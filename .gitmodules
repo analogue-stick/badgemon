@@ -1,0 +1,12 @@
+[submodule "gc9a01_mpy"]
+	path = gc9a01_mpy
+	url = git@github.com:russhughes/gc9a01_mpy.git
+[submodule "badge-2024-software"]
+	path = badge-2024-software
+	url = git@github.com:emfcamp/badge-2024-software.git
+[submodule "badge-2024-hardware"]
+	path = badge-2024-hardware
+	url = git@github.com:emfcamp/badge-2024-hardware.git
+[submodule "micropython"]
+	path = micropython
+	url = git@github.com:micropython/micropython.git
