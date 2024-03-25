@@ -5,22 +5,22 @@ This is where the core gameplay objects go: moves, badgemons, players, whatever.
 game it goes in here.
 """
 from random import random
-from typing import Callable
+from struct import pack, unpack
 
 
-class Effect:
+class EFFECTS:
+    NONE = 0
+    POISON = 1
 
-    def __init__(self):
-        pass
 
-
-class MoveType:
-    def __init__(self):
-        pass
+class MOVE_TYPES:
+    NORMAL = 0
+    FIRE = 1
+    BUG = 2
 
 
 class Move:
-    def __init__(self, name: str, move_type: MoveType, sp_usage: int, base_damage: float, effect: Effect):
+    def __init__(self, name: str, move_type: int, sp_usage: int, base_damage: float, effect: int):
         """
         This is the class to hold a specific move.
 
@@ -42,13 +42,12 @@ class BadgeMon:
     SP_SCALE = 0.3
     STR_SCALE = .3
 
-    def __init__(self, name: str, move_set: [Move], death_handler: 'Callable'):
+    def __init__(self, name: str, move_set: [int]):
         """
 
 
         :param name:
         :param move_set:
-        :param death_handler:
         """
 
         self.active_effect = None
@@ -58,7 +57,6 @@ class BadgeMon:
 
         self.hp = self.get_max_hp()
         self.sp = self.get_max_sp()
-        self.death_handler = death_handler
 
     def do_move(self, move_id: int, target: 'BadgeMon') -> bool:
         action: Move = self.move_set[move_id]
@@ -90,14 +88,32 @@ class BadgeMon:
 
     def do_damage(self, damage: float):
         self.hp -= int(damage)
-        if self.hp <= 0:
-            self.death_handler()
 
     def heal(self, amount: int):
         self.hp = min(self.get_max_hp(), self.hp + amount)
 
-    def add_effect(self, effect: Effect):
+    def add_effect(self, effect: int):
         self.active_effect = effect
+
+    def serialise(self) -> bytes:
+        output = self.name.encode('utf-8')[:10]
+        output += bytes(10 - len(output))
+        output += pack('>HHH', self.hp, self.sp, self.exp)
+        output += pack('>HHHH', *self.move_set)
+        return output
+
+    @staticmethod
+    def deserialise(b: bytes) -> 'BadgeMon':
+        name = b[:10].rstrip(b'\x00')
+        name = name.decode('utf-8')
+        hp, sp, exp = unpack('>HHH', b[10:16])
+        move_set = unpack('>HHHH', b[16:24])
+        badgemon = BadgeMon(name, move_set)
+        badgemon.hp = hp
+        badgemon.sp = sp
+        badgemon.exp = exp
+
+        return badgemon
 
 
 class Player:
