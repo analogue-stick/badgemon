@@ -9,6 +9,12 @@ instead of working on a protocol
 """
 
 
+class API:
+    CHALLENGE = 1
+    SEND_PARTY = 2
+    SEND_MOVE = 3
+
+
 class Protocol:
-    def __init__(self):
+    def __init__(self, address: str, port: int):
         pass
