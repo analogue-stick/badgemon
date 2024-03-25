@@ -6,21 +6,22 @@ game it goes in here.
 """
 from random import random
 from typing import Callable, List
+from struct import pack, unpack_from
 
 
-class Effect:
+class EFFECTS:
+    NONE = 0
+    POISON = 1
 
-    def __init__(self):
-        pass
 
-
-class MoveType:
-    def __init__(self):
-        pass
+class MOVE_TYPES:
+    NORMAL = 0
+    FIRE = 1
+    BUG = 2
 
 
 class Move:
-    def __init__(self, name: str, move_type: MoveType, sp_usage: int, base_damage: float, effect: Effect):
+    def __init__(self, name: str, move_type: int, sp_usage: int, base_damage: float, effect: int):
         """
         This is the class to hold a specific move.
 
@@ -42,13 +43,12 @@ class BadgeMon:
     SP_SCALE = 0.3
     STR_SCALE = .03
 
-    def __init__(self, name: str, move_set: List[Move]):
+    def __init__(self, name: str, move_set: List[int]):
         """
 
 
         :param name:
         :param move_set:
-        :param death_handler:
         """
 
         self.active_effect = None
@@ -96,8 +96,28 @@ class BadgeMon:
     def heal(self, amount: int):
         self.hp = min(self.get_max_hp(), self.hp + amount)
 
-    def add_effect(self, effect: Effect):
+    def add_effect(self, effect: int):
         self.active_effect = effect
+
+    def serialise(self) -> bytes:
+        output = self.name.encode('utf-8')[:10]
+        output += bytes(10 - len(output))
+        output += pack('>HHH', self.hp, self.sp, self.exp)
+        output += pack('>HHHH', *self.move_set)
+        return output
+
+    @staticmethod
+    def deserialise(b: bytes) -> 'BadgeMon':
+        name = b[:10].rstrip(b'\x00')
+        name = name.decode('utf-8')
+        hp, sp, exp = unpack('>HHH', b[10:16])
+        move_set = unpack('>HHHH', b[16:24])
+        badgemon = BadgeMon(name, move_set)
+        badgemon.hp = hp
+        badgemon.sp = sp
+        badgemon.exp = exp
+
+        return badgemon
 
     def is_down(self) -> bool:
         return self.hp < 0
