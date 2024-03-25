@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Components/User Interface.md",
+                "file": "Prototype Notes.md",
                 "mode": "source",
                 "source": false
               }
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Components/User Interface.md",
+                "file": "Prototype Notes.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -126,7 +126,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Components/User Interface.md",
+                "file": "Prototype Notes.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -149,7 +149,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Components/User Interface.md"
+                "file": "Prototype Notes.md"
               }
             }
           }
@@ -172,10 +172,10 @@
   },
   "active": "e7b050f6fa3a1897",
   "lastOpenFiles": [
-    "Components/Protocol.md",
-    "Components/BageMon.md",
     "Components/User Interface.md",
+    "Components/BageMon.md",
     "README.md",
+    "Components/Protocol.md",
     "Prototype Notes.md",
     "Project Specification.md",
     "MVP.md",
