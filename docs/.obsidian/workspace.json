@@ -4,43 +4,15 @@
     "type": "split",
     "children": [
       {
-        "id": "3b0f1889410ba658",
+        "id": "111ba8ba0149c810",
         "type": "tabs",
         "children": [
           {
-            "id": "e7b050f6fa3a1897",
+            "id": "ad57f5ac18f53ea2",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Components/User Interface.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "cc22679ec77d39df",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Components/BageMon.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
-            "id": "bf2a6fefea677f7e",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "README.md",
-                "mode": "source",
-                "source": false
-              }
+              "type": "empty",
+              "state": {}
             }
           }
         ]
@@ -109,7 +81,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Components/User Interface.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -126,7 +97,6 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Components/User Interface.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -148,9 +118,7 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {
-                "file": "Components/User Interface.md"
-              }
+              "state": {}
             }
           }
         ]
@@ -170,14 +138,14 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "e7b050f6fa3a1897",
+  "active": "ad57f5ac18f53ea2",
   "lastOpenFiles": [
+    "Components/BadgeMon.md",
     "Components/Protocol.md",
-    "Components/BageMon.md",
-    "Components/User Interface.md",
     "README.md",
     "Prototype Notes.md",
     "Project Specification.md",
+    "Components/User Interface.md",
     "MVP.md",
     "Components"
   ]
