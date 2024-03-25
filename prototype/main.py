@@ -3,8 +3,8 @@ Main. This will be 100% prototype specific. Run it in the terminal ultra-basic s
 """
 import badgemon
 
-NORMAL_TYPE = badgemon.MoveType()
-NO_EFFECT = badgemon.Effect()
+NORMAL_TYPE = badgemon.MOVE_TYPES.NORMAL
+NO_EFFECT = badgemon.EFFECTS.NONE
 
 HIT = badgemon.Move('Hit', NORMAL_TYPE, 1, 1, NO_EFFECT)
 
