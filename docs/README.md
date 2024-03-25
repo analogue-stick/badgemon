@@ -1,0 +1,1 @@
+This folder is for the design and specification of the project. I have been using obsidian to write this, I recommend others do too, I will be making use of Obsidian's embedded mermaid graphs.
