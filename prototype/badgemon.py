@@ -5,7 +5,8 @@ This is where the core gameplay objects go: moves, badgemons, players, whatever.
 game it goes in here.
 """
 from random import random
-from struct import pack, unpack
+from typing import Callable, List
+from struct import pack, unpack_from
 
 
 class EFFECTS:
@@ -40,9 +41,9 @@ class Move:
 class BadgeMon:
     HP_SCALE = 0.5
     SP_SCALE = 0.3
-    STR_SCALE = .3
+    STR_SCALE = .03
 
-    def __init__(self, name: str, move_set: [int]):
+    def __init__(self, name: str, move_set: List[int]):
         """
 
 
@@ -60,6 +61,7 @@ class BadgeMon:
 
     def do_move(self, move_id: int, target: 'BadgeMon') -> bool:
         action: Move = self.move_set[move_id]
+        print("making move:", action.name)
 
         if action.sp_usage > self.sp:
             return False
@@ -88,6 +90,8 @@ class BadgeMon:
 
     def do_damage(self, damage: float):
         self.hp -= int(damage)
+        if self.hp <= 0:
+            print("ded")
 
     def heal(self, amount: int):
         self.hp = min(self.get_max_hp(), self.hp + amount)
@@ -115,8 +119,61 @@ class BadgeMon:
 
         return badgemon
 
+    def is_down(self) -> bool:
+        return self.hp < 0
+    
+    def list_moves(self):
+        for move in self.move_set:
+            print(move.name)
+
+    def dump_stats(self):
+        print("BADGEMON:", self.name)
+        print("HP:", self.hp, "SP:", self.sp)
+        print("EXP:", self.exp)
 
 class Player:
 
-    def __init__(self, party: [BadgeMon]):
+    def __init__(self, party: List[BadgeMon]):
         self.party = party
+
+    def make_move(mon: BadgeMon):
+        pass
+
+class User(Player):
+
+    def make_move(self, mon: BadgeMon, target: BadgeMon):
+        print("MAKE MOVE:")
+        i = input()
+        if i == "attack":
+            mon.list_moves()
+            i = input()
+            for x, move in enumerate(mon.move_set):
+                if move.name == i:
+                    mon.do_move(x, target)
+
+
+class Battle():
+    a_mon: BadgeMon
+    b_mon: BadgeMon
+    a_player: Player
+    b_player: Player
+    turn: bool = True
+
+    def __init__(self, a_player, b_player):
+        self.a_player = a_player
+        self.b_player = b_player
+        self.a_mon = a_player.party[0]
+        self.b_mon = b_player.party[0]
+
+    def do_battle(self):
+        while (not self.a_mon.is_down() and not self.b_mon.is_down()):
+            self.a_mon.dump_stats()
+            self.b_mon.dump_stats()
+            if self.turn:
+                print("A's Turn")
+                self.a_player.make_move(self.a_mon, self.b_mon)
+            else:
+                print("B's Turn")
+                self.b_player.make_move(self.b_mon, self.a_mon)
+            self.turn = not self.turn
+        print("battle over")
