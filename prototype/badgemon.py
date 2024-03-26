@@ -4,17 +4,17 @@ WELCOME TO BADGEMON!!!!
 This is where the core gameplay objects go: moves, badgemons, players, whatever. If it stores data and is part of the
 game it goes in here.
 """
-from random import random
-from typing import Callable, List
-from struct import pack, unpack_from
+from random import random, choice
+from struct import pack, unpack
+from typing import List
 
 
-class EFFECTS:
+class Effects:
     NONE = 0
     POISON = 1
 
 
-class MOVE_TYPES:
+class MoveTypes:
     NORMAL = 0
     FIRE = 1
     BUG = 2
@@ -36,6 +36,14 @@ class Move:
         self.base_damage = base_damage
         self.sp_usage = sp_usage
         self.effect = effect
+
+
+class Moves:
+    HIT = 0
+
+    MOVES_ID = [
+        Move('Hit', MoveTypes.NORMAL, 1, 1, Effects.NONE)
+    ]
 
 
 class BadgeMon:
@@ -60,7 +68,7 @@ class BadgeMon:
         self.sp = self.get_max_sp()
 
     def do_move(self, move_id: int, target: 'BadgeMon') -> bool:
-        action: Move = self.move_set[move_id]
+        action: Move = Moves.MOVES_ID[move_id]
         print("making move:", action.name)
 
         if action.sp_usage > self.sp:
@@ -111,7 +119,7 @@ class BadgeMon:
         name = b[:10].rstrip(b'\x00')
         name = name.decode('utf-8')
         hp, sp, exp = unpack('>HHH', b[10:16])
-        move_set = unpack('>HHHH', b[16:24])
+        move_set = list(unpack('>HHHH', b[16:24]))
         badgemon = BadgeMon(name, move_set)
         badgemon.hp = hp
         badgemon.sp = sp
@@ -121,43 +129,36 @@ class BadgeMon:
 
     def is_down(self) -> bool:
         return self.hp < 0
-    
+
     def list_moves(self):
+        names = []
         for move in self.move_set:
-            print(move.name)
+            name = Moves.MOVES_ID[move].name
+            names.append(name)
+        return names
 
     def dump_stats(self):
-        print("BADGEMON:", self.name)
-        print("HP:", self.hp, "SP:", self.sp)
-        print("EXP:", self.exp)
+        print(f'[*] Mon: {self.name} | HP: {self.hp} | SP: {self.sp}')
+
 
 class Player:
 
     def __init__(self, party: List[BadgeMon]):
         self.party = party
 
-    def make_move(mon: BadgeMon):
+    def make_move(self, mon: BadgeMon, target: BadgeMon):
         pass
 
-class User(Player):
+
+class Cpu(Player):
 
     def make_move(self, mon: BadgeMon, target: BadgeMon):
-        print("MAKE MOVE:")
-        i = input()
-        if i == "attack":
-            mon.list_moves()
-            i = input()
-            for x, move in enumerate(mon.move_set):
-                if move.name == i:
-                    mon.do_move(x, target)
+        move = choice(mon.move_set)
+        print(f'[*] CPU used {Moves.MOVES_ID[move].name}')
+        mon.do_move(move, target)
 
 
-class Battle():
-    a_mon: BadgeMon
-    b_mon: BadgeMon
-    a_player: Player
-    b_player: Player
-    turn: bool = True
+class Battle:
 
     def __init__(self, a_player, b_player):
         self.a_player = a_player
@@ -165,8 +166,10 @@ class Battle():
         self.a_mon = a_player.party[0]
         self.b_mon = b_player.party[0]
 
+        self.turn = True
+
     def do_battle(self):
-        while (not self.a_mon.is_down() and not self.b_mon.is_down()):
+        while not self.a_mon.is_down() and not self.b_mon.is_down():
             self.a_mon.dump_stats()
             self.b_mon.dump_stats()
             if self.turn:

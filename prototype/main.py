@@ -1,15 +1,26 @@
 """
 Main. This will be 100% prototype specific. Run it in the terminal ultra-basic stuff.
 """
-import badgemon
+from badgemon import Player, BadgeMon, Moves, Battle, Cpu
 
-NORMAL_TYPE = badgemon.MOVE_TYPES.NORMAL
-NO_EFFECT = badgemon.EFFECTS.NONE
+LILGUY = BadgeMon("Lil guy", [Moves.HIT])
+BIGGUY = BadgeMon("Big guy", [Moves.HIT])
 
-HIT = badgemon.Move('Hit', NORMAL_TYPE, 1, 1, NO_EFFECT)
 
-LILGUY = badgemon.BadgeMon("Lil guy", [HIT])
-BIGGUY = badgemon.BadgeMon("Big guy", [HIT])
+class User(Player):
+
+    def make_move(self, mon: BadgeMon, target: BadgeMon):
+        i = input("[*] What would you like to do?\n- (a)ttack\n- (r)un away\n- (u)se an item\n: ")
+        if i == 'a':
+            moves = mon.list_moves()
+            pretty_print = '\n- ' + '\n- '.join(moves)
+            i = input(f"[*] Your available moves are:{pretty_print}\n: ")
+            for move in mon.move_set:
+                name = Moves.MOVES_ID[move].name
+                print(name)
+                if name == i:
+                    mon.do_move(move, target)
+
 
 class Game:
 
@@ -21,10 +32,11 @@ class Game:
 
 
 def main():
-    player_a = badgemon.User([LILGUY])
-    player_b = badgemon.User([BIGGUY])
-    battle = badgemon.Battle(player_a, player_b)
+    player_a = User([LILGUY])
+    player_b = Cpu([BIGGUY])
+    battle = Battle(player_a, player_b)
     battle.do_battle()
+
 
 if __name__ == '__main__':
     main()
