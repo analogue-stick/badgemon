@@ -6,7 +6,6 @@ game it goes in here.
 """
 from random import random, choice
 from struct import pack, unpack
-from typing import List
 
 
 class Effects:
@@ -196,14 +195,31 @@ class Battle:
         self.turn = True
 
     def do_battle(self):
-        while not self.a_mon.is_down() and not self.b_mon.is_down():
-            self.a_mon.dump_stats()
-            self.b_mon.dump_stats()
-            if self.turn:
-                print(f"[*] Now it's {self.a_player.name}'s turn")
-                self.a_player.make_move(self.a_mon, self.b_mon)
-            else:
-                print(f"[*] Now it's {self.b_player.name}'s turn")
-                self.b_player.make_move(self.b_mon, self.a_mon)
-            self.turn = not self.turn
+        battle = True
+        while battle:
+            while not self.a_mon.is_down() and not self.b_mon.is_down():
+                self.a_mon.dump_stats()
+                self.b_mon.dump_stats()
+                if self.turn:
+                    print(f"[*] Now it's {self.a_player.name}'s turn")
+                    self.a_player.make_move(self.a_mon, self.b_mon)
+                else:
+                    print(f"[*] Now it's {self.b_player.name}'s turn")
+                    self.b_player.make_move(self.b_mon, self.a_mon)
+                self.turn = not self.turn
+            i = 0
+            while self.a_mon.is_down():
+                if i == len(self.a_player.party):
+                    battle = False
+                    break
+                self.a_mon = self.a_player.party[i]
+                i+=1
+            i = 0
+            while self.b_mon.is_down():
+                if i == len(self.b_player.party):
+                    battle = False
+                    break
+                self.b_mon = self.b_player.party[i]
+                i+=1
+        
         print("battle over")
