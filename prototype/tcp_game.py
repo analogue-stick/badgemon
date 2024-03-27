@@ -1,6 +1,6 @@
 from socket import socket
 from struct import unpack
-from typing import Optional
+from typing import List, Optional
 
 from badgemon import Player, BadgeMon, Moves, Battle
 from protocol import API, Protocol
@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 
 
 class TCPPlayer(Player):
-    def __init__(self, name: str, party: [BadgeMon]):
+    def __init__(self, name: str, party: List[BadgeMon]):
         super().__init__(name, party)
         self.conn: Optional[socket] = None
         self.buffer = bytearray()
