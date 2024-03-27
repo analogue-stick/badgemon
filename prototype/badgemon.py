@@ -40,9 +40,15 @@ class Move:
 
 class Moves:
     HIT = 0
+    SCRATCH = 1
+    BITE = 2
+    MAIM = 3
 
     MOVES_ID = [
-        Move('Hit', MoveTypes.NORMAL, 1, 1, Effects.NONE)
+        Move('Hit', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Scratch', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Bite', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Maim', MoveTypes.NORMAL, 1, 1, Effects.NONE)
     ]
 
 
@@ -153,7 +159,7 @@ class Player:
         pass
 
     def serialise(self):
-        packet = pack('>10s', self.name)
+        packet = pack('>10s', self.name.encode('utf-8'))
         for mon in self.party:
             packet += mon.serialise()
         return packet

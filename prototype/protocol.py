@@ -37,7 +37,6 @@ class Protocol:
         header = pack('>BB', API.CHALLENGE_ACCEPT, len(packet))
         return header + packet
 
-
     @staticmethod
     def attack_packet(move_id: int):
         packet = pack('>B', move_id)
