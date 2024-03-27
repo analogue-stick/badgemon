@@ -40,13 +40,21 @@ class Move:
 
 class Moves:
     HIT = 0
+    SCRATCH = 1
+    BITE = 2
+    MAIM = 3
 
     MOVES_ID = [
-        Move('Hit', MoveTypes.NORMAL, 1, 1, Effects.NONE)
+        Move('Hit', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Scratch', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Bite', MoveTypes.NORMAL, 1, 1, Effects.NONE),
+        Move('Maim', MoveTypes.NORMAL, 1, 1, Effects.NONE)
     ]
 
 
 class BadgeMon:
+    SERIALISED_LENGTH = 24
+
     HP_SCALE = 0.5
     SP_SCALE = 0.3
     STR_SCALE = .03
@@ -143,11 +151,30 @@ class BadgeMon:
 
 class Player:
 
-    def __init__(self, party: List[BadgeMon]):
+    def __init__(self, name: str, party: List[BadgeMon]):
+        self.name = name
         self.party = party
 
     def make_move(self, mon: BadgeMon, target: BadgeMon):
         pass
+
+    def serialise(self):
+        packet = pack('>10s', self.name.encode('utf-8'))
+        for mon in self.party:
+            packet += mon.serialise()
+        return packet
+
+    @staticmethod
+    def deserialise(b: bytes):
+        name, = unpack('>10s', b[:10])
+        name = name.strip(b'\x00').decode('utf-8')
+
+        mons = []
+        for i in range(10, len(b), BadgeMon.SERIALISED_LENGTH):
+            mon = BadgeMon.deserialise(b[i:i + BadgeMon.SERIALISED_LENGTH])
+            mons.append(mon)
+
+        return Player(name, mons)
 
 
 class Cpu(Player):
@@ -173,10 +200,10 @@ class Battle:
             self.a_mon.dump_stats()
             self.b_mon.dump_stats()
             if self.turn:
-                print("A's Turn")
+                print(f"[*] Now it's {self.a_player.name}'s turn")
                 self.a_player.make_move(self.a_mon, self.b_mon)
             else:
-                print("B's Turn")
+                print(f"[*] Now it's {self.b_player.name}'s turn")
                 self.b_player.make_move(self.b_mon, self.a_mon)
             self.turn = not self.turn
         print("battle over")

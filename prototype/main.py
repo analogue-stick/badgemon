@@ -32,8 +32,8 @@ class Game:
 
 
 def main():
-    player_a = User([LILGUY])
-    player_b = Cpu([BIGGUY])
+    player_a = User('Player A', [LILGUY])
+    player_b = Cpu('Tr41n0rB0T', [BIGGUY])
     battle = Battle(player_a, player_b)
     battle.do_battle()
 
