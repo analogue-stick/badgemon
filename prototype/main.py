@@ -2,7 +2,6 @@
 Main. This will be 100% prototype specific. Run it in the terminal ultra-basic stuff.
 """
 from badgemon import Player, BadgeMon, Moves, Battle, Cpu
-from choice import make_choice
 
 LILGUY = BadgeMon("Lil guy", [Moves.HIT])
 BIGGUY = BadgeMon("Big guy", [Moves.HIT])
@@ -11,15 +10,17 @@ BIGGUY = BadgeMon("Big guy", [Moves.HIT])
 class User(Player):
 
     def make_move(self, mon: BadgeMon, target: BadgeMon):
-        i = 0
-        moves = mon.list_moves()
-        move_choices = []
-        for x, move in enumerate(moves):
-            move_choices.append((move, x+10))
-        while i == 0:
-            i = make_choice("[*] What would you like to do?", [("attack",move_choices),("run away",2),("use an item",3)])
-        if i >= 10 and i < 20:
-            mon.do_move(i-10, target)
+        i = input("[*] What would you like to do?\n- (a)ttack\n- (r)un away\n- (u)se an item\n: ")
+        if i == 'a':
+            moves = mon.list_moves()
+            pretty_print = '\n- ' + '\n- '.join(moves)
+            i = input(f"[*] Your available moves are:{pretty_print}\n: ")
+            for move in mon.move_set:
+                name = Moves.MOVES_ID[move].name
+                print(name)
+                if name == i:
+                    mon.do_move(move, target)
+
 
 class Game:
 
