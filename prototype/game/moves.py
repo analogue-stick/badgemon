@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 import math
 import random
 from enum import Enum
-from typing import Callable, List, Union
+from typing import Callable, List, Union, TYPE_CHECKING
 
 import prototype.game.constants as constants
-import prototype.game.battle_main as battle_main
-from prototype.game import mons
 
-
-move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
+if TYPE_CHECKING:
+    from prototype.game import mons, battle_main
+    move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
 
 
 class MoveOverrideSpecial(Enum):
@@ -35,8 +36,9 @@ class MoveEffect:
     @staticmethod
     def apply_status_effect(status: constants.StatusEffect, chance_to_apply: float = 1) -> "MoveEffect":
         """
-        Applies a status effect at a specific chance. Success is if the effect is applied successfully (roll success
-        AND effect successfully added)
+        Applies a status effect at a specific chance. Success is if the effect is applied successfully
+        (roll success AND effect successfully added)
+
         :param status: The status to apply to the target.
         :param chance_to_apply: The chance that status is applied.
         :return: A MoveEffect object containing this effect only.
@@ -57,7 +59,9 @@ class MoveEffect:
         :return: A MoveEffect object containing this effect only.
         """
         def function(battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int):
-            battle.deal_damage(user, target, math.floor(damage * pct), None, "from recoil")
+            battle.deal_damage(
+                user, target, math.floor(damage * pct), None, "{target} took {amount} recoil damage!"
+            )
             return True
 
         return MoveEffect(function)

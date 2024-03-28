@@ -1,6 +1,3 @@
-from random import random, choice
-from struct import pack, unpack
-from typing import List
 from enum import Enum
 
 
@@ -33,3 +30,6 @@ class MonType(Enum):
     ROCK = 14
     STEEL = 15
     WATER = 16
+
+
+stat_names = ["HP", "ATK", "DEF", "SpATK", "SpDEF", "SPD"]
