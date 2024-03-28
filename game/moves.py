@@ -133,6 +133,8 @@ class MoveEffect:
 
 
 class Move:
+    id_inc = 0
+
     def __init__(
         self, name: str, desc: str, move_type: constants.MonType, max_pp: int, power: int, accuracy: int,
         effect_on_hit: MoveEffect = None, effect_on_miss: MoveEffect = None,
@@ -150,6 +152,9 @@ class Move:
         :param effect_on_miss: Special effect called when the move misses.
         :param special_override: Any override that a special case must be made for.
         """
+        self.id = Move.id_inc
+        Move.id_inc += 1
+
         self.name = name
         self.desc = desc
         self.move_type = move_type
@@ -161,11 +166,11 @@ class Move:
         self.special_override = special_override
 
 
-moves_list = {
-    "KILLS_YOU": Move(
+moves_list = [
+    Move(
         "Kills you", "Kills you with hammers", constants.MonType.DRAGON, 20, 999, 100,
         MoveEffect.recoil_damage(20).then(
             MoveEffect.apply_status_effect(constants.StatusEffect.BURNED, 0.3)
         )
     )
-}
+]

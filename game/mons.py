@@ -9,6 +9,7 @@ class MonTemplate:
     """
     A template for a mon. This is copied into every instance of a mon, but NEVER MODIFIED.
     """
+    id_inc = 0
 
     def __init__(self, name: str, desc: str, types: List[constants.MonType],
                  ability: abilities.Ability,
@@ -32,6 +33,9 @@ class MonTemplate:
         :param learnset: The moves this mon learns. At each specified level,
         the mon tries to learn the move. Must be sorted from low to high, e.g. [[Move1, 2], [Move2, 10], ...]
         """
+        self.id = MonTemplate.id_inc
+        MonTemplate.id_inc += 1
+
         self.name = name
         self.desc = desc
         self.types = types
@@ -58,6 +62,15 @@ class Mon:
 
     Don't call functions on this directly if currently in battle - use the Battle object instead.
     """
+    @classmethod
+    def deserialise(cls, data):
+        """
+        Deserialise data into a Mon object, then return it.
+
+        :param data: The data to deserialise.
+        :return: The newly created Mon.
+        """
+        pass
 
     def __init__(self, template: MonTemplate, level: int,
                  ivs: Union[List[int], None] = None,
@@ -101,6 +114,14 @@ class Mon:
             self.setup_moves_at_level()
 
         self.full_heal()
+
+    def serialise(self):
+        """
+        Transform the mon into serialised data. Opposite of Mon.deserialise().
+
+        :return: The serialised data
+        """
+        pass
 
     def set_nickname(self, new_name: str) -> "Mon":
         self.nickname = new_name
@@ -191,3 +212,20 @@ class Mon:
             return True
         else:
             return False
+
+
+mons_list = [
+    MonTemplate(
+        "guy", "fuckin dude", [constants.MonType.FIGHTING, constants.MonType.FIRE],
+        abilities.Ability.NO_ABILITY, None, None,
+        85, 135, 130, 60, 70, 25, [
+            (moves[0], 5),
+            (moves[1], 5),
+            (moves[2], 8),
+            (moves[3], 13),
+            (moves[4], 21),
+            (moves[5], 30),
+            (moves[6], 40)
+        ]
+    )
+]
