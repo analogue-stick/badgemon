@@ -142,6 +142,9 @@ class Mon:
 
         self.status = constants.StatusEffect.NO_EFFECT
 
+        self.xp = 0
+        # TODO gaining XP and levelling up
+
         self.pp = [0, 0, 0, 0]
 
         self.moves = []  # type: List[moves.Move]

@@ -1,4 +1,6 @@
+from io import StringIO
 from typing import Union
+import sys
 
 from game import constants, mons, moves
 
@@ -7,9 +9,17 @@ from game import constants, mons, moves
 #  i'll get to it at some point. generally just call the related function on the target mon
 #  and build a news entry
 class Battle:
-    def __init__(self, mon1, mon2):
+    def __init__(self, mon1: mons.Mon, mon2: mons.Mon, news_target: StringIO = None):
         self.mon1 = mon1
         self.mon2 = mon2
+
+        if news_target:
+            self.news_target = news_target
+        else:
+            self.news_target = sys.stdout
+
+    def push_news_entry(self, *entry):
+        self.news_target.write(" ".join(str(e) for e in entry))
 
     def use_move(self, user: mons.Mon, target: mons.Mon, move: moves.Move):
         """

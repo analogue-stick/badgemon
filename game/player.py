@@ -1,9 +1,8 @@
-from typing import List
+from typing import List, Tuple
 from game import mons, items
 
 
-class Player():
-    
-    def __init__():
+class Player:
+    def __init__(self):
         badgemon: List[mons.Mon] = []
-        inventory: List[items.Item] = []
+        inventory: List[Tuple[items.Item, int]] = []
