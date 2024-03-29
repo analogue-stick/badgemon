@@ -100,9 +100,10 @@ class Mon:
             offset += 2
 
         mon = Mon(mons_list[template_id], level, ivs, evs, set_moves)
+
         mon.set_nickname(nickname)
         mon.hp = hp
-
+        mon.fainted = fainted
         for i, v in enumerate(pps):
             mon.pp[i] = v
 
@@ -129,7 +130,8 @@ class Mon:
         self.level = level
 
         #            hp    atk   def  spatk spdef  spd
-        self.stats = [0, 0, 0, 0, 0, 0]
+        self.stats = [0,    0,    0,    0,    0,    0]
+
         self.evs = evs if evs else [0, 0, 0, 0, 0, 0]
         self.ivs = ivs if ivs else [random.randint(0, 31) for _ in range(6)]
 
@@ -160,7 +162,7 @@ class Mon:
 
         # 🌏 🧑‍🚀 "Wait it's all unsigned bytes?"
         # 🧑‍🚀 🔫 🧑‍🚀 "Always has been"
-        # (oh except for the name)
+        # (oh except for the name and fainted)
 
         data = bytearray()
 
