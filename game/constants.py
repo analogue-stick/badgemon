@@ -29,4 +29,28 @@ class MonType:
     WATER = 16
 
 
+class ItemType:
+    NO_ITEM = 0
+    MASTER_HEXBOX = 1
+    ULTRA_HEXBOX = 2
+    SUPER_HEXBOX = 3
+    HEXBOX = 4
+    ANTIDOTE = 5
+    OINTMENT = 6
+    HEAT_PACK = 7
+    KLAXON = 8
+    HOT_CHOC = 9
+    BOX_PARACETAMOL = 10
+    BOX_COOKIES = 11
+    MASSIVE_COOKIE = 12
+    LARGE_COOKIE = 13
+    COOKIE = 14
+    PARACETAMOL = 15
+    ENTICING_SCENT = 16 
+    OP_SCENT = 17
+    TEA = 18
+    COFFEE = 19 
+    ESPRESSO = 20
+    ENERGY_DRINK = 21
+
 stat_names = ["HP", "ATK", "DEF", "SpATK", "SpDEF", "SPD"]
