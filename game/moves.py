@@ -5,10 +5,10 @@ import random
 from enum import Enum
 from typing import Callable, List, Union, TYPE_CHECKING
 
-import prototype.game.constants as constants
+from game import constants
 
 if TYPE_CHECKING:
-    from prototype.game import mons, battle_main
+    from game import battle_main, mons
     move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
 
 
@@ -172,5 +172,5 @@ moves_list = [
         MoveEffect.recoil_damage(20).then(
             MoveEffect.apply_status_effect(constants.StatusEffect.BURNED, 0.3)
         )
-    )
+    ) for i in range(10)
 ]

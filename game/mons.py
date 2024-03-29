@@ -1,8 +1,9 @@
 import math
 import random
+from struct import pack, unpack
 from typing import List, Tuple, Union
 
-from prototype.game import moves, abilities, constants
+from game import moves, abilities, constants
 
 
 class MonTemplate:
@@ -62,6 +63,7 @@ class Mon:
 
     Don't call functions on this directly if currently in battle - use the Battle object instead.
     """
+
     @classmethod
     def deserialise(cls, data):
         """
@@ -70,7 +72,41 @@ class Mon:
         :param data: The data to deserialise.
         :return: The newly created Mon.
         """
-        pass
+        offset = 0
+
+        name_len, = unpack('B', data[offset:offset + 1])
+        offset += 1
+        raw_nickname = data[offset:offset + name_len]
+        nickname = raw_nickname.decode('utf-8')
+        offset += name_len
+
+        template_id, level, hp, fainted = unpack('BBB?', data[offset:offset + 4])
+        offset += 4
+
+        evs = list(unpack('BBBBBB', data[offset:offset + 6]))
+        offset += 6
+        ivs = list(unpack('BBBBBB', data[offset:offset + 6]))
+        offset += 6
+
+        num_moves, = unpack('B', data[offset:offset + 1])
+        offset += 1
+
+        set_moves = []
+        pps = []
+        for _ in range(num_moves):
+            move, pp = unpack('BB', data[offset:offset + 2])
+            set_moves.append(moves.moves_list[move])
+            pps.append(pp)
+            offset += 2
+
+        mon = Mon(mons_list[template_id], level, ivs, evs, set_moves)
+        mon.set_nickname(nickname)
+        mon.hp = hp
+
+        for i, v in enumerate(pps):
+            mon.pp[i] = v
+
+        return mon
 
     def __init__(self, template: MonTemplate, level: int,
                  ivs: Union[List[int], None] = None,
@@ -93,7 +129,7 @@ class Mon:
         self.level = level
 
         #            hp    atk   def  spatk spdef  spd
-        self.stats = [0,    0,    0,    0,    0,    0]
+        self.stats = [0, 0, 0, 0, 0, 0]
         self.evs = evs if evs else [0, 0, 0, 0, 0, 0]
         self.ivs = ivs if ivs else [random.randint(0, 31) for _ in range(6)]
 
@@ -115,13 +151,34 @@ class Mon:
 
         self.full_heal()
 
-    def serialise(self):
+    def serialise(self) -> bytes:
         """
         Transform the mon into serialised data. Opposite of Mon.deserialise().
 
         :return: The serialised data
         """
-        pass
+
+        # 🌏 🧑‍🚀 "Wait it's all unsigned bytes?"
+        # 🧑‍🚀 🔫 🧑‍🚀 "Always has been"
+        # (oh except for the name)
+
+        data = bytearray()
+
+        name_len = len(self.nickname)
+        data += pack('B', name_len)
+        data += self.nickname.encode('utf-8')
+
+        data += pack('BBB?', self.template.id, self.level, self.hp, self.fainted)
+
+        data += pack('BBBBBB', *self.evs)
+        data += pack('BBBBBB', *self.ivs)
+
+        data += pack('B', len(self.moves))
+
+        for move, pp in zip(self.moves, self.pp):
+            data += pack('BB', move.id, pp)
+
+        return data
 
     def set_nickname(self, new_name: str) -> "Mon":
         self.nickname = new_name
@@ -157,14 +214,14 @@ class Mon:
         """
         self.moves = []
         self.pp = [0, 0, 0, 0]
-        for i in range(len(self.template.learnset)-1, -1, -1):
+        for i in range(len(self.template.learnset) - 1, -1, -1):
             if len(self.moves) >= 4:
                 break
 
             if self.template.learnset[i][1] > self.level:
                 continue
 
-            chance = 2.0/3.0
+            chance = 2.0 / 3.0
             if (4 - len(self.moves)) >= i:
                 chance = 1
 
@@ -219,13 +276,13 @@ mons_list = [
         "guy", "fuckin dude", [constants.MonType.FIGHTING, constants.MonType.FIRE],
         abilities.Ability.NO_ABILITY, None, None,
         85, 135, 130, 60, 70, 25, [
-            (moves[0], 5),
-            (moves[1], 5),
-            (moves[2], 8),
-            (moves[3], 13),
-            (moves[4], 21),
-            (moves[5], 30),
-            (moves[6], 40)
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[2], 8),
+            (moves.moves_list[3], 13),
+            (moves.moves_list[4], 21),
+            (moves.moves_list[5], 30),
+            (moves.moves_list[6], 40)
         ]
     )
 ]

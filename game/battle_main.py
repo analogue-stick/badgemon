@@ -1,6 +1,6 @@
 from typing import Union
 
-from prototype.game import constants, mons, moves
+from game import constants, mons, moves
 
 
 # TODO battle is currently just method stubs, should be self-explanatory how it should work.

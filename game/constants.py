@@ -1,9 +1,6 @@
-from enum import Enum
-
-
 # Confusion is not included here because it can be applied alongside other effects
 # and is not a persistent effect
-class StatusEffect(Enum):
+class StatusEffect:
     NO_EFFECT = 0
     POISONED = 1
     BURNED = 2
@@ -12,7 +9,7 @@ class StatusEffect(Enum):
     SLEEPING = 5
 
 
-class MonType(Enum):
+class MonType:
     NO_TYPE = 0
     BUG = 1
     DARK = 2
