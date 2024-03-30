@@ -26,16 +26,19 @@ class Battle:
         :param target: Target of the move.
         :param move: The move to use.
         """
-        damage = calculation.calculate_damage(user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+        damage = calculation.calculate_damage(
+            user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
+            user.template.type1, user.template.type2, target.template.type1, target.template.type2)
 
         if calculation.get_hit(move.accuracy):
-            self.deal_damage(user,target,damage,move.move_type)
+            self.deal_damage(user, target, damage, move.move_type)
             move.effect_on_hit.execute(self, user, target, damage)
         else:
             move.effect_on_miss.execute(self, user, target, damage)
 
         if move.special_override != constants.MoveOverrideSpecial.NO_OVERRIDE:
-            pass #Handle special moves?
+            # TODO Handle special moves
+            pass
 
     def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,
                        custom_log: str = "") -> bool:
@@ -72,7 +75,8 @@ class Battle:
         damage_taken = target.take_damage(amount, dmg_type)
         if custom_log == "":
             custom_log = "{target} took {damage_taken} damage!"
-        self.push_news_entry(custom_log.format(target=target, user=user, damage_taken=damage_taken, dmg_type=constants.type_to_str(dmg_type), original_damage=amount))
+        self.push_news_entry(custom_log.format(target=target, user=user, damage_taken=damage_taken,
+                                               dmg_type=constants.type_to_str(dmg_type), original_damage=amount))
         return damage_taken
 
     def heal_target(self, user: Union[mons.Mon, None], target: mons.Mon, amount: int, custom_log: str = ""):
