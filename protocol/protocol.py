@@ -7,9 +7,7 @@ more "normal". I've written stuff for BLE before and it gets messy.
 Also since this is a prototype we'd only be getting lost in the specific implementation of the python-bleak library
 instead of working on a protocol
 """
-from socket import socket
 from struct import pack, unpack
-from badgemon import Player, BadgeMon
 
 
 class API:
@@ -20,16 +18,16 @@ class API:
     SEND_ATTACK = 4
 
 
-class Protocol:
+class Packet:
 
     @staticmethod
-    def challenge_req_packet(challenger: Player):
+    def challenge_req_packet(challenger):
         packet = challenger.serialise()
         header = pack('>BB', API.CHALLENGE_REQUEST, len(packet))
         return header + packet
 
     @staticmethod
-    def challenge_res_packet(accept: bool, defender: Player):
+    def challenge_res_packet(accept: bool, defender):
         if not accept:
             header = pack('>BB', API.CHALLENGE_DENY, 0)
             return header
