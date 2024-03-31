@@ -35,16 +35,13 @@ class Battle:
             move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
 
         if calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
-            self.deal_damage(user, target, damage, move.move_type)
+            if move.special_override != moves.MoveOverrideSpecial.NO_OVERRIDE:
+                self.deal_damage(user, target, sp_damage, move.move_type)
+            else:
+                self.deal_damage(user, target, damage, move.move_type)
             move.effect_on_hit.execute(self, user, target, damage)
         else:
             move.effect_on_miss.execute(self, user, target, damage)
-
-        if move.special_override != moves.MoveOverrideSpecial.NO_OVERRIDE and \
-                calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
-
-            self.deal_damage(user, target, damage, move.move_type)
-            pass
 
     def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,
                        custom_log: str = "") -> bool:
