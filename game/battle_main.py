@@ -30,14 +30,20 @@ class Battle:
             user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
             user.template.type1, user.template.type2, target.template.type1, target.template.type2)
 
-        if calculation.get_hit(move.accuracy):
+        sp_damage = calculation.calculate_damage(
+            user.level, move.power, user.stats[constants.STAT_SPATK], target.stats[constants.STAT_SPDEF],
+            move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+
+        if calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
             self.deal_damage(user, target, damage, move.move_type)
             move.effect_on_hit.execute(self, user, target, damage)
         else:
             move.effect_on_miss.execute(self, user, target, damage)
 
-        if move.special_override != constants.MoveOverrideSpecial.NO_OVERRIDE:
-            # TODO Handle special moves
+        if move.special_override != moves.MoveOverrideSpecial.NO_OVERRIDE and \
+                calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
+
+            self.deal_damage(user, target, damage, move.move_type)
             pass
 
     def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,

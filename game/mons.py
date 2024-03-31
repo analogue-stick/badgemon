@@ -142,6 +142,9 @@ class Mon:
         self.hp = self.stats[0]
         self.fainted = False
 
+        self.accuracy = 100
+        self.evasion = 100
+
         self.status = constants.StatusEffect.NO_EFFECT
 
         self.xp = 0
