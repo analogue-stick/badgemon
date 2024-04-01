@@ -1,15 +1,22 @@
+from io import StringIO
 from typing import Union
+import sys
 
-from game import constants, mons, moves
+from game import constants, mons, moves, calculation
 
 
-# TODO battle is currently just method stubs, should be self-explanatory how it should work.
-#  i'll get to it at some point. generally just call the related function on the target mon
-#  and build a news entry
 class Battle:
-    def __init__(self, mon1, mon2):
+    def __init__(self, mon1: mons.Mon, mon2: mons.Mon, news_target: StringIO = None):
         self.mon1 = mon1
         self.mon2 = mon2
+
+        if news_target:
+            self.news_target = news_target
+        else:
+            self.news_target = sys.stdout
+
+    def push_news_entry(self, *entry):
+        self.news_target.write(" ".join(str(e) for e in entry))
 
     def use_move(self, user: mons.Mon, target: mons.Mon, move: moves.Move):
         """
@@ -19,7 +26,22 @@ class Battle:
         :param target: Target of the move.
         :param move: The move to use.
         """
-        pass
+        damage = calculation.calculate_damage(
+            user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
+            user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+
+        sp_damage = calculation.calculate_damage(
+            user.level, move.power, user.stats[constants.STAT_SPATK], target.stats[constants.STAT_SPDEF],
+            move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+
+        if calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
+            if move.special_override != moves.MoveOverrideSpecial.NO_OVERRIDE:
+                self.deal_damage(user, target, sp_damage, move.move_type)
+            else:
+                self.deal_damage(user, target, damage, move.move_type)
+            move.effect_on_hit.execute(self, user, target, damage)
+        else:
+            move.effect_on_miss.execute(self, user, target, damage)
 
     def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,
                        custom_log: str = "") -> bool:
@@ -32,7 +54,11 @@ class Battle:
         :param custom_log: A format string. Valid format values are {user}, {target}, {status}.
         :return: Whether the status was successfully applied.
         """
-        pass
+        status_taken = target.apply_status(status)
+        if custom_log == "":
+            custom_log = "{target} was inflicted with the {status} condition!"
+        self.push_news_entry(custom_log.format(target=target, user=user, status=constants.status_to_str(status)))
+        return status_taken
 
     def deal_damage(self, user: Union[mons.Mon, None], target: mons.Mon, amount: int,
                     dmg_type: Union[constants.MonType, None], custom_log: str = "") -> int:
@@ -49,7 +75,12 @@ class Battle:
          {damage_taken}, {dmg_type}.
         :return: The amount of damage taken.
         """
-        pass
+        damage_taken = target.take_damage(amount, dmg_type)
+        if custom_log == "":
+            custom_log = "{target} took {damage_taken} damage!"
+        self.push_news_entry(custom_log.format(target=target, user=user, damage_taken=damage_taken,
+                                               dmg_type=constants.type_to_str(dmg_type), original_damage=amount))
+        return damage_taken
 
     def heal_target(self, user: Union[mons.Mon, None], target: mons.Mon, amount: int, custom_log: str = ""):
         """
@@ -60,8 +91,12 @@ class Battle:
         :param target: The target for the damage.
         :param amount: The amount of damage, before modifications.
         :param custom_log: A format string. Valid format values are {user}, {target}, {original_heal},
-         {heal_taken}, {dmg_type}. original_heal is "amount" in this function,
+         {heal_taken}. original_heal is "amount" in this function,
          heal_taken is the amount of HP actually gained.
         :return: The amount of damage taken.
         """
-        pass
+        heal_taken = target.take_heal(amount)
+        if custom_log == "":
+            custom_log = "{target} regained {heal_taken} HP!"
+        self.push_news_entry(custom_log.format(target=target, user=user, heal_taken=heal_taken, original_heal=amount))
+        return heal_taken

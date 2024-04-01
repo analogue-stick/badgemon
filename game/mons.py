@@ -12,7 +12,7 @@ class MonTemplate:
     """
     id_inc = 0
 
-    def __init__(self, name: str, desc: str, types: List[constants.MonType],
+    def __init__(self, name: str, desc: str, type1: constants.MonType, type2: constants.MonType,
                  ability: abilities.Ability,
                  evolve_mon: Union["MonTemplate", None], evolve_level: Union[int, None],
                  base_hp: int, base_atk: int, base_def: int,
@@ -21,7 +21,8 @@ class MonTemplate:
         """
         :param name: Name of the mon
         :param desc: Description (dex entry)
-        :param types: List of types, e.g. for Fire, Ground give [MonType.Fire, MonType.Ground].
+        :param type1: First type, e.g. Fire, Ground
+        :param type2: Second type, e.g. Fire, Ground
         :param ability: Ability. Use an object reference.
         :param evolve_mon: The mon this will evolve into. Will not evolve if this is None.
         :param evolve_level: The level at which this mon evolves. Will not evolve if this is None.
@@ -39,7 +40,8 @@ class MonTemplate:
 
         self.name = name
         self.desc = desc
-        self.types = types
+        self.type1 = type1
+        self.type2 = type2
         self.ability = ability
         self.evolve_mon = evolve_mon
         self.evolve_level = evolve_level
@@ -140,7 +142,13 @@ class Mon:
         self.hp = self.stats[0]
         self.fainted = False
 
+        self.accuracy = 100
+        self.evasion = 100
+
         self.status = constants.StatusEffect.NO_EFFECT
+
+        self.xp = 0
+        # TODO gaining XP and levelling up
 
         self.pp = [0, 0, 0, 0]
 

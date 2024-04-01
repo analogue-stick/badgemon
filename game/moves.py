@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
 
 
-class MoveOverrideSpecial(Enum):
+class MoveOverrideSpecial:
     """
     Any overrides that can't be expressed, even by MoveEffect.
 

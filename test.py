@@ -1,4 +1,4 @@
-from game import mons, abilities, moves, constants, battle_main
+from game import mons, abilities, moves, constants, battle_main, calculation, items, player
 
 mon_template = mons.mons_list[0]
 mon1 = mons.Mon(mon_template, 5).set_nickname("small guy")
@@ -19,3 +19,5 @@ print("\n\n".join(
         )
     ) for mon in [mon1, mon2, mon3, mon4, mon5]
 ))
+
+battle.push_news_entry("hello", "chat", 123)
