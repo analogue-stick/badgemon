@@ -66,51 +66,6 @@ class Mon:
     Don't call functions on this directly if currently in battle - use the Battle object instead.
     """
 
-    @classmethod
-    def deserialise(cls, data):
-        """
-        Deserialise data into a Mon object, then return it.
-
-        :param data: The data to deserialise.
-        :return: The newly created Mon.
-        """
-        offset = 0
-
-        name_len, = unpack('B', data[offset:offset + 1])
-        offset += 1
-        raw_nickname = data[offset:offset + name_len]
-        nickname = raw_nickname.decode('utf-8')
-        offset += name_len
-
-        template_id, level, hp, fainted = unpack('BBB?', data[offset:offset + 4])
-        offset += 4
-
-        evs = list(unpack('BBBBBB', data[offset:offset + 6]))
-        offset += 6
-        ivs = list(unpack('BBBBBB', data[offset:offset + 6]))
-        offset += 6
-
-        num_moves, = unpack('B', data[offset:offset + 1])
-        offset += 1
-
-        set_moves = []
-        pps = []
-        for _ in range(num_moves):
-            move, pp = unpack('BB', data[offset:offset + 2])
-            set_moves.append(moves.moves_list[move])
-            pps.append(pp)
-            offset += 2
-
-        mon = Mon(mons_list[template_id], level, ivs, evs, set_moves)
-
-        mon.set_nickname(nickname)
-        mon.hp = hp
-        mon.fainted = fainted
-        for i, v in enumerate(pps):
-            mon.pp[i] = v
-
-        return mon
-
     def __init__(self, template: MonTemplate, level: int,
                  ivs: Union[List[int], None] = None,
                  evs: Union[List[int], None] = None,
@@ -189,6 +144,52 @@ class Mon:
             data += pack('BB', move.id, pp)
 
         return data
+
+    @staticmethod
+    def deserialise(data):
+        """
+        Deserialise data into a Mon object, then return it.
+
+        :param data: The data to deserialise.
+        :return: The newly created Mon.
+        """
+        offset = 0
+
+        name_len, = data[offset]
+        offset += 1
+        raw_nickname = data[offset:offset + name_len]
+        nickname = raw_nickname.decode('utf-8')
+        offset += name_len
+
+        template_id, level, hp, fainted = data[offset:offset + 4]
+        fainted = bool(fainted)
+        offset += 4
+
+        evs = list(data[offset:offset + 6])
+        offset += 6
+        ivs = list(data[offset:offset + 6])
+        offset += 6
+
+        num_moves, = data[offset]
+        offset += 1
+
+        set_moves = []
+        pps = []
+        for _ in range(num_moves):
+            move, pp = data[offset:offset + 2]
+            set_moves.append(moves.moves_list[move])
+            pps.append(pp)
+            offset += 2
+
+        mon = Mon(mons_list[template_id], level, ivs, evs, set_moves)
+
+        mon.set_nickname(nickname)
+        mon.hp = hp
+        mon.fainted = fainted
+        for i, v in enumerate(pps):
+            mon.pp[i] = v
+
+        return mon
 
     def set_nickname(self, new_name: str) -> "Mon":
         self.nickname = new_name
