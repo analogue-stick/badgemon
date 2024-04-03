@@ -1,13 +1,24 @@
 from struct import pack
-from typing import List, Tuple
-from game import mons, items
+from typing import List, Tuple, Union
+from game import mons, items, moves
+import sys
 
 
 class Player:
     def __init__(self, name: str, badgemon: List[mons.Mon], inventory: List[Tuple[items.Item, int]]):
-        self.name = str
+        """
+        The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
+        handles interaction with the main Battle class
+
+        @param name:
+        @param badgemon:
+        @param inventory:
+        """
+        self.name = name
         self.badgemon = badgemon
         self.inventory = inventory
+
+        self.news_target = None
 
     def serialise(self):
         data = bytearray()
@@ -54,3 +65,9 @@ class Player:
             offset += 1
 
         return Player(name, badgemon, inventory)
+
+    def get_move(self) -> Tuple[int, Union[mons.Mon, items.Item, moves.Move, None]]:
+        """
+        This is overridden by any parent class handling user interactions.
+        """
+        pass

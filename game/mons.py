@@ -284,7 +284,7 @@ class Mon:
 
 mons_list = [
     MonTemplate(
-        "guy", "fuckin dude", [constants.MonType.FIGHTING, constants.MonType.FIRE],
+        "guy", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
         abilities.Ability.NO_ABILITY, None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[0], 5),
