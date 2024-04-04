@@ -116,6 +116,9 @@ class Mon:
 
         self.full_heal()
 
+    def __repr__(self):
+        return f'{self.nickname}, HP: {self.hp}'
+
     def serialise(self) -> bytes:
         """
         Transform the mon into serialised data. Opposite of Mon.deserialise().

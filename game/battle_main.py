@@ -36,22 +36,27 @@ class Battle:
         else:
             self.news_target = sys.stdout
 
-        player1.news_target = self.news_target
-        player2.news_target = self.news_target
+        player1.battle_context = self
+        player2.battle_context = self
 
         self.turn = start
 
     def push_news_entry(self, *entry):
         self.news_target.write(" ".join(str(e) for e in entry))
 
-    def use_move(self, user: mons.Mon, target: mons.Mon, move: moves.Move):
+    def use_move(self, user: mons.Mon, target: mons.Mon, move: moves.Move, custom_log: str = ""):
         """
         Use a move on a target. This is what you should call to use a move.
 
         :param user: User of the move.
         :param target: Target of the move.
         :param move: The move to use.
+        :param custom_log: A format string. Valid format values are {user} and {move_name}.
         """
+        if custom_log == "":
+            custom_log = "{user} used {move_name}!\n"
+        self.push_news_entry(custom_log.format(user=user.nickname, move_name=move.name))
+
         damage = calculation.calculate_damage(
             user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
             user.template.type1, user.template.type2, target.template.type1, target.template.type2)
@@ -65,9 +70,12 @@ class Battle:
                 self.deal_damage(user, target, sp_damage, move.move_type)
             else:
                 self.deal_damage(user, target, damage, move.move_type)
-            move.effect_on_hit.execute(self, user, target, damage)
+
+            if move.effect_on_hit:
+                move.effect_on_hit.execute(self, user, target, damage)
         else:
-            move.effect_on_miss.execute(self, user, target, damage)
+            if move.effect_on_miss:
+                move.effect_on_miss.execute(self, user, target, damage)
 
     def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,
                        custom_log: str = "") -> bool:
@@ -82,7 +90,7 @@ class Battle:
         """
         status_taken = target.apply_status(status)
         if custom_log == "":
-            custom_log = "{target} was inflicted with the {status} condition!"
+            custom_log = "{target} was inflicted with the {status} condition!\n"
         self.push_news_entry(custom_log.format(target=target, user=user, status=constants.status_to_str(status)))
         return status_taken
 
@@ -103,8 +111,8 @@ class Battle:
         """
         damage_taken = target.take_damage(amount, dmg_type)
         if custom_log == "":
-            custom_log = "{target} took {damage_taken} damage!"
-        self.push_news_entry(custom_log.format(target=target, user=user, damage_taken=damage_taken,
+            custom_log = "{target} took {damage_taken} damage!\n"
+        self.push_news_entry(custom_log.format(target=target.nickname, user=user.nickname, damage_taken=-damage_taken,
                                                dmg_type=constants.type_to_str(dmg_type), original_damage=amount))
         return damage_taken
 
@@ -123,7 +131,7 @@ class Battle:
         """
         heal_taken = target.take_heal(amount)
         if custom_log == "":
-            custom_log = "{target} regained {heal_taken} HP!"
+            custom_log = "{target} regained {heal_taken} HP!\n"
         self.push_news_entry(custom_log.format(target=target, user=user, heal_taken=heal_taken, original_heal=amount))
         return heal_taken
 
@@ -134,6 +142,7 @@ class Battle:
         @return: The victor
         """
         while True:
+            print(self.mon1, self.mon2)
             if self.turn:
                 curr_player, curr_target = self.player1, self.player2
                 player_mon, target_mon = self.mon1, self.mon2
@@ -143,7 +152,7 @@ class Battle:
 
             all_fainted = True
             for mon in curr_player.badgemon:
-                all_fainted = all_fainted and not mon.fainted
+                all_fainted = all_fainted and mon.fainted
             if all_fainted:
                 return curr_target
 

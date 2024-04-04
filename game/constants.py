@@ -89,5 +89,5 @@ STAT_SPD = 5
 # [attacking][defending]
 # 1 is 2x, 0 is 1x, -1 is 0.5x, -100 is 0x
 type_table = [
-    [],
+    [1 for _ in range(17)] for _ in range(17)
     ]

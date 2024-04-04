@@ -1,40 +1,50 @@
 """
 Main. This will be 100% prototype specific. Run it in the terminal ultra-basic stuff.
 """
-from badgemon import Player, BadgeMon, Moves, Battle, Cpu
+from typing import Tuple, Union
 
-LILGUY = BadgeMon("Lil guy", [Moves.HIT])
-BIGGUY = BadgeMon("Big guy", [Moves.HIT])
+import random
 
+from game import mons, items, moves, battle_main, player
 
-class User(Player):
-
-    def make_move(self, mon: BadgeMon, target: BadgeMon):
-        i = input("[*] What would you like to do?\n- (a)ttack\n- (r)un away\n- (u)se an item\n: ")
-        if i == 'a':
-            moves = mon.list_moves()
-            pretty_print = '\n- ' + '\n- '.join(moves)
-            i = input(f"[*] Your available moves are:{pretty_print}\n: ")
-            for move in mon.move_set:
-                name = Moves.MOVES_ID[move].name
-                print(name)
-                if name == i:
-                    mon.do_move(move, target)
+mon_template = mons.mons_list[0]
+mon1 = mons.Mon(mon_template, 5).set_nickname("small guy")
+mon2 = mons.Mon(mon_template, 17).set_nickname("mr. 17")
+mon3 = mons.Mon(mon_template, 17).set_nickname("David")
+mon4 = mons.Mon(mon_template, 33).set_nickname("large individual")
+mon5 = mons.Mon(mon_template, 100).set_nickname("biggest dude")
 
 
-class Game:
+class User(player.Player):
 
-    def __init__(self):
-        self.has_won = False
+    def get_move(self) -> Tuple[int, Union[mons.Mon, items.Item, moves.Move, None]]:
+        print("Which move would you like to take?\n" +
+              "  1. Make a move\n" +
+              "  2. Use an item\n" +
+              "  3. Swap mon\n" +
+              "  4. Run away")
+        res = input(': ')
+        if res == "1":
+            mon = self.battle_context.mon1
+            mon_moves = mon.moves
+            print("Pick a move")
+            for i, m in enumerate(mon_moves):
+                print(f'  {i + 1}. {m.name}')
+            res = input(': ')
+            return battle_main.Actions.MAKE_MOVE, mon_moves[int(res) - 1]
 
-    def do_turn(self):
-        pass
+
+class Cpu(player.Player):
+
+    def get_move(self) -> Tuple[int, Union[mons.Mon, items.Item, moves.Move, None]]:
+        mon = self.battle_context.mon2
+        return battle_main.Actions.MAKE_MOVE, random.choice(mon.moves)
 
 
 def main():
-    player_a = User('Player A', [LILGUY])
-    player_b = Cpu('Tr41n0rB0T', [BIGGUY])
-    battle = Battle(player_a, player_b)
+    player_a = User('Player A', [mon1], [])
+    player_b = Cpu('Tr41n0rB0T', [mon2], [])
+    battle = battle_main.Battle(player_a, player_b, True)
     battle.do_battle()
 
 

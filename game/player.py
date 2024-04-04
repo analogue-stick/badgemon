@@ -1,7 +1,9 @@
+from __future__ import annotations
 from struct import pack
-from typing import List, Tuple, Union
-from game import mons, items, moves
-import sys
+from typing import List, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game import mons, items, moves, battle_main
 
 
 class Player:
@@ -18,7 +20,7 @@ class Player:
         self.badgemon = badgemon
         self.inventory = inventory
 
-        self.news_target = None
+        self.battle_context: Union[battle_main.Battle, None] = None
 
     def serialise(self):
         data = bytearray()

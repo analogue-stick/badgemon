@@ -60,7 +60,7 @@ class MoveEffect:
         """
         def function(battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int):
             battle.deal_damage(
-                user, target, math.floor(damage * pct), None, "{target} took {amount} recoil damage!"
+                user, target, math.floor(damage * pct), None, "{target} took {damage_taken} recoil damage!"
             )
             return True
 
@@ -167,10 +167,11 @@ class Move:
 
 
 moves_list = [
-    Move(
-        "Kills you", "Kills you with hammers", constants.MonType.DRAGON, 20, 999, 100,
-        MoveEffect.recoil_damage(20).then(
-            MoveEffect.apply_status_effect(constants.StatusEffect.BURNED, 0.3)
-        )
-    ) for i in range(10)
+    Move('Scratch', 'Scratches opponent', constants.MonType.NORMAL, 35, 40, 100) for i in range(10)
+    # Move(
+    #     "Kills you", "Kills you with hammers", constants.MonType.DRAGON, 20, 999, 100,
+    #     MoveEffect.recoil_damage(20).then(
+    #         MoveEffect.apply_status_effect(constants.StatusEffect.BURNED, 0.3)
+    #     )
+    # ) for i in range(10)
 ]
