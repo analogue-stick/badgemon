@@ -12,7 +12,7 @@ class FieldTargetingType:
 class Item:
     id_inc = 0
 
-    def __init__(self, name: str, desc: str, value: int, usable_in_battle: bool, usable_in_field: FieldTargetingType,
+    def __init__(self, name: str, desc: str, value: int, usable_in_battle: bool, usable_in_field: int,
                  function_in_battle: Union[
                      Callable[[player.Player, battle_main.Battle, mons.Mon, mons.Mon], None], None
                  ] = None,
@@ -42,5 +42,7 @@ class Item:
 
 
 items_list = [
+    Item("Potion", "Heals a mon in combat", 200, True, FieldTargetingType.TARGETS_SPECIFIC_MON,
+         lambda _, __, m, ___: m.take_heal(20), lambda _, m: m.take_heal(20)),
     # items go here
 ]

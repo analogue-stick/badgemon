@@ -7,6 +7,7 @@ import random
 
 from game import mons, items, moves, battle_main, player
 
+potion = items.items_list[0]
 mon_template = mons.mons_list[0]
 mon1 = mons.Mon(mon_template, 5).set_nickname("small guy")
 mon2 = mons.Mon(mon_template, 17).set_nickname("mr. 17")
@@ -34,19 +35,22 @@ class User(player.Player):
                 for i, m in enumerate(mon_moves):
                     print(f'  {i + 1}. {m.name}')
                 res = input(': ')
-                if res !=  "0":
+                if res != "0":
                     return battle_main.Actions.MAKE_MOVE, mon_moves[int(res) - 1]
             elif res == "2":
-                player_items: List[Tuple[int, Tuple[items.Item, int]]] = list(filter(lambda _, i: i[0].usable_in_battle and i[1] > 0, enumerate(self.inventory)))
+                player_items: List[Tuple[int, Tuple[items.Item, int]]] = list(
+                    filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self.inventory)))
                 print("Pick an item")
                 print("  0. Back")
                 for i, (_, (item, count)) in enumerate(player_items):
                     print(f'  {i + 1}. {count}x {item.name}')
                 res = input(': ')
-                if res !=  "0":
-                    item_index, (item, _) = player_items[int(res) - 1]
-                    self.inventory[item_index][1] -= 1 # decrease stock
+                if res != "0":
+                    item_index, (item, count) = player_items[int(res) - 1]
+                    count -= 1
+                    self.inventory[item_index] = (item, count)  # decrease stock
                     return battle_main.Actions.USE_ITEM, item
+
             elif res == "3":
                 player_mons: List[mons.Mon] = list(filter(lambda b: not b.fainted, self.badgemon))
                 print("Pick a mon")
@@ -54,8 +58,9 @@ class User(player.Player):
                 for i, m in enumerate(player_mons):
                     print(f'  {i + 1}. {m.nickname}')
                 res = input(': ')
-                if res !=  "0":
+                if res != "0":
                     return battle_main.Actions.SWAP_MON, player_mons[int(res) - 1]
+
             elif res == "4":
                 print("Are you sure you want to run away?")
                 print("  0. No")
@@ -63,6 +68,7 @@ class User(player.Player):
                 res = input(': ')
                 if res != "0":
                     return battle_main.Actions.RUN_AWAY, None
+
             else:
                 res = "0"
 
@@ -75,8 +81,8 @@ class Cpu(player.Player):
 
 
 def main():
-    player_a = User('Player A', [mon1], [])
-    player_b = Cpu('Tr41n0rB0T', [mon2], [])
+    player_a = User('Player A', [mon2], [(potion, 1)])
+    player_b = Cpu('Tr41n0rB0T', [mon1], [])
     battle = battle_main.Battle(player_a, player_b, True)
     victor = battle.do_battle()
     print(f"{victor.name} WINS!")
