@@ -1,20 +1,27 @@
 import random
+from typing import Tuple
 
 from game import constants
 
 STAGES = [33, 36, 43, 50, 60, 75, 100, 133, 166, 200, 233, 266, 300]
 
+EFF_EFFECTIVE = 1
+EFF_INEFFECTIVE = -1
+EFF_NORMAL = 0
 
 def calculate_damage(level: int, power: int, attack: int, defense: int, type: constants.MonType,
                      mon1_type1: constants.MonType, mon1_type2: constants.MonType, mon2_type1: constants.MonType,
-                     mon2_type2: constants.MonType) -> int:
+                     mon2_type2: constants.MonType) -> Tuple[int, bool, int]:
     """
     Calculates the amount of damage to apply.
     Uses https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_V_onward
+
+    @return: (damage, critical hit, effectiveness)
     """
     damage = (((((level << 1) // 5 + 2) * power * attack) // defense) // 50) + 2
 
-    if is_critical():
+    crit = is_critical()
+    if crit:
         damage <<= 1
 
     if type == mon1_type1 or type == mon1_type2:  # STAB
@@ -23,13 +30,16 @@ def calculate_damage(level: int, power: int, attack: int, defense: int, type: co
     type_bonus1 = constants.type_table[type][mon2_type1]
     type_bonus2 = constants.type_table[type][mon2_type2]
     type_bonus = type_bonus1 + type_bonus2
+    effective = EFF_NORMAL
     if type_bonus > 0:
+        effective = EFF_EFFECTIVE
         damage <<= type_bonus
     elif type_bonus < 0:
+        effective = EFF_INEFFECTIVE
         damage >>= -type_bonus
     damage *= random.randrange(217, 256)
     damage >>= 8
-    return damage
+    return damage, crit, effective
 
 
 def is_critical() -> bool:

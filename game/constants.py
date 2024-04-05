@@ -88,6 +88,7 @@ STAT_SPD = 5
 
 # [attacking][defending]
 # 1 is 2x, 0 is 1x, -1 is 0.5x, -100 is 0x
+# So it's damage*2^(this table)
 type_table = [
-    [1 for _ in range(17)] for _ in range(17)
+    [0 for _ in range(17)] for _ in range(17)
     ]

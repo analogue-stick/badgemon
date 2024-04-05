@@ -57,23 +57,32 @@ class Battle:
             custom_log = "{user} used {move_name}!\n"
         self.push_news_entry(custom_log.format(user=user.nickname, move_name=move.name))
 
-        damage = calculation.calculate_damage(
-            user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
-            user.template.type1, user.template.type2, target.template.type1, target.template.type2)
-
-        sp_damage = calculation.calculate_damage(
-            user.level, move.power, user.stats[constants.STAT_SPATK], target.stats[constants.STAT_SPDEF],
-            move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+        if move.special_override == moves.MoveOverrideSpecial.NO_OVERRIDE:
+            (damage, crit, effective) = calculation.calculate_damage(
+                user.level, move.power, user.stats[constants.STAT_ATK], target.stats[constants.STAT_DEF], move.move_type,
+                user.template.type1, user.template.type2, target.template.type1, target.template.type2)
+        else:
+            (damage, crit, effective) = calculation.calculate_damage(
+                user.level, move.power, user.stats[constants.STAT_SPATK], target.stats[constants.STAT_SPDEF],
+                move.move_type, user.template.type1, user.template.type2, target.template.type1, target.template.type2)
 
         if calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
-            if move.special_override != moves.MoveOverrideSpecial.NO_OVERRIDE:
-                self.deal_damage(user, target, sp_damage, move.move_type)
+            if crit:
+                self.push_news_entry("A CRITITCAL Hit!\n")
             else:
-                self.deal_damage(user, target, damage, move.move_type)
+                self.push_news_entry("A Hit!\n")
+
+            if effective == calculation.EFF_EFFECTIVE:
+                self.push_news_entry("It was really effective!\n")
+            elif effective == calculation.EFF_INEFFECTIVE:
+                self.push_news_entry("It didn't really do much...\n")
+            
+            self.deal_damage(user, target, damage, move.move_type)
 
             if move.effect_on_hit:
                 move.effect_on_hit.execute(self, user, target, damage)
         else:
+            self.push_news_entry("A Miss!\n")
             if move.effect_on_miss:
                 move.effect_on_miss.execute(self, user, target, damage)
 
@@ -142,7 +151,7 @@ class Battle:
         @return: The victor
         """
         while True:
-            print(self.mon1, self.mon2)
+            print(f"({self.mon1}) VS ({self.mon2})")
             if self.turn:
                 curr_player, curr_target = self.player1, self.player2
                 player_mon, target_mon = self.mon1, self.mon2
