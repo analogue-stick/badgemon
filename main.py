@@ -83,7 +83,23 @@ class Cpu(player.Player):
 
 
 def main():
-    player_a = User('Player A', [mon2], [(potion, 1)])
+    print("[SHOW PROF]")
+    print("Hello there! Welcome to the world of BADGEMON! My name is Acorn R. Machine. People call me the BADGEMON PROF!")
+    print("[SHOW BADGEMON]")
+    print("This field in the middle of England is inhabited by creatures called BADGEMON! For some people, BADGEMON are pets. Others consider them \"a nuisance\" and \"not covered by the insurance\". Myself... I study BADGEMON as a profession.")
+    print("[SHOW YOU]")
+    print("First, what is your name?")
+    player_name = input(":")
+    if len(player_name) > 12:
+        player_name = player_name[0:12]
+    if player_name == "":
+        player_name = "SCARLETT"
+    print(f"Right! So your name is {player_name}!")
+    print("[SHOW GRANDSON]")
+    print("This is my grandson. He's unrelated to the BADGEMON, I just wanted to show you his picture. Isn't he the best? I'm very proud of him.")
+    print("[SHOW YOU]")
+    print(f"{player_name}! Your very own BADGEMON legend is about to unfold! A whole field of dreams and adventures and tents and seminars with BADGEMON awaits! Let's go!")
+    player_a = User(player_name, [mon2], [(potion, 1)])
     player_b = Cpu('Tr41n0rB0T', [mon1], [])
     battle = battle_main.Battle(player_a, player_b, True)
     victor = battle.do_battle()
