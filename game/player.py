@@ -1,9 +1,12 @@
-from __future__ import annotations
 from struct import pack
-from typing import List, Tuple, Union, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from game import mons, items, moves, battle_main
+try:
+    from typing import List, Tuple, Union, TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from game import mons, items, moves, battle_main
+except ImportError:
+    pass
 
 
 class Player:

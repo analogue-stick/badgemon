@@ -1,6 +1,9 @@
-from typing import Callable, Union
+try:
+    from typing import Callable, Union
+except ImportError:
+    pass
 
-from game import constants, player, battle_main, mons
+from game import player, battle_main, mons
 
 
 class FieldTargetingType:

@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 import math
 import random
-from enum import Enum
-from typing import Callable, List, Union, TYPE_CHECKING
-
 from game import constants
 
-if TYPE_CHECKING:
-    from game import battle_main, mons
-    move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
-
+try:
+    from typing import Callable, List, Union, TYPE_CHECKING
+    if TYPE_CHECKING:
+        from game import battle_main, mons
+        move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
+except ImportError:
+    pass
 
 class MoveOverrideSpecial:
     """

@@ -1,5 +1,9 @@
 import random
-from typing import Tuple
+
+try:
+    from typing import Tuple
+except ImportError:
+    pass
 
 from game import constants
 
@@ -8,6 +12,7 @@ STAGES = [33, 36, 43, 50, 60, 75, 100, 133, 166, 200, 233, 266, 300]
 EFF_EFFECTIVE = 1
 EFF_INEFFECTIVE = -1
 EFF_NORMAL = 0
+
 
 def calculate_damage(level: int, power: int, attack: int, defense: int, type: constants.MonType,
                      mon1_type1: constants.MonType, mon1_type2: constants.MonType, mon2_type1: constants.MonType,

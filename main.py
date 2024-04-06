@@ -1,10 +1,12 @@
 """
 Main. This will be 100% prototype specific. Run it in the terminal ultra-basic stuff.
 """
-from typing import List, Tuple, Union
+try:
+    from typing import List, Tuple, Union
+except ImportError:
+    pass
 
 import random
-
 from game import mons, items, moves, battle_main, player
 
 potion = items.items_list[0]

@@ -1,9 +1,12 @@
 from io import StringIO
-from typing import Union
 import sys
 
-from game import constants, mons, moves, calculation
-from game.player import Player
+try:
+    from typing import Union
+except ImportError:
+    pass
+
+from game import constants, mons, moves, calculation, player
 
 
 class Actions:
@@ -14,7 +17,7 @@ class Actions:
 
 
 class Battle:
-    def __init__(self, player1: Player, player2: Player, start: bool, news_target: StringIO = None):
+    def __init__(self, player1: player.Player, player2: player.Player, start: bool, news_target: StringIO = None):
         """
         A battle takes place between two players, until all BadgeMon on one side have fainted.
 
@@ -144,7 +147,7 @@ class Battle:
         self.push_news_entry(custom_log.format(target=target, user=user, heal_taken=heal_taken, original_heal=amount))
         return heal_taken
 
-    def do_battle(self) -> Player:
+    def do_battle(self) -> player.Player:
         """
         The stupid function.
 
