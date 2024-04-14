@@ -1,4 +1,7 @@
 from struct import pack
+import time
+
+from game.badgedex import Badgedex
 
 try:
     from typing import List, Tuple, Union, TYPE_CHECKING
@@ -8,20 +11,28 @@ try:
 except ImportError:
     pass
 
+_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List[mons.Mon], inventory: List[Tuple[items.Item, int]]):
+    def __init__(self, name: str, badgemon: List[mons.Mon], badgemon_case: List[mons.Mon], inventory: List[Tuple[items.Item, int]]):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
 
         @param name:
-        @param badgemon:
+        @param badgemon: player's team. max 6
+        @param badgemon_case: all other badgemon
         @param inventory:
         """
         self.name = name
-        self.badgemon = badgemon
+        self.badgemon = badgemon[0:6]
+        self.badgemon_case = badgemon_case
         self.inventory = inventory
+        self.last_heal = time.ticks_ms()
+
+        self.badgedex = Badgedex()
+
+        self.random_encounters = True
 
         self.battle_context: Union[battle_main.Battle, None] = None
 
@@ -76,3 +87,22 @@ class Player:
         This is overridden by any parent class handling user interactions.
         """
         pass
+
+    def get_meters_walked():
+        return time.ticks_ms()/1000
+
+    def full_heal_available(self) -> int:
+        diff = time.ticks_diff(time.ticks_ms(), self.last_heal)
+        if diff >= _TIME_BETWEEN_HEALS:
+            self.last_heal = time.ticks_add(time.ticks_ms(), -_TIME_BETWEEN_HEALS)
+        return diff
+
+    def use_full_heal(self) -> bool:
+        diff = self.full_heal_available()
+        if diff >= _TIME_BETWEEN_HEALS:
+            for guy in self.badgemon:
+                guy.full_heal()
+            self.last_heal = time.ticks_ms()
+            print("Healed!")
+        else:
+            print(f"Heal is not allowed for another {(_TIME_BETWEEN_HEALS-diff)/1000} seconds")
