@@ -287,6 +287,18 @@ class Mon:
             return True
         else:
             return False
+        
+    def heal_status(self, status: Union[constants.StatusEffect, None]):
+        '''
+        Heals the status "status", or does nothing
+
+        @returns True if the status was healed
+        '''
+        if status is None or self.status == status:
+            self.status = constants.StatusEffect.NO_EFFECT
+            return True
+        else:
+            return False
 
 
 mons_list = [

@@ -3,7 +3,7 @@ try:
 except ImportError:
     pass
 
-from game import player, battle_main, mons
+from game import constants, player, battle_main, mons
 
 
 class FieldTargetingType:
@@ -43,9 +43,31 @@ class Item:
         self.function_in_battle = function_in_battle
         self.function_in_field = function_in_field
 
+def parabox(mon: mons.Mon):
+    mon.heal_status(None)
+    mon.modify_hp(999999)
 
 items_list = [
-    Item("Potion", "Heals a mon in combat", 200, True, FieldTargetingType.TARGETS_SPECIFIC_MON,
-         lambda _, __, m, ___: m.take_heal(20), lambda _, m: m.take_heal(20)),
-    # items go here
+    Item("Charcoal", "A lump of activated charcoal. It does the job of curing poison, just about.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.POISONED)),
+    Item("Ointment", "A wet, sticky gel that soothes burns.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.BURNED)),
+    Item("Heat Pack", "A portable heater to attach to frozen badgemon.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.FROZEN)),
+    Item("Klaxon", "\"Heals\" a sleeping badgemon.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.SLEEPING)),
+    Item("Hot Chocolate", "One cup of this and paralysis is no more.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.PARALYZED)),
+    Item("Entire Box of Paracetamol", "Cures any status condition and heals the badgemon to full HP.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: parabox(m)),
+    Item("Entire Box of Cookies", "Heals a badgemon to full HP.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.modify_hp(999999)),
+    Item("Massive Cookie", "Heals a badgemon by 200 HP.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.modify_hp(200)),
+    Item("Large Cookie", "Heals a badgemon by 50 HP.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.modify_hp(50)),
+    Item("Cookie", "Heals a badgemon by 20 HP.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.modify_hp(20)),
+    Item("Paracetamol", "Cures any status condition.",
+         200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(None)),
 ]
