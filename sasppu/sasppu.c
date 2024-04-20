@@ -311,6 +311,29 @@ STATIC mp_obj_t render(void)
 // Define a Python reference to the function above
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(render_obj, (render));
 
+STATIC mp_obj_t get_background_disabled(void)
+{
+    return mp_obj_new_bool(disable_background);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_background_disabled_obj, get_background_disabled);
+STATIC mp_obj_t set_background_disabled(mp_obj_t b)
+{
+    disable_background = mp_obj_is_true(b);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_background_disabled_obj, set_background_disabled);
+STATIC mp_obj_t get_mainscreen_colour(void)
+{
+    return mp_obj_new_int(mainscreen_colour);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_mainscreen_colour_obj, get_mainscreen_colour);
+STATIC mp_obj_t set_mainscreen_colour(mp_obj_t b)
+{
+    mainscreen_colour = mp_obj_get_int_truncated(b) & 0xFFFF;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_mainscreen_colour_obj, set_mainscreen_colour);
+
 // This is the entry point and is called when the module is imported
 mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *args)
 {
@@ -319,6 +342,10 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
 
     // Make the function available in the module's namespace
     mp_store_global(MP_QSTR_render, MP_OBJ_FROM_PTR(&render_obj));
+    mp_store_global(MP_QSTR_get_background_disabled, MP_OBJ_FROM_PTR(&get_background_disabled_obj));
+    mp_store_global(MP_QSTR_set_background_disabled, MP_OBJ_FROM_PTR(&set_background_disabled_obj));
+    mp_store_global(MP_QSTR_get_mainscreen_colour, MP_OBJ_FROM_PTR(&get_mainscreen_colour_obj));
+    mp_store_global(MP_QSTR_set_mainscreen_colour, MP_OBJ_FROM_PTR(&set_mainscreen_colour_obj));
 
     // This must be last, it restores the globals dict
     MP_DYNRUNTIME_INIT_EXIT
