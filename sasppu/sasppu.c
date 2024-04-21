@@ -40,8 +40,8 @@ unsigned short palette[64];
 unsigned short mainscreen_colour;
 unsigned short subscreen_colour;
 
-bool disable_bg0;
-bool disable_bg1;
+bool enable_bg0;
+bool enable_bg1;
 
 #define BG0_WIDTH_POWER 9
 #define BG0_HEIGHT_POWER 9
@@ -98,8 +98,8 @@ unsigned char window_2_right;
 // sprites
 #define SPRITE_COUNT 256
 
-struct Sprite *main_sprite_cache[16];
-struct Sprite *aux_sprite_cache[16];
+struct Sprite *low_sprite_cache[16];
+struct Sprite *high_sprite_cache[16];
 struct Sprite OAM[SPRITE_COUNT];
 
 #define OAM_LIMIT (OAM + SPRITE_COUNT)
@@ -135,17 +135,17 @@ static bool inline get_window(unsigned char logic, bool window_1, bool window_2,
 
 static void inline handle_bg0(unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
 {
-    if (!disable_bg0)
+    if (enable_bg0)
     {
         short bg0 = BG0[(x + bg0scrollh) & (BG0_WIDTH - 1)][(y + bg0scrollv) & (BG0_HEIGHT - 1)];
         if (bg0 != 0)
         {
-            if (get_window(bg0_main_window_log, window_1, window_2, bg0_main_in_window, bg0_main_out_window))
+            if (bg0_main_screen_enable && get_window(bg0_main_window_log, window_1, window_2, bg0_main_in_window, bg0_main_out_window))
             {
                 *main_col = bg0;
                 *c_math = bg0_cmath_enable;
             }
-            if (get_window(bg0_sub_window_log, window_1, window_2, bg0_sub_in_window, bg0_sub_out_window))
+            if (bg0_sub_screen_enable && get_window(bg0_sub_window_log, window_1, window_2, bg0_sub_in_window, bg0_sub_out_window))
             {
                 *sub_col = bg0;
             }
@@ -155,19 +155,68 @@ static void inline handle_bg0(unsigned short *main_col, unsigned short *sub_col,
 
 static void inline handle_bg1(unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
 {
-    if (!disable_bg1)
+    if (enable_bg1)
     {
         short bg1 = BG1[(x + bg1scrollh) & (BG1_WIDTH - 1)][(y + bg1scrollv) & (BG1_HEIGHT - 1)];
         if (bg1 != 0)
         {
-            if (get_window(bg1_main_window_log, window_1, window_2, bg1_main_in_window, bg1_main_out_window))
+            if (bg1_main_screen_enable && get_window(bg1_main_window_log, window_1, window_2, bg1_main_in_window, bg1_main_out_window))
             {
                 *main_col = bg1;
                 *c_math = bg1_cmath_enable;
             }
-            if (get_window(bg1_sub_window_log, window_1, window_2, bg1_sub_in_window, bg1_sub_out_window))
+            if (bg1_sub_screen_enable && get_window(bg1_sub_window_log, window_1, window_2, bg1_sub_in_window, bg1_sub_out_window))
             {
                 *sub_col = bg1;
+            }
+        }
+    }
+}
+
+static void inline handle_sprite(struct Sprite *sprite, unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
+{
+    unsigned short flags = sprite->flags;
+    bool double_sprite = (flags & SPR_DOUBLE);
+    short sprite_width = sprite->width;
+    if (double_sprite)
+    {
+        sprite_width <<= 1;
+    }
+    short offsetx = (short)x - sprite->x;
+    if ((offsetx >= 0) && (offsetx < sprite_width))
+    {
+        if (flags & SPR_FLIP_X)
+        {
+            offsetx = sprite_width - offsetx - 1;
+        }
+        short offsety = (short)y - sprite->y;
+        if (flags & SPR_FLIP_Y)
+        {
+            offsety = sprite_width - offsetx - 1;
+        }
+        if (double_sprite)
+        {
+            offsetx >>= 1;
+            offsety >>= 1;
+        }
+        unsigned char spr_pal = sprites[offsety + (sprite->graphics_y)][offsetx + (sprite->graphics_x)];
+        if (spr_pal != 0)
+        {
+            short col = palette[spr_pal - 1];
+            if (flags & SPR_MAIN_SCREEN)
+            {
+                if (get_window((flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_MAIN_IN_WINDOW, flags & SPR_MAIN_OUT_WINDOW))
+                {
+                    *main_col = col;
+                    *c_math = flags & SPR_C_MATH;
+                }
+            }
+            if (flags & SPR_SUB_SCREEN)
+            {
+                if (get_window((flags >> SPR_SUB_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_SUB_IN_WINDOW, flags & SPR_SUB_OUT_WINDOW))
+                {
+                    *sub_col = col;
+                }
             }
         }
     }
@@ -184,69 +233,26 @@ static short per_pixel(unsigned char x, unsigned char y)
 
     handle_bg0(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
 
-    bool bg_handled = false;
     for (int i = 0; i < 16; i++)
     {
-        struct Sprite *sprite = main_sprite_cache[i];
+        struct Sprite *sprite = low_sprite_cache[i];
         if (sprite == NULL)
         {
             break;
         }
-        unsigned short flags = sprite->flags;
-        if ((flags & SPR_PRIORITY) && !bg_handled)
-        {
-            handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
-            bg_handled = true;
-        }
-        bool double_sprite = (flags & SPR_DOUBLE);
-        short sprite_width = sprite->width;
-        if (double_sprite)
-        {
-            sprite_width <<= 1;
-        }
-        short offsetx = (short)x - sprite->x;
-        if ((offsetx >= 0) && (offsetx < sprite_width))
-        {
-            if (flags & SPR_FLIP_X)
-            {
-                offsetx = sprite_width - offsetx - 1;
-            }
-            short offsety = (short)y - sprite->y;
-            if (flags & SPR_FLIP_Y)
-            {
-                offsety = sprite_width - offsetx - 1;
-            }
-            if (double_sprite)
-            {
-                offsetx >>= 1;
-                offsety >>= 1;
-            }
-            unsigned char spr_pal = sprites[offsety + (sprite->graphics_y)][offsetx + (sprite->graphics_x)];
-            if (spr_pal != 0)
-            {
-                short col = palette[spr_pal - 1];
-                if (flags & SPR_MAIN_SCREEN)
-                {
-                    if (get_window((flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_MAIN_IN_WINDOW, flags & SPR_MAIN_OUT_WINDOW))
-                    {
-                        main_col = col;
-                        c_math = flags & SPR_C_MATH;
-                    }
-                }
-                if (flags & SPR_SUB_SCREEN)
-                {
-                    if (get_window((flags >> SPR_SUB_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_SUB_IN_WINDOW, flags & SPR_SUB_OUT_WINDOW))
-                    {
-                        sub_col = col;
-                    }
-                }
-            }
-        }
+        handle_sprite(sprite, &main_col, &sub_col, &c_math, x, y, window_1, window_2);
     }
 
-    if (!bg_handled)
+    handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
+
+    for (int i = 0; i < 16; i++)
     {
-        handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
+        struct Sprite *sprite = high_sprite_cache[i];
+        if (sprite == NULL)
+        {
+            break;
+        }
+        handle_sprite(sprite, &main_col, &sub_col, &c_math, x, y, window_1, window_2);
     }
 
     bool use_cmath = cmath_enable & c_math;
@@ -309,7 +315,7 @@ static short per_pixel(unsigned char x, unsigned char y)
     return main_col;
 }
 
-// main_sprite_cache is updated once per scanline
+// sprite_caches are updated once per scanline
 static void per_scanline(unsigned short y)
 {
     int sprites_low_prio = 0;
@@ -329,11 +335,11 @@ static void per_scanline(unsigned short y)
         {
             if (flags & SPR_PRIORITY)
             {
-                aux_sprite_cache[sprites_high_prio++] = sprite;
+                high_sprite_cache[sprites_high_prio++] = sprite;
             }
             else
             {
-                main_sprite_cache[sprites_low_prio++] = sprite;
+                low_sprite_cache[sprites_low_prio++] = sprite;
             }
         }
         if ((sprites_high_prio + sprites_low_prio) == 16)
@@ -341,13 +347,13 @@ static void per_scanline(unsigned short y)
             break;
         }
     }
-    for (int i = 0; i < sprites_high_prio;)
-    {
-        main_sprite_cache[sprites_low_prio++] = aux_sprite_cache[i++];
-    }
     if (sprites_low_prio < 16)
     {
-        main_sprite_cache[sprites_low_prio] = NULL;
+        low_sprite_cache[sprites_low_prio] = NULL;
+    }
+    if (sprites_high_prio < 16)
+    {
+        high_sprite_cache[sprites_high_prio] = NULL;
     }
 }
 
@@ -366,17 +372,17 @@ STATIC mp_obj_t render(void)
 // Define a Python reference to the function above
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(render_obj, (render));
 
-STATIC mp_obj_t get_bg0_disabled(void)
+STATIC mp_obj_t get_bg0_enabled(void)
 {
-    return mp_obj_new_bool(disable_bg0);
+    return mp_obj_new_bool(enable_bg0);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_bg0_disabled_obj, get_bg0_disabled);
-STATIC mp_obj_t set_bg0_disabled(mp_obj_t b)
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_bg0_enabled_obj, get_bg0_enabled);
+STATIC mp_obj_t set_bg0_enabled(mp_obj_t b)
 {
-    disable_bg0 = mp_obj_is_true(b);
+    enable_bg0 = mp_obj_is_true(b);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_bg0_disabled_obj, set_bg0_disabled);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_bg0_enabled_obj, set_bg0_enabled);
 STATIC mp_obj_t get_mainscreen_colour(void)
 {
     return mp_obj_new_int(mainscreen_colour);
@@ -397,8 +403,8 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
 
     // Make the function available in the module's namespace
     mp_store_global(MP_QSTR_render, MP_OBJ_FROM_PTR(&render_obj));
-    mp_store_global(MP_QSTR_get_bg0_disabled, MP_OBJ_FROM_PTR(&get_bg0_disabled_obj));
-    mp_store_global(MP_QSTR_set_bg0_disabled, MP_OBJ_FROM_PTR(&set_bg0_disabled_obj));
+    mp_store_global(MP_QSTR_get_bg0_enabled, MP_OBJ_FROM_PTR(&get_bg0_enabled_obj));
+    mp_store_global(MP_QSTR_set_bg0_enabled, MP_OBJ_FROM_PTR(&set_bg0_enabled_obj));
     mp_store_global(MP_QSTR_get_mainscreen_colour, MP_OBJ_FROM_PTR(&get_mainscreen_colour_obj));
     mp_store_global(MP_QSTR_set_mainscreen_colour, MP_OBJ_FROM_PTR(&set_mainscreen_colour_obj));
 
