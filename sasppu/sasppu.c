@@ -8,6 +8,8 @@ struct Sprite
     unsigned char width;
     unsigned char height;
     unsigned short flags;
+    unsigned char graphics_x;
+    unsigned char graphics_y;
 };
 
 #define SPR_ENABLED (1 << 0)
@@ -29,28 +31,41 @@ struct Sprite
 #define SPR_SUB_WINDOW_LOG1 (1 << 14)
 #define SPR_SUB_WINDOW_LOG2 (1 << 15)
 
-short screen[240][240];
+unsigned short screen[240][240];
 
-short palette[64];
+unsigned short palette[64];
 
 // background
 
-short mainscreen_colour;
-short subscreen_colour;
+unsigned short mainscreen_colour;
+unsigned short subscreen_colour;
 
-bool disable_background;
+bool disable_bg0;
+bool disable_bg1;
 
 #define BG0_WIDTH_POWER 9
 #define BG0_HEIGHT_POWER 9
 #define BG0_WIDTH (1 << BG0_WIDTH_POWER)
 #define BG0_HEIGHT (1 << BG0_HEIGHT_POWER)
+#define BG1_WIDTH_POWER 9
+#define BG1_HEIGHT_POWER 9
+#define BG1_WIDTH (1 << BG1_WIDTH_POWER)
+#define BG1_HEIGHT (1 << BG1_HEIGHT_POWER)
 
-short BG0[BG0_WIDTH][BG0_HEIGHT];
-short bgscrollh;
-short bgscrollv;
+unsigned short BG0[BG0_WIDTH][BG0_HEIGHT];
+short bg0scrollh;
+short bg0scrollv;
+unsigned short BG1[BG1_WIDTH][BG1_HEIGHT];
+short bg1scrollh;
+short bg1scrollv;
 
 // color math
 bool bg0_cmath_enable;
+bool bg1_cmath_enable;
+bool bg0_main_screen_enable;
+bool bg0_sub_screen_enable;
+bool bg1_main_screen_enable;
+bool bg1_sub_screen_enable;
 bool half_main_screen;
 bool double_main_screen;
 bool half_sub_screen;
@@ -62,9 +77,18 @@ unsigned short screen_fade;
 bool cmath_enable;
 
 // windowing
-bool bg0_in_window;
-bool bg0_out_window;
-unsigned char bg0_window_log;
+bool bg0_main_in_window;
+bool bg0_main_out_window;
+unsigned char bg0_main_window_log;
+bool bg1_main_in_window;
+bool bg1_main_out_window;
+unsigned char bg1_main_window_log;
+bool bg0_sub_in_window;
+bool bg0_sub_out_window;
+unsigned char bg0_sub_window_log;
+bool bg1_sub_in_window;
+bool bg1_sub_out_window;
+unsigned char bg1_sub_window_log;
 
 unsigned char window_1_left;
 unsigned char window_1_right;
@@ -80,7 +104,12 @@ struct Sprite OAM[SPRITE_COUNT];
 
 #define OAM_LIMIT (OAM + SPRITE_COUNT)
 
-unsigned char *sprites[256];
+#define SPR_WIDTH_POWER 8
+#define SPR_HEIGHT_POWER 8
+#define SPR_WIDTH (1 << SPR_WIDTH_POWER)
+#define SPR_HEIGHT (1 << SPR_HEIGHT_POWER)
+
+unsigned char sprites[SPR_WIDTH][SPR_HEIGHT];
 
 static bool inline get_window(unsigned char logic, bool window_1, bool window_2, bool in_window, bool out_window)
 {
@@ -104,17 +133,41 @@ static bool inline get_window(unsigned char logic, bool window_1, bool window_2,
     return ((window & in_window) | ((!window) & out_window));
 }
 
-static void inline handle_bg(unsigned short *main, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
+static void inline handle_bg0(unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
 {
-    if (!disable_background)
+    if (!disable_bg0)
     {
-        short bg0 = BG0[(x + bgscrollh) & (BG0_WIDTH - 1)][(y + bgscrollv) & (BG0_HEIGHT - 1)];
+        short bg0 = BG0[(x + bg0scrollh) & (BG0_WIDTH - 1)][(y + bg0scrollv) & (BG0_HEIGHT - 1)];
         if (bg0 != 0)
         {
-            if (get_window(bg0_window_log, window_1, window_2, bg0_in_window, bg0_out_window))
+            if (get_window(bg0_main_window_log, window_1, window_2, bg0_main_in_window, bg0_main_out_window))
             {
-                *main = bg0;
+                *main_col = bg0;
                 *c_math = bg0_cmath_enable;
+            }
+            if (get_window(bg0_sub_window_log, window_1, window_2, bg0_sub_in_window, bg0_sub_out_window))
+            {
+                *sub_col = bg0;
+            }
+        }
+    }
+}
+
+static void inline handle_bg1(unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
+{
+    if (!disable_bg1)
+    {
+        short bg1 = BG1[(x + bg1scrollh) & (BG1_WIDTH - 1)][(y + bg1scrollv) & (BG1_HEIGHT - 1)];
+        if (bg1 != 0)
+        {
+            if (get_window(bg1_main_window_log, window_1, window_2, bg1_main_in_window, bg1_main_out_window))
+            {
+                *main_col = bg1;
+                *c_math = bg1_cmath_enable;
+            }
+            if (get_window(bg1_sub_window_log, window_1, window_2, bg1_sub_in_window, bg1_sub_out_window))
+            {
+                *sub_col = bg1;
             }
         }
     }
@@ -122,12 +175,14 @@ static void inline handle_bg(unsigned short *main, bool *c_math, unsigned char x
 
 static short per_pixel(unsigned char x, unsigned char y)
 {
-    unsigned short main = mainscreen_colour;
-    unsigned short sub = subscreen_colour;
+    unsigned short main_col = mainscreen_colour;
+    unsigned short sub_col = subscreen_colour;
 
     bool c_math = false;
     bool window_1 = (x >= window_1_left) && (x <= window_1_right);
     bool window_2 = (x >= window_2_left) && (x <= window_2_right);
+
+    handle_bg0(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
 
     bool bg_handled = false;
     for (int i = 0; i < 16; i++)
@@ -140,7 +195,7 @@ static short per_pixel(unsigned char x, unsigned char y)
         unsigned short flags = sprite->flags;
         if ((flags & SPR_PRIORITY) && !bg_handled)
         {
-            handle_bg(&main, &c_math, x, y, window_1, window_2);
+            handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
             bg_handled = true;
         }
         bool double_sprite = (flags & SPR_DOUBLE);
@@ -166,7 +221,7 @@ static short per_pixel(unsigned char x, unsigned char y)
                 offsetx >>= 1;
                 offsety >>= 1;
             }
-            unsigned char spr_pal = sprites[i][(offsety * (sprite->width)) + offsetx];
+            unsigned char spr_pal = sprites[offsety + (sprite->graphics_y)][offsetx + (sprite->graphics_x)];
             if (spr_pal != 0)
             {
                 short col = palette[spr_pal - 1];
@@ -174,7 +229,7 @@ static short per_pixel(unsigned char x, unsigned char y)
                 {
                     if (get_window((flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_MAIN_IN_WINDOW, flags & SPR_MAIN_OUT_WINDOW))
                     {
-                        main = col;
+                        main_col = col;
                         c_math = flags & SPR_C_MATH;
                     }
                 }
@@ -182,7 +237,7 @@ static short per_pixel(unsigned char x, unsigned char y)
                 {
                     if (get_window((flags >> SPR_SUB_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_SUB_IN_WINDOW, flags & SPR_SUB_OUT_WINDOW))
                     {
-                        sub = col;
+                        sub_col = col;
                     }
                 }
             }
@@ -191,20 +246,20 @@ static short per_pixel(unsigned char x, unsigned char y)
 
     if (!bg_handled)
     {
-        handle_bg(&main, &c_math, x, y, window_1, window_2);
+        handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
     }
 
     bool use_cmath = cmath_enable & c_math;
     if (use_cmath || fade_enable)
     {
-        unsigned char main_r = (main >> 11) & 0b00011111;
-        unsigned char main_g = (main >> 5) & 0b00111111;
-        unsigned char main_b = (main >> 0) & 0b00011111;
+        unsigned char main_r = (main_col >> 11) & 0b00011111;
+        unsigned char main_g = (main_col >> 5) & 0b00111111;
+        unsigned char main_b = (main_col >> 0) & 0b00011111;
         if (use_cmath)
         {
-            unsigned char sub_r = (sub >> 11) & 0b00011111;
-            unsigned char sub_g = (sub >> 5) & 0b00111111;
-            unsigned char sub_b = (sub >> 0) & 0b00011111;
+            unsigned char sub_r = (sub_col >> 11) & 0b00011111;
+            unsigned char sub_g = (sub_col >> 5) & 0b00111111;
+            unsigned char sub_b = (sub_col >> 0) & 0b00011111;
 
             if (double_main_screen)
             {
@@ -251,7 +306,7 @@ static short per_pixel(unsigned char x, unsigned char y)
         }
         return (main_r << 11) | (main_g << 5) | (main_b);
     }
-    return main;
+    return main_col;
 }
 
 // main_sprite_cache is updated once per scanline
@@ -311,17 +366,17 @@ STATIC mp_obj_t render(void)
 // Define a Python reference to the function above
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(render_obj, (render));
 
-STATIC mp_obj_t get_background_disabled(void)
+STATIC mp_obj_t get_bg0_disabled(void)
 {
-    return mp_obj_new_bool(disable_background);
+    return mp_obj_new_bool(disable_bg0);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_background_disabled_obj, get_background_disabled);
-STATIC mp_obj_t set_background_disabled(mp_obj_t b)
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_bg0_disabled_obj, get_bg0_disabled);
+STATIC mp_obj_t set_bg0_disabled(mp_obj_t b)
 {
-    disable_background = mp_obj_is_true(b);
+    disable_bg0 = mp_obj_is_true(b);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_background_disabled_obj, set_background_disabled);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(set_bg0_disabled_obj, set_bg0_disabled);
 STATIC mp_obj_t get_mainscreen_colour(void)
 {
     return mp_obj_new_int(mainscreen_colour);
@@ -342,8 +397,8 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
 
     // Make the function available in the module's namespace
     mp_store_global(MP_QSTR_render, MP_OBJ_FROM_PTR(&render_obj));
-    mp_store_global(MP_QSTR_get_background_disabled, MP_OBJ_FROM_PTR(&get_background_disabled_obj));
-    mp_store_global(MP_QSTR_set_background_disabled, MP_OBJ_FROM_PTR(&set_background_disabled_obj));
+    mp_store_global(MP_QSTR_get_bg0_disabled, MP_OBJ_FROM_PTR(&get_bg0_disabled_obj));
+    mp_store_global(MP_QSTR_set_bg0_disabled, MP_OBJ_FROM_PTR(&set_bg0_disabled_obj));
     mp_store_global(MP_QSTR_get_mainscreen_colour, MP_OBJ_FROM_PTR(&get_mainscreen_colour_obj));
     mp_store_global(MP_QSTR_set_mainscreen_colour, MP_OBJ_FROM_PTR(&set_mainscreen_colour_obj));
 
