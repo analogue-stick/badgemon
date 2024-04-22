@@ -1,6 +1,7 @@
 import bluetooth
 import aioble
 import asyncio
+from protocol.queue import Queue
 
 _BADGEMON_SERVICE = bluetooth.UUID('42616467-654d-6f6e-3545-7661723a3333')
 _BADGEMON_COMM_CHAR = bluetooth.UUID(0x0001)
@@ -13,50 +14,54 @@ _DISCONNECTED = 2
 class BluetoothDevice:
 
     def __init__(self):
+        self._input = Queue()
+        self._output = Queue()
 
-        self._conn = None
-        self._comm = None
-        self._state = _DISCONNECTED
-
-        service = aioble.Service(_BADGEMON_SERVICE)
-        self._server_char = aioble.Characteristic(service, _BADGEMON_COMM_CHAR, notify=True, write_no_response=True)
-        aioble.register_services(service)
-
-    async def send_message(self, packet):
+    async def _send_task(self, conn: aioble.device.DeviceConnection, char: aioble.Characteristic, state: int) -> None:
         """
-        Sends a message to the currently connected device
 
-        @param packet:
-        @return: None
+        @param conn: The current connection
+        @param char: The characteristic to notify/write to
+        @param state: Whether the device is a server or client
+        @return:
         """
-        if self._state == _PERIPHERAL_STATE:
-            self._server_char.notify(self._conn, packet)
-        elif self._state == _CENTRAL_STATE:
-            await self._comm.write(packet)
+        while True:
+            packet = await self._input.get()
 
-    async def recv_message(self):
+            if state == _PERIPHERAL_STATE:
+                char.notify(conn, packet)
+
+            elif state == _CENTRAL_STATE:
+                await char.write(packet)
+
+    async def _recv_task(self, char, state):
         """
-        Receives a message
 
-        @return: The message
+        @param char:
+        @param state:
+        @return:
         """
         while True:
             try:
-                if self._state == _PERIPHERAL_STATE:
-                    await self._server_char.written(timeout_ms=2000)
-                    data = self._server_char.read()
-                    self._server_char.write(b'')
-                    print(data)
+                if state == _PERIPHERAL_STATE:
+                    await char.written(timeout_ms=2000)
+                    data = char.read()
+                    char.write(b'')
 
-                elif self._state == _CENTRAL_STATE:
-                    data = await self._comm.notified(timeout_ms=2000)
-                    print(data)
+                elif state == _CENTRAL_STATE:
+                    data = await char.notified(timeout_ms=2000)
+
                 else:
-                    await asyncio.sleep(2)
+                    data = b''
+
+                await self._output.put(data)
+                print(data)
+
             except asyncio.TimeoutError:
                 continue
 
-    async def find_trainers(self):
+    @staticmethod
+    async def find_trainers():
         """
         Search for nearby trainers
 
@@ -70,16 +75,11 @@ class BluetoothDevice:
 
         return trainers
 
-    def start_server(self):
-        service = aioble.Service(_BADGEMON_SERVICE)
-        self._comm = aioble.Characteristic(service, _BADGEMON_COMM_CHAR, notify=True, write_no_response=True)
-        aioble.register_services(service)
-
     async def advertise(self):
+        service = aioble.Service(_BADGEMON_SERVICE)
+        char = aioble.Characteristic(service, _BADGEMON_COMM_CHAR, notify=True, write_no_response=True)
+        aioble.register_services(service)
         while True:
-            if self._state == _CENTRAL_STATE:
-                await asyncio.sleep(10)
-                continue
             async with await aioble.advertise(
                     250000,
                     name="TrainerName",
@@ -87,33 +87,32 @@ class BluetoothDevice:
                     appearance=0x0A82,
             ) as connection:
                 print("Connection from", connection.device)
-                self._state = _PERIPHERAL_STATE
-                self._conn = connection
-                await connection.disconnected()
-                self._state = _DISCONNECTED
+                recv_task = asyncio.create_task(self._recv_task(char, _PERIPHERAL_STATE))
+                send_task = asyncio.create_task(self._send_task(connection, char, _PERIPHERAL_STATE))
+                disconnect_task = asyncio.create_task(connection.disconnected())
+                await asyncio.gather(send_task, recv_task, disconnect_task)
 
     async def connect_peripheral(self, device):
-        """
-        Connect to a peripheral device
-
-        @param device: an aioble Device()
-        @return: True if connection was successful, else false
-        """
         try:
-            self._conn = await device.connect(timeout_ms=2000)
-            service = await self._conn.service(_BADGEMON_SERVICE)
-
-            self._comm = await service.characteristic(_BADGEMON_COMM_CHAR)
-            self._state = _CENTRAL_STATE
-            return True
-
+            connection = await device.connect(timeout_ms=2000)
         except asyncio.TimeoutError:
-            return False
+            print("Timeout during connection")
+            return
+
+        async with connection:
+            try:
+                service = await connection.service(_BADGEMON_SERVICE)
+                char = await service.characteristic(_BADGEMON_COMM_CHAR)
+            except asyncio.TimeoutError:
+                return
+
+            recv_task = asyncio.create_task(self._recv_task(char, _CENTRAL_STATE))
+            send_task = asyncio.create_task(self._send_task(connection, char, _CENTRAL_STATE))
+            disconnect_task = asyncio.create_task(connection.disconnected())
+            await asyncio.gather(send_task, recv_task, disconnect_task)
 
     async def main(self):
-        server_thread = asyncio.create_task(self.advertise())
-        recv_thread = asyncio.create_task(self.recv_message())
-        await asyncio.gather(server_thread, recv_thread)
+        pass
 
 
 if __name__ == '__main__':

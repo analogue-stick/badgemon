@@ -1,7 +1,11 @@
 import math
 import random
 from struct import pack, unpack
-from typing import List, Tuple, Union
+
+try:
+    from typing import List, Tuple, Union
+except ImportError:
+    pass
 
 from game import moves, abilities, constants
 
@@ -13,7 +17,7 @@ class MonTemplate:
     id_inc = 0
 
     def __init__(self, name: str, desc: str, type1: constants.MonType, type2: constants.MonType,
-                 ability: abilities.Ability,
+                 ability: int,
                  evolve_mon: Union["MonTemplate", None], evolve_level: Union[int, None],
                  base_hp: int, base_atk: int, base_def: int,
                  base_spatk: int, base_spdef: int, base_spd: int,
@@ -115,6 +119,9 @@ class Mon:
             self.setup_moves_at_level()
 
         self.full_heal()
+
+    def __repr__(self):
+        return f'{self.nickname}, HP: {self.hp}'
 
     def serialise(self) -> bytes:
         """
@@ -284,7 +291,7 @@ class Mon:
 
 mons_list = [
     MonTemplate(
-        "guy", "fuckin dude", [constants.MonType.FIGHTING, constants.MonType.FIRE],
+        "guy", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
         abilities.Ability.NO_ABILITY, None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[0], 5),

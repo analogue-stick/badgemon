@@ -1,5 +1,2 @@
-from enum import Enum
-
-
-class Ability(Enum):
+class Ability:
     NO_ABILITY = 0
