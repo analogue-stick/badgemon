@@ -1,5 +1,22 @@
 // Include the header file to get access to the MicroPython API
 #include "py/dynruntime.h"
+// #include "extmod/modmachine.h"
+
+#if !defined(__linux__)
+void *memcpy(void *dst, const void *src, size_t n)
+{
+    return mp_fun_table.memmove_(dst, src, n);
+}
+void *memset(void *s, int c, size_t n)
+{
+    return mp_fun_table.memset_(s, c, n);
+}
+#endif
+
+void *memmove(void *dest, const void *src, size_t n)
+{
+    return mp_fun_table.memmove_(dest, src, n);
+}
 
 typedef struct _sprite_obj_t
 {
@@ -35,6 +52,46 @@ typedef sprite_obj_t Sprite;
 #define SPR_SUB_WINDOW_LOG2 (1 << 15)
 
 unsigned short screen[240][240];
+
+mp_obj_t SPI;
+mp_obj_t write_fun;
+mp_obj_t CS;
+mp_obj_t cs_on_fun;
+mp_obj_t cs_off_fun;
+mp_obj_t DC;
+mp_obj_t dc_on_fun;
+mp_obj_t dc_off_fun;
+mp_obj_t RST;
+mp_obj_t rst_on_fun;
+mp_obj_t rst_off_fun;
+mp_obj_t BACKLIGHT;
+mp_obj_t backlight_on_fun;
+mp_obj_t backlight_off_fun;
+
+#define spi_write(buf) mp_call_function_n_kw(write_fun, 1, 0, ((mp_obj_t[1]){(buf)}))
+#define cs_on mp_call_function_n_kw(cs_on_fun, 0, 0, mp_const_none)
+#define cs_off mp_call_function_n_kw(cs_off_fun, 0, 0, mp_const_none)
+#define dc_on mp_call_function_n_kw(dc_on_fun, 0, 0, mp_const_none)
+#define dc_off mp_call_function_n_kw(dc_off_fun, 0, 0, mp_const_none)
+#define rst_on mp_call_function_n_kw(rst_on_fun, 0, 0, mp_const_none)
+#define rst_off mp_call_function_n_kw(rst_off_fun, 0, 0, mp_const_none)
+#define backlight_on mp_call_function_n_kw(backlight_on_fun, 0, 0, mp_const_none)
+#define backlight_off mp_call_function_n_kw(backlight_off_fun, 0, 0, mp_const_none)
+
+#define GC9A01_SWRESET 0x01
+#define GC9A01_SLPIN 0x10
+#define GC9A01_SLPOUT 0x11
+#define GC9A01_INVOFF 0x20
+#define GC9A01_INVON 0x21
+#define GC9A01_DISPOFF 0x28
+#define GC9A01_DISPON 0x29
+#define GC9A01_CASET 0x2A
+#define GC9A01_RASET 0x2B
+#define GC9A01_RAMWR 0x2C
+#define GC9A01_VSCRDEF 0x33
+#define GC9A01_COLMOD 0x3A
+#define GC9A01_MADCTL 0x36
+#define GC9A01_VSCSAD 0x37
 
 // background
 #define BG0_WIDTH_POWER 9
@@ -370,17 +427,56 @@ static void per_scanline(unsigned short y)
     }
 }
 
+/*
+static mp_obj_t blit_buffer(size_t n_args, const mp_obj_t *args)
+{
+    gc9a01_GC9A01_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    mp_buffer_info_t buf_info;
+
+    mp_get_buffer_raise(args[1], &buf_info, MP_BUFFER_READ);
+
+    mp_int_t x = mp_obj_get_int(args[2]);
+    mp_int_t y = mp_obj_get_int(args[3]);
+    mp_int_t w = mp_obj_get_int(args[4]);
+    mp_int_t h = mp_obj_get_int(args[5]);
+
+    set_window(self, x, y, x + w - 1, y + h - 1);
+    DC_HIGH();
+    CS_LOW();
+
+    const int buf_size = 256;
+    int limit = MIN(buf_info.len, w * h * 2);
+    int chunks = limit / buf_size;
+    int rest = limit % buf_size;
+    int i = 0;
+
+    for (; i < chunks; i++)
+    {
+        write_spi(self->spi_obj, (const uint8_t *)buf_info.buf + i * buf_size, buf_size);
+    }
+    if (rest)
+    {
+        write_spi(self->spi_obj, (const uint8_t *)buf_info.buf + i * buf_size, rest);
+    }
+    CS_HIGH();
+    mp_machine_spi_p_t
+
+        return mp_const_none;
+}
+*/
+
 STATIC mp_obj_t render(void)
 {
-    for (unsigned char y = 0; y < 240; y++)
+    for (unsigned char y = 0; y < 20; y++)
     {
         per_scanline(y);
-        for (unsigned char x = 0; x < 240; x++)
+        for (unsigned char x = 0; x < 20; x++)
         {
             screen[x][y] = per_pixel(x, y);
         }
     }
-    return mp_obj_new_bytes((const byte *)&screen, sizeof(screen));
+    spi_write(mp_obj_new_bytes((unsigned char *)screen, sizeof(screen)));
+    return mp_obj_new_bytes((unsigned char *)screen, sizeof(screen));
 }
 // Define a Python reference to the function above
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(render_obj, (render));
@@ -408,6 +504,64 @@ STATIC mp_obj_t load_sprite(mp_obj_t position)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(save_sprite_obj, save_sprite);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(load_sprite_obj, load_sprite);
+
+STATIC mp_obj_t blit_sprite(size_t n_args, const mp_obj_t *args)
+{
+    mp_buffer_info_t buf_info;
+    mp_get_buffer_raise(args[0], &buf_info, MP_BUFFER_READ);
+    mp_int_t x = mp_obj_get_int(args[1]);
+    mp_int_t y = mp_obj_get_int(args[2]);
+    mp_int_t w = mp_obj_get_int(args[3]);
+    mp_int_t h = mp_obj_get_int(args[4]);
+    mp_int_t endh = x + w;
+    mp_int_t endv = y + h;
+    if (buf_info.len < w * h * 2)
+    {
+        mp_raise_ValueError("This ain't it bro");
+    }
+    short *bufpos = buf_info.buf;
+    for (; y < endv; y++)
+        for (; x < endh; x++)
+            sprites[y][x] = *bufpos++;
+
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(blit_sprite_obj, 5, 5, blit_sprite);
+
+STATIC inline mp_obj_t blit_background(unsigned short BG[BG0_WIDTH][BG0_HEIGHT], size_t n_args, const mp_obj_t *args)
+{
+    mp_buffer_info_t buf_info;
+    mp_get_buffer_raise(args[0], &buf_info, MP_BUFFER_READ);
+    mp_int_t x = mp_obj_get_int(args[1]);
+    mp_int_t y = mp_obj_get_int(args[2]);
+    mp_int_t w = mp_obj_get_int(args[3]);
+    mp_int_t h = mp_obj_get_int(args[4]);
+    mp_int_t endh = x + w;
+    mp_int_t endv = y + h;
+    if (buf_info.len < w * h * 2)
+    {
+        mp_raise_ValueError("This ain't it bro");
+    }
+    short *bufpos = buf_info.buf;
+    for (; y < endv; y++)
+        for (; x < endh; x++)
+            BG[y][x] = *bufpos++;
+
+    return mp_const_none;
+}
+
+STATIC mp_obj_t blit_bg0(size_t n_args, const mp_obj_t *args)
+{
+    return blit_background(BG0, n_args, args);
+}
+STATIC mp_obj_t blit_bg1(size_t n_args, const mp_obj_t *args)
+{
+    return blit_background(BG1, n_args, args);
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(blit_bg0_obj, 5, 5, blit_bg0);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(blit_bg1_obj, 5, 5, blit_bg1);
 
 STATIC void sprite_init(sprite_obj_t *self)
 {
@@ -1273,6 +1427,220 @@ STATIC mp_obj_t get_sprite_page()
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_sprite_page_obj, get_sprite_page);
 
+mp_obj_t sleep_ms;
+#define msleep(buf) mp_call_function_n_kw(sleep_ms, 1, 0, ((mp_obj_t[1]){MP_OBJ_NEW_SMALL_INT(buf)}))
+
+void write(unsigned char command, unsigned char *data, int data_len)
+{
+    cs_off;
+
+    if (command != 0)
+    {
+        dc_off;
+        spi_write(mp_obj_new_bytes(&command, 1));
+    }
+    if (data_len != 0)
+    {
+        dc_on;
+        spi_write(mp_obj_new_bytes(data, data_len));
+    }
+
+    cs_on;
+}
+
+void hard_reset(void)
+{
+    cs_off;
+
+    rst_on;
+    msleep(50);
+    rst_off;
+    msleep(50);
+    rst_on;
+    msleep(150);
+
+    cs_on;
+}
+
+void soft_reset(void)
+{
+    write(GC9A01_SWRESET, NULL, 0);
+    msleep(150);
+}
+
+void sleep_mode(bool enable)
+{
+    if (enable)
+    {
+        write(GC9A01_SLPIN, NULL, 0);
+    }
+    else
+    {
+        write(GC9A01_SLPOUT, NULL, 0);
+    }
+}
+
+void inversion_mode(bool enable)
+{
+    if (enable)
+        write(GC9A01_INVON, NULL, 0);
+    else
+        write(GC9A01_INVOFF, NULL, 0);
+}
+
+void rotation(int rotation)
+{
+    unsigned char ROTATIONS[8] = {
+        0x48,  // 0 - PORTRAIT
+        0x28,  // 1 - LANDSCAPE
+        0x88,  // 2 - INVERTED_PORTRAIT
+        0xe8,  // 3 - INVERTED_LANDSCAPE
+        0x08,  // 4 - PORTRAIT_MIRRORED
+        0x68,  // 5 - LANDSCAPE_MIRRORED
+        0xc8,  // 6 - INVERTED_PORTRAIT_MIRRORED
+        0xa8}; // 7 - INVERTED_LANDSCAPE_MIRRORED
+    write(GC9A01_MADCTL, ROTATIONS + (rotation & 0x3), 1);
+}
+
+void _set_columns(unsigned short start, unsigned short end)
+{
+    if (start <= end && end <= 240)
+        write(GC9A01_CASET, (unsigned char *)(unsigned short[2]){start, end}, 4);
+}
+
+void _set_rows(unsigned short start, unsigned short end)
+{
+    if (start <= end && end <= 240)
+        write(GC9A01_RASET, (unsigned char *)(unsigned short[2]){start, end}, 4);
+}
+
+void _set_window(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1)
+{
+    _set_columns(x0, x1);
+    _set_rows(y0, y1);
+    write(GC9A01_RAMWR, NULL, 0);
+}
+
+STATIC mp_obj_t init_display(size_t n_args, const mp_obj_t *args)
+{
+
+    if (args[0] == mp_const_none)
+    {
+        mp_raise_ValueError("SPI object is required.");
+    }
+    if (args[1] == mp_const_none)
+    {
+        mp_raise_ValueError("cs pin is required.");
+    }
+    if (args[2] == mp_const_none)
+    {
+        mp_raise_ValueError("dc pin is required.");
+    }
+    if (args[3] == mp_const_none)
+    {
+        mp_raise_ValueError("rst pin is required.");
+    }
+    if (args[4] == mp_const_none)
+    {
+        mp_raise_ValueError("backlight pin is required.");
+    }
+
+    SPI = args[0];
+    write_fun = mp_load_attr(SPI, MP_QSTR_write);
+    CS = args[1];
+    cs_on_fun = mp_load_attr(CS, MP_QSTR_on);
+    cs_off_fun = mp_load_attr(CS, MP_QSTR_off);
+    DC = args[2];
+    dc_on_fun = mp_load_attr(DC, MP_QSTR_on);
+    dc_off_fun = mp_load_attr(DC, MP_QSTR_off);
+    RST = args[3];
+    rst_on_fun = mp_load_attr(RST, MP_QSTR_on);
+    rst_off_fun = mp_load_attr(RST, MP_QSTR_off);
+    BACKLIGHT = args[4];
+    backlight_on_fun = mp_load_attr(BACKLIGHT, MP_QSTR_on);
+    backlight_off_fun = mp_load_attr(BACKLIGHT, MP_QSTR_off);
+
+    hard_reset();
+    msleep(100);
+
+    write(0xEF, NULL, 0);
+    write(0xEB, (unsigned char[1]){0x14}, 1);
+    write(0xFE, NULL, 0);
+    write(0xEF, NULL, 0);
+    write(0xEB, (unsigned char[1]){0x14}, 1);
+    write(0x84, (unsigned char[1]){0x40}, 1);
+    write(0x85, (unsigned char[1]){0xFF}, 1);
+    write(0x86, (unsigned char[1]){0xFF}, 1);
+    write(0x87, (unsigned char[1]){0xFF}, 1);
+    write(0x88, (unsigned char[1]){0x0A}, 1);
+    write(0x89, (unsigned char[1]){0x21}, 1);
+    write(0x8A, (unsigned char[1]){0x00}, 1);
+    write(0x8B, (unsigned char[1]){0x80}, 1);
+    write(0x8C, (unsigned char[1]){0x01}, 1);
+    write(0x8D, (unsigned char[1]){0x01}, 1);
+    write(0x8E, (unsigned char[1]){0xFF}, 1);
+    write(0x8F, (unsigned char[1]){0xFF}, 1);
+    write(0xB6, (unsigned char[2]){0x00, 0x00}, 2);
+    write(0x3A, (unsigned char[1]){0x55}, 1);
+    write(0x90, (unsigned char[4]){0x08, 0x08, 0x08, 0x08}, 4);
+    write(0xBD, (unsigned char[1]){0x06}, 1);
+    write(0xBC, (unsigned char[1]){0x00}, 1);
+    write(0xFF, (unsigned char[3]){0x60, 0x01, 0x04}, 3);
+    write(0xC3, (unsigned char[1]){0x13}, 1);
+    write(0xC4, (unsigned char[1]){0x13}, 1);
+    write(0xC9, (unsigned char[1]){0x22}, 1);
+    write(0xBE, (unsigned char[1]){0x11}, 1);
+    write(0xE1, (unsigned char[2]){0x10, 0x0E}, 2);
+    write(0xDF, (unsigned char[3]){0x21, 0x0c, 0x02}, 3);
+    write(0xF0, (unsigned char[6]){0x45, 0x09, 0x08, 0x08, 0x26, 0x2A}, 6);
+    write(0xF1, (unsigned char[6]){0x43, 0x70, 0x72, 0x36, 0x37, 0x6F}, 6);
+    write(0xF2, (unsigned char[6]){0x45, 0x09, 0x08, 0x08, 0x26, 0x2A}, 6);
+    write(0xF3, (unsigned char[6]){0x43, 0x70, 0x72, 0x36, 0x37, 0x6F}, 6);
+    write(0xED, (unsigned char[2]){0x1B, 0x0B}, 2);
+    write(0xAE, (unsigned char[1]){0x77}, 1);
+    write(0xCD, (unsigned char[1]){0x63}, 1);
+    write(0x70, (unsigned char[9]){0x07, 0x07, 0x04, 0x0E, 0x0F, 0x09, 0x07, 0x08, 0x03}, 9);
+    write(0xE8, (unsigned char[1]){0x34}, 1);
+
+    write(
+        0x62,
+        (unsigned char[12]){0x18, 0x0D, 0x71, 0xED, 0x70, 0x70, 0x18, 0x0F, 0x71, 0xEF, 0x70, 0x70}, 12);
+
+    write(
+        0x63,
+        (unsigned char[12]){0x18, 0x11, 0x71, 0xF1, 0x70, 0x70, 0x18, 0x13, 0x71, 0xF3, 0x70, 0x70}, 12);
+
+    write(0x64, (unsigned char[7]){0x28, 0x29, 0xF1, 0x01, 0xF1, 0x00, 0x07}, 7);
+    write(
+        0x66,
+        (unsigned char[10]){0x3C, 0x00, 0xCD, 0x67, 0x45, 0x45, 0x10, 0x00, 0x00, 0x00}, 10);
+
+    write(
+        0x67,
+        (unsigned char[10]){0x00, 0x3C, 0x00, 0x00, 0x00, 0x01, 0x54, 0x10, 0x32, 0x98}, 10);
+
+    write(0x74, (unsigned char[7]){0x10, 0x85, 0x80, 0x00, 0x00, 0x4E, 0x00}, 7);
+    write(0x98, (unsigned char[2]){0x3e, 0x07}, 2);
+    write(0x35, NULL, 0);
+    write(0x21, NULL, 0);
+    write(0x11, NULL, 0);
+    msleep(120);
+
+    write(0x29, NULL, 0);
+    msleep(20);
+
+    rotation(0);
+
+    backlight_on;
+
+    _set_window(110, 110, 130, 130);
+    cs_on;
+    dc_on;
+    return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(init_display_obj, 5, 5, init_display);
+
 // This is the entry point and is called when the module is imported
 mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *args)
 {
@@ -1286,6 +1654,16 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
     mp_store_global(MP_QSTR_get_sprite_page, MP_OBJ_FROM_PTR(&get_sprite_page_obj));
     mp_store_global(MP_QSTR_get_bg0, MP_OBJ_FROM_PTR(&get_bg0_obj));
     mp_store_global(MP_QSTR_get_bg1, MP_OBJ_FROM_PTR(&get_bg1_obj));
+
+    mp_store_global(MP_QSTR_blit_sprite, MP_OBJ_FROM_PTR(&blit_sprite_obj));
+    mp_store_global(MP_QSTR_blit_bg0, MP_OBJ_FROM_PTR(&blit_bg0_obj));
+    mp_store_global(MP_QSTR_blit_bg1, MP_OBJ_FROM_PTR(&blit_bg1_obj));
+
+    mp_store_global(MP_QSTR_init_display, MP_OBJ_FROM_PTR(&init_display_obj));
+    mp_store_global(MP_QSTR_spi, SPI);
+
+    mp_obj_t time = mp_import_name(MP_QSTR_time, mp_const_none, MP_OBJ_NEW_SMALL_INT(0));
+    sleep_ms = mp_import_from(time, MP_QSTR_sleep_ms);
 
     // Initialise the sprite type.
     sprite_type.base.type = (void *)&mp_type_type;
