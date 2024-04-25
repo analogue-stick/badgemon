@@ -1,6 +1,22 @@
 {
     "files.associations": {
         "*.asm": "lldb.disassembly",
-        "dynruntime.h": "c"
+        "dynruntime.h": "c",
+        "*.tcc": "c",
+        "array": "c",
+        "hash_map": "c",
+        "chrono": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "string_view": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c",
+        "valarray": "c"
     }
 }
