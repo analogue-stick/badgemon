@@ -11,14 +11,17 @@ def timer():
     print((then_cpu-now_cpu)/(then-now))
 
 import sasppu
+import gc9a01py
 from machine import SPI, Pin
 
-spi = SPI(1, sck=10)
+spi = SPI(1, baudrate=80000000, sck=10)
 dc = Pin(8, mode=Pin.OUT, value=0)
 cs = Pin(9, mode=Pin.OUT, value=0)
 rst = Pin(12, mode=Pin.OUT, value=0)
 bl = Pin(40, mode=Pin.OUT, value=0)
-sasppu.init_display(spi, dc, cs, rst, bl)
+thing = gc9a01py.GC9A01(spi,dc,cs,rst,bl)
+rd= sasppu.render()
+thing.blit_buffer(rd, 0,0,240,240)
 
 def timer_sasppu():
     now_cpu = time.ticks_cpu()
@@ -33,5 +36,5 @@ def timer_sasppu():
     sasppu.render()
     sasppu.render()
     then_cpu = time.ticks_cpu()
-    return (then_cpu-now_cpu)/160000
+    return (time.ticks_diff(then_cpu,now_cpu))/160000
 

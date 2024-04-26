@@ -286,7 +286,7 @@ static void inline handle_sprite(Sprite *sprite, unsigned short *main_col, unsig
     }
 }
 
-static short per_pixel(unsigned char x, unsigned char y)
+static unsigned short per_pixel(unsigned char x, unsigned char y)
 {
     unsigned short main_col = state.mainscreen_colour;
     unsigned short sub_col = state.subscreen_colour;
@@ -467,15 +467,22 @@ static mp_obj_t blit_buffer(size_t n_args, const mp_obj_t *args)
 
 STATIC mp_obj_t render(void)
 {
-    for (unsigned char y = 0; y < 20; y++)
+    for (unsigned char y = 0; y < 240; y++)
+        for (unsigned char x = 0; x < 240; x++)
+        {
+            unsigned short col = (31 << 11);
+            screen[y][x] = (col >> 8) | (col << 8);
+        }
+    for (unsigned char y = 110; y < 130; y++)
     {
         per_scanline(y);
-        for (unsigned char x = 0; x < 20; x++)
+        for (unsigned char x = 110; x < 130; x++)
         {
-            screen[x][y] = per_pixel(x, y);
+            unsigned short col = per_pixel(x, y);
+            screen[y][x] = (col >> 8) | (col << 8);
         }
     }
-    spi_write(mp_obj_new_bytes((unsigned char *)screen, sizeof(screen)));
+    // spi_write(mp_obj_new_bytes((unsigned char *)screen, sizeof(screen)));
     return mp_obj_new_bytes((unsigned char *)screen, sizeof(screen));
 }
 // Define a Python reference to the function above
@@ -1634,12 +1641,37 @@ STATIC mp_obj_t init_display(size_t n_args, const mp_obj_t *args)
     backlight_on;
 
     _set_window(110, 110, 130, 130);
-    cs_on;
+    cs_off;
     dc_on;
     return mp_const_none;
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(init_display_obj, 5, 5, init_display);
+
+STATIC mp_obj_t init_spi(mp_obj_t spi)
+{
+    write_fun = mp_load_attr(spi, MP_QSTR_write);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(init_spi_obj, init_spi);
+
+STATIC mp_obj_t save_state(mp_obj_t state_in)
+{
+    if (!mp_obj_is_type(state_in, (mp_obj_type_t *)(&state_type)))
+    {
+        mp_raise_TypeError("argument is not a state");
+    }
+    state_obj_t *state_local = MP_OBJ_TO_PTR(state_in);
+    state = *state_local;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(save_state_obj, save_state);
+
+STATIC mp_obj_t load_state()
+{
+    return MP_OBJ_TO_PTR(&state);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(load_state_obj, load_state);
 
 // This is the entry point and is called when the module is imported
 mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *args)
@@ -1660,7 +1692,10 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
     mp_store_global(MP_QSTR_blit_bg1, MP_OBJ_FROM_PTR(&blit_bg1_obj));
 
     mp_store_global(MP_QSTR_init_display, MP_OBJ_FROM_PTR(&init_display_obj));
-    mp_store_global(MP_QSTR_spi, SPI);
+    // mp_store_global(MP_QSTR_spi, SPI);
+    mp_store_global(MP_QSTR_init_spi, MP_OBJ_FROM_PTR(&init_spi_obj));
+    mp_store_global(MP_QSTR_load_state, MP_OBJ_FROM_PTR(&load_state_obj));
+    mp_store_global(MP_QSTR_save_state, MP_OBJ_FROM_PTR(&save_state_obj));
 
     mp_obj_t time = mp_import_name(MP_QSTR_time, mp_const_none, MP_OBJ_NEW_SMALL_INT(0));
     sleep_ms = mp_import_from(time, MP_QSTR_sleep_ms);
