@@ -12,6 +12,3 @@ notify = "6.1"
 [profile.release]
 lto = "fat"
 codegen-units = 1
-
-[build]
-rustflags = ["-C", "target-cpu=native"]
