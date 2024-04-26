@@ -38,18 +38,18 @@ typedef sprite_obj_t Sprite;
 #define SPR_MAIN_SCREEN (1 << 3)
 #define SPR_SUB_SCREEN (1 << 4)
 #define SPR_C_MATH (1 << 5)
-#define SPR_PRIORITY (1 << 6)
+// #define SPR_PRIORITY (1 << 6)
 #define SPR_DOUBLE (1 << 7)
 #define SPR_MAIN_IN_WINDOW (1 << 8)
 #define SPR_MAIN_OUT_WINDOW (1 << 9)
 #define SPR_MAIN_WINDOW_LOG2_LOG2 (10)
 #define SPR_MAIN_WINDOW_LOG1 (1 << 10)
 #define SPR_MAIN_WINDOW_LOG2 (1 << 11)
-#define SPR_SUB_IN_WINDOW (1 << 12)
-#define SPR_SUB_OUT_WINDOW (1 << 13)
-#define SPR_SUB_WINDOW_LOG2_LOG2 (14)
-#define SPR_SUB_WINDOW_LOG1 (1 << 14)
-#define SPR_SUB_WINDOW_LOG2 (1 << 15)
+// #define SPR_SUB_IN_WINDOW (1 << 12)
+// #define SPR_SUB_OUT_WINDOW (1 << 13)
+// #define SPR_SUB_WINDOW_LOG2_LOG2 (14)
+// #define SPR_SUB_WINDOW_LOG1 (1 << 14)
+// #define SPR_SUB_WINDOW_LOG2 (1 << 15)
 
 unsigned short screen[240][240];
 
@@ -98,13 +98,8 @@ mp_obj_t backlight_off_fun;
 #define BG0_HEIGHT_POWER 9
 #define BG0_WIDTH (1 << BG0_WIDTH_POWER)
 #define BG0_HEIGHT (1 << BG0_HEIGHT_POWER)
-#define BG1_WIDTH_POWER 9
-#define BG1_HEIGHT_POWER 9
-#define BG1_WIDTH (1 << BG1_WIDTH_POWER)
-#define BG1_HEIGHT (1 << BG1_HEIGHT_POWER)
 
 unsigned short BG0[BG0_WIDTH][BG0_HEIGHT];
-unsigned short BG1[BG1_WIDTH][BG1_HEIGHT];
 
 typedef struct _state_obj_t
 {
@@ -113,20 +108,14 @@ typedef struct _state_obj_t
     unsigned short subscreen_colour;
 
     bool enable_bg0;
-    bool enable_bg1;
 
     short bg0scrollh;
     short bg0scrollv;
-    short bg1scrollh;
-    short bg1scrollv;
 
     // color math
     bool bg0_cmath_enable;
-    bool bg1_cmath_enable;
     bool bg0_main_screen_enable;
     bool bg0_sub_screen_enable;
-    bool bg1_main_screen_enable;
-    bool bg1_sub_screen_enable;
     bool half_main_screen;
     bool double_main_screen;
     bool half_sub_screen;
@@ -142,15 +131,6 @@ typedef struct _state_obj_t
     bool bg0_main_in_window;
     bool bg0_main_out_window;
     unsigned char bg0_main_window_log;
-    bool bg1_main_in_window;
-    bool bg1_main_out_window;
-    unsigned char bg1_main_window_log;
-    bool bg0_sub_in_window;
-    bool bg0_sub_out_window;
-    unsigned char bg0_sub_window_log;
-    bool bg1_sub_in_window;
-    bool bg1_sub_out_window;
-    unsigned char bg1_sub_window_log;
 
     unsigned char window_1_left;
     unsigned char window_1_right;
@@ -163,8 +143,7 @@ state_obj_t state;
 // sprites
 #define SPRITE_COUNT 256
 
-Sprite *low_sprite_cache[16];
-Sprite *high_sprite_cache[16];
+Sprite *sprite_cache[16];
 Sprite OAM[SPRITE_COUNT];
 
 #define OAM_LIMIT (OAM + SPRITE_COUNT)
@@ -205,34 +184,17 @@ static void inline handle_bg0(unsigned short *main_col, unsigned short *sub_col,
         short bg0 = BG0[(x + state.bg0scrollh) & (BG0_WIDTH - 1)][(y + state.bg0scrollv) & (BG0_HEIGHT - 1)];
         if (bg0 != 0)
         {
-            if (state.bg0_main_screen_enable && get_window(state.bg0_main_window_log, window_1, window_2, state.bg0_main_in_window, state.bg0_main_out_window))
+            if (get_window(state.bg0_main_window_log, window_1, window_2, state.bg0_main_in_window, state.bg0_main_out_window))
             {
-                *main_col = bg0;
-                *c_math = state.bg0_cmath_enable;
-            }
-            if (state.bg0_sub_screen_enable && get_window(state.bg0_sub_window_log, window_1, window_2, state.bg0_sub_in_window, state.bg0_sub_out_window))
-            {
-                *sub_col = bg0;
-            }
-        }
-    }
-}
-
-static void inline handle_bg1(unsigned short *main_col, unsigned short *sub_col, bool *c_math, unsigned char x, unsigned char y, bool window_1, bool window_2)
-{
-    if (state.enable_bg1)
-    {
-        short bg1 = BG1[(x + state.bg1scrollh) & (BG1_WIDTH - 1)][(y + state.bg1scrollv) & (BG1_HEIGHT - 1)];
-        if (bg1 != 0)
-        {
-            if (state.bg1_main_screen_enable && get_window(state.bg1_main_window_log, window_1, window_2, state.bg1_main_in_window, state.bg1_main_out_window))
-            {
-                *main_col = bg1;
-                *c_math = state.bg1_cmath_enable;
-            }
-            if (state.bg1_sub_screen_enable && get_window(state.bg1_sub_window_log, window_1, window_2, state.bg1_sub_in_window, state.bg1_sub_out_window))
-            {
-                *sub_col = bg1;
+                if (state.bg0_main_screen_enable)
+                {
+                    *main_col = bg0;
+                    *c_math = state.bg0_cmath_enable;
+                }
+                if (state.bg0_sub_screen_enable)
+                {
+                    *sub_col = bg0;
+                }
             }
         }
     }
@@ -267,18 +229,16 @@ static void inline handle_sprite(Sprite *sprite, unsigned short *main_col, unsig
         unsigned short spr_col = sprites[offsety + (sprite->graphics_y)][offsetx + (sprite->graphics_x)];
         if (spr_col != 0)
         {
-            if (flags & SPR_MAIN_SCREEN)
+            if (get_window((flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_MAIN_IN_WINDOW, flags & SPR_MAIN_OUT_WINDOW))
             {
-                if (get_window((flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_MAIN_IN_WINDOW, flags & SPR_MAIN_OUT_WINDOW))
+                if (flags & SPR_MAIN_SCREEN)
                 {
                     *main_col = spr_col;
                     *c_math = flags & SPR_C_MATH;
                 }
-            }
-            if (flags & SPR_SUB_SCREEN)
-            {
-                if (get_window((flags >> SPR_SUB_WINDOW_LOG2_LOG2) & 3, window_1, window_2, flags & SPR_SUB_IN_WINDOW, flags & SPR_SUB_OUT_WINDOW))
+                if (flags & SPR_SUB_SCREEN)
                 {
+
                     *sub_col = spr_col;
                 }
             }
@@ -299,19 +259,7 @@ static unsigned short per_pixel(unsigned char x, unsigned char y)
 
     for (int i = 0; i < 16; i++)
     {
-        Sprite *sprite = low_sprite_cache[i];
-        if (sprite == NULL)
-        {
-            break;
-        }
-        handle_sprite(sprite, &main_col, &sub_col, &c_math, x, y, window_1, window_2);
-    }
-
-    handle_bg1(&main_col, &sub_col, &c_math, x, y, window_1, window_2);
-
-    for (int i = 0; i < 16; i++)
-    {
-        Sprite *sprite = high_sprite_cache[i];
+        Sprite *sprite = sprite_cache[i];
         if (sprite == NULL)
         {
             break;
@@ -388,8 +336,7 @@ static unsigned short per_pixel(unsigned char x, unsigned char y)
 // sprite_caches are updated once per scanline
 static void per_scanline(unsigned short y)
 {
-    int sprites_low_prio = 0;
-    int sprites_high_prio = 0;
+    int sprites_index = 0;
     for (Sprite *sprite = OAM; sprite < OAM_LIMIT; sprite++)
     {
         unsigned short flags = sprite->flags;
@@ -397,73 +344,21 @@ static void per_scanline(unsigned short y)
             (flags & SPR_ENABLED) &&
             (((flags & SPR_MAIN_SCREEN) &&
               ((flags & SPR_MAIN_IN_WINDOW) ||
-               (flags & SPR_MAIN_OUT_WINDOW))) ||
-             ((flags & SPR_SUB_SCREEN) &&
-              ((flags & SPR_SUB_IN_WINDOW) ||
-               (flags & SPR_SUB_OUT_WINDOW)))) &&
+               (flags & SPR_MAIN_OUT_WINDOW)))) &&
             (y >= sprite->y) && (((flags & SPR_DOUBLE) && (y < (sprite->height << 1))) || (y < sprite->height)))
         {
-            if (flags & SPR_PRIORITY)
-            {
-                high_sprite_cache[sprites_high_prio++] = sprite;
-            }
-            else
-            {
-                low_sprite_cache[sprites_low_prio++] = sprite;
-            }
+            sprite_cache[sprites_index++] = sprite;
         }
-        if ((sprites_high_prio + sprites_low_prio) == 16)
+        if (sprites_index == 16)
         {
             break;
         }
     }
-    if (sprites_low_prio < 16)
+    if (sprites_index < 16)
     {
-        low_sprite_cache[sprites_low_prio] = NULL;
-    }
-    if (sprites_high_prio < 16)
-    {
-        high_sprite_cache[sprites_high_prio] = NULL;
+        sprite_cache[sprites_index] = NULL;
     }
 }
-
-/*
-static mp_obj_t blit_buffer(size_t n_args, const mp_obj_t *args)
-{
-    gc9a01_GC9A01_obj_t *self = MP_OBJ_TO_PTR(args[0]);
-    mp_buffer_info_t buf_info;
-
-    mp_get_buffer_raise(args[1], &buf_info, MP_BUFFER_READ);
-
-    mp_int_t x = mp_obj_get_int(args[2]);
-    mp_int_t y = mp_obj_get_int(args[3]);
-    mp_int_t w = mp_obj_get_int(args[4]);
-    mp_int_t h = mp_obj_get_int(args[5]);
-
-    set_window(self, x, y, x + w - 1, y + h - 1);
-    DC_HIGH();
-    CS_LOW();
-
-    const int buf_size = 256;
-    int limit = MIN(buf_info.len, w * h * 2);
-    int chunks = limit / buf_size;
-    int rest = limit % buf_size;
-    int i = 0;
-
-    for (; i < chunks; i++)
-    {
-        write_spi(self->spi_obj, (const uint8_t *)buf_info.buf + i * buf_size, buf_size);
-    }
-    if (rest)
-    {
-        write_spi(self->spi_obj, (const uint8_t *)buf_info.buf + i * buf_size, rest);
-    }
-    CS_HIGH();
-    mp_machine_spi_p_t
-
-        return mp_const_none;
-}
-*/
 
 STATIC mp_obj_t render(void)
 {
@@ -562,13 +457,8 @@ STATIC mp_obj_t blit_bg0(size_t n_args, const mp_obj_t *args)
 {
     return blit_background(BG0, n_args, args);
 }
-STATIC mp_obj_t blit_bg1(size_t n_args, const mp_obj_t *args)
-{
-    return blit_background(BG1, n_args, args);
-}
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(blit_bg0_obj, 5, 5, blit_bg0);
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(blit_bg1_obj, 5, 5, blit_bg1);
 
 STATIC void sprite_init(sprite_obj_t *self)
 {
@@ -653,11 +543,6 @@ STATIC void sprite_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = mp_obj_new_bool(self->flags & SPR_C_MATH);
             return;
         }
-        if (attr == MP_QSTR_priority)
-        {
-            dest[0] = mp_obj_new_bool(self->flags & SPR_PRIORITY);
-            return;
-        }
         if (attr == MP_QSTR_double)
         {
             dest[0] = mp_obj_new_bool(self->flags & SPR_DOUBLE);
@@ -676,21 +561,6 @@ STATIC void sprite_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         if (attr == MP_QSTR_main_window_log)
         {
             dest[0] = MP_OBJ_NEW_SMALL_INT((self->flags >> SPR_MAIN_WINDOW_LOG2_LOG2) & 0x3);
-            return;
-        }
-        if (attr == MP_QSTR_sub_in_window)
-        {
-            dest[0] = mp_obj_new_bool(self->flags & SPR_SUB_IN_WINDOW);
-            return;
-        }
-        if (attr == MP_QSTR_sub_out_window)
-        {
-            dest[0] = mp_obj_new_bool(self->flags & SPR_SUB_OUT_WINDOW);
-            return;
-        }
-        if (attr == MP_QSTR_sub_window_log)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT((self->flags >> SPR_SUB_WINDOW_LOG2_LOG2) & 0x3);
             return;
         }
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("Unknown attribute"));
@@ -776,12 +646,6 @@ STATIC void sprite_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = MP_OBJ_NULL;
             return;
         }
-        if (attr == MP_QSTR_priority)
-        {
-            self->flags = mp_obj_is_true(dest[1]) ? (self->flags | SPR_PRIORITY) : (self->flags & (~SPR_PRIORITY));
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
         if (attr == MP_QSTR_double)
         {
             self->flags = mp_obj_is_true(dest[1]) ? (self->flags | SPR_DOUBLE) : (self->flags & (~SPR_DOUBLE));
@@ -803,24 +667,6 @@ STATIC void sprite_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         if (attr == MP_QSTR_main_window_log)
         {
             self->flags = ((self->flags & (~(0x3 << SPR_MAIN_WINDOW_LOG2_LOG2))) | (mp_obj_get_int(dest[1]) & 0x3 << SPR_MAIN_WINDOW_LOG2_LOG2));
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_sub_in_window)
-        {
-            self->flags = mp_obj_is_true(dest[1]) ? (self->flags | SPR_SUB_IN_WINDOW) : (self->flags & (~SPR_SUB_IN_WINDOW));
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_sub_out_window)
-        {
-            self->flags = mp_obj_is_true(dest[1]) ? (self->flags | SPR_SUB_OUT_WINDOW) : (self->flags & (~SPR_SUB_OUT_WINDOW));
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_sub_window_log)
-        {
-            self->flags = ((self->flags & (~(0x3 << SPR_SUB_WINDOW_LOG2_LOG2))) | (mp_obj_get_int(dest[1]) & 0x3 << SPR_SUB_WINDOW_LOG2_LOG2));
             dest[0] = MP_OBJ_NULL;
             return;
         }
@@ -878,19 +724,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg0scrollh & 0xFFFF);
             return;
         }
-        if (attr == MP_QSTR_bg1scrollh)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg1scrollh & 0xFFFF);
-            return;
-        }
         if (attr == MP_QSTR_bg0scrollv)
         {
             dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg0scrollv & 0xFFFF);
-            return;
-        }
-        if (attr == MP_QSTR_bg1scrollv)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg1scrollv & 0xFFFF);
             return;
         }
         if (attr == MP_QSTR_screen_fade)
@@ -901,21 +737,6 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         if (attr == MP_QSTR_bg0_main_window_log)
         {
             dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg0_main_window_log & 0xFF);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_main_window_log)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg1_main_window_log & 0xFF);
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_window_log)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg0_sub_window_log & 0xFF);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_window_log)
-        {
-            dest[0] = MP_OBJ_NEW_SMALL_INT(self->bg1_sub_window_log & 0xFF);
             return;
         }
         if (attr == MP_QSTR_window_1_left)
@@ -943,24 +764,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = mp_obj_new_bool(self->enable_bg0);
             return;
         }
-        if (attr == MP_QSTR_enable_bg1)
-        {
-            dest[0] = mp_obj_new_bool(self->enable_bg1);
-            return;
-        }
         if (attr == MP_QSTR_bg0_cmath_enable)
         {
             dest[0] = mp_obj_new_bool(self->bg0_cmath_enable);
-            return;
-        }
-        if (attr == MP_QSTR_bg0_cmath_enable)
-        {
-            dest[0] = mp_obj_new_bool(self->bg0_cmath_enable);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_cmath_enable)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_cmath_enable);
             return;
         }
         if (attr == MP_QSTR_bg0_main_screen_enable)
@@ -968,19 +774,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = mp_obj_new_bool(self->bg0_main_screen_enable);
             return;
         }
-        if (attr == MP_QSTR_bg1_main_screen_enable)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_main_screen_enable);
-            return;
-        }
         if (attr == MP_QSTR_bg0_sub_screen_enable)
         {
             dest[0] = mp_obj_new_bool(self->bg0_sub_screen_enable);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_screen_enable)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_sub_screen_enable);
             return;
         }
         if (attr == MP_QSTR_half_main_screen)
@@ -1036,36 +832,6 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         if (attr == MP_QSTR_bg0_main_out_window)
         {
             dest[0] = mp_obj_new_bool(self->bg0_main_out_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_main_in_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_main_in_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_main_out_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_main_out_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_in_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg0_sub_in_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_out_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg0_sub_out_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_in_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_sub_in_window);
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_out_window)
-        {
-            dest[0] = mp_obj_new_bool(self->bg1_sub_out_window);
             return;
         }
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("Unknown attribute"));
@@ -1133,21 +899,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = MP_OBJ_NULL;
             return;
         }
-        if (attr == MP_QSTR_bg1scrollh)
-        {
-            self->bg1scrollh = mp_obj_get_int(dest[1]) & 0xFFFF;
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
         if (attr == MP_QSTR_bg0scrollv)
         {
             self->bg0scrollv = mp_obj_get_int(dest[1]) & 0xFFFF;
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1scrollv)
-        {
-            self->bg1scrollv = mp_obj_get_int(dest[1]) & 0xFFFF;
             dest[0] = MP_OBJ_NULL;
             return;
         }
@@ -1160,24 +914,6 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
         if (attr == MP_QSTR_bg0_main_window_log)
         {
             self->bg0_main_window_log = mp_obj_get_int(dest[1]) & 0xFF;
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_main_window_log)
-        {
-            self->bg1_main_window_log = mp_obj_get_int(dest[1]) & 0xFF;
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_window_log)
-        {
-            self->bg0_sub_window_log = mp_obj_get_int(dest[1]) & 0xFF;
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_window_log)
-        {
-            self->bg1_sub_window_log = mp_obj_get_int(dest[1]) & 0xFF;
             dest[0] = MP_OBJ_NULL;
             return;
         }
@@ -1211,27 +947,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = MP_OBJ_NULL;
             return;
         }
-        if (attr == MP_QSTR_enable_bg1)
-        {
-            self->enable_bg1 = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
         if (attr == MP_QSTR_bg0_cmath_enable)
         {
             self->bg0_cmath_enable = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg0_cmath_enable)
-        {
-            self->bg0_cmath_enable = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_cmath_enable)
-        {
-            self->bg1_cmath_enable = mp_obj_is_true(dest[1]);
             dest[0] = MP_OBJ_NULL;
             return;
         }
@@ -1240,21 +958,9 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             self->bg0_main_screen_enable = mp_obj_is_true(dest[1]);
             return;
         }
-        if (attr == MP_QSTR_bg1_main_screen_enable)
-        {
-            self->bg1_main_screen_enable = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
         if (attr == MP_QSTR_bg0_sub_screen_enable)
         {
             self->bg0_sub_screen_enable = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_screen_enable)
-        {
-            self->bg1_sub_screen_enable = mp_obj_is_true(dest[1]);
             dest[0] = MP_OBJ_NULL;
             return;
         }
@@ -1324,42 +1030,6 @@ STATIC void state_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest)
             dest[0] = MP_OBJ_NULL;
             return;
         }
-        if (attr == MP_QSTR_bg1_main_in_window)
-        {
-            self->bg1_main_in_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_main_out_window)
-        {
-            self->bg1_main_out_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_in_window)
-        {
-            self->bg0_sub_in_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg0_sub_out_window)
-        {
-            self->bg0_sub_out_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_in_window)
-        {
-            self->bg1_sub_in_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
-        if (attr == MP_QSTR_bg1_sub_out_window)
-        {
-            self->bg1_sub_out_window = mp_obj_is_true(dest[1]);
-            dest[0] = MP_OBJ_NULL;
-            return;
-        }
         mp_raise_msg(&mp_type_ValueError, MP_ERROR_TEXT("Unknown attribute"));
     }
 }
@@ -1371,17 +1041,11 @@ STATIC void state_init(state_obj_t *self)
     self->mainscreen_colour = AS_565(0, 0, 31);
     self->subscreen_colour = AS_565(31, 0, 0);
     self->enable_bg0 = false;
-    self->enable_bg1 = false;
     self->bg0scrollh = 0;
     self->bg0scrollv = 0;
-    self->bg1scrollh = 0;
-    self->bg1scrollv = 0;
     self->bg0_cmath_enable = false;
-    self->bg1_cmath_enable = false;
     self->bg0_main_screen_enable = false;
     self->bg0_sub_screen_enable = false;
-    self->bg1_main_screen_enable = false;
-    self->bg1_sub_screen_enable = false;
     self->half_main_screen = false;
     self->double_main_screen = false;
     self->half_sub_screen = false;
@@ -1395,15 +1059,6 @@ STATIC void state_init(state_obj_t *self)
     self->bg0_main_in_window = true;
     self->bg0_main_out_window = true;
     self->bg0_main_window_log = 0;
-    self->bg1_main_in_window = true;
-    self->bg1_main_out_window = true;
-    self->bg1_main_window_log = 0;
-    self->bg0_sub_in_window = true;
-    self->bg0_sub_out_window = true;
-    self->bg0_sub_window_log = 0;
-    self->bg1_sub_in_window = true;
-    self->bg1_sub_out_window = true;
-    self->bg1_sub_window_log = 0;
     self->window_1_left = 0;
     self->window_1_right = 255;
     self->window_2_left = 0;
@@ -1423,11 +1078,6 @@ STATIC mp_obj_t get_bg0()
     return mp_obj_new_bytearray_by_ref(sizeof(BG0), &BG0);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_bg0_obj, get_bg0);
-STATIC mp_obj_t get_bg1()
-{
-    return mp_obj_new_bytearray_by_ref(sizeof(BG1), &BG1);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(get_bg1_obj, get_bg1);
 STATIC mp_obj_t get_sprite_page()
 {
     return mp_obj_new_bytearray_by_ref(sizeof(sprites), &sprites);
@@ -1685,11 +1335,9 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
     mp_store_global(MP_QSTR_save_sprite, MP_OBJ_FROM_PTR(&save_sprite_obj));
     mp_store_global(MP_QSTR_get_sprite_page, MP_OBJ_FROM_PTR(&get_sprite_page_obj));
     mp_store_global(MP_QSTR_get_bg0, MP_OBJ_FROM_PTR(&get_bg0_obj));
-    mp_store_global(MP_QSTR_get_bg1, MP_OBJ_FROM_PTR(&get_bg1_obj));
 
     mp_store_global(MP_QSTR_blit_sprite, MP_OBJ_FROM_PTR(&blit_sprite_obj));
     mp_store_global(MP_QSTR_blit_bg0, MP_OBJ_FROM_PTR(&blit_bg0_obj));
-    mp_store_global(MP_QSTR_blit_bg1, MP_OBJ_FROM_PTR(&blit_bg1_obj));
 
     mp_store_global(MP_QSTR_init_display, MP_OBJ_FROM_PTR(&init_display_obj));
     // mp_store_global(MP_QSTR_spi, SPI);
