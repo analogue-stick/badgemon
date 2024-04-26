@@ -23,7 +23,7 @@ class BaseScene:
         try:
             while True:
                 await self.tick()
-                await asyncio.sleep_ms(33)
+                await asyncio.sleep_ms(10)
                 self._frame += 1
         finally:
             self._ctx.tasks.remove(self.task)
