@@ -1,0 +1,17 @@
+[package]
+name = "sasppu_view"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+minifb = "0.25"
+notify = "6.1"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
+[build]
+rustflags = ["-C", "target-cpu=native"]

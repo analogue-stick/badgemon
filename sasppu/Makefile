@@ -8,8 +8,8 @@ MOD = sasppu
 SRC = sasppu.c
 
 # Architecture to build for (x86, x64, armv6m, armv7m, xtensa, xtensawin)
-ARCH = xtensawin
-#ARCH = x64
+#ARCH = xtensawin
+ARCH = x64
 
 CFLAGS += 
 

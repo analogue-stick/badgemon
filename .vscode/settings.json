@@ -19,5 +19,6 @@
         "span": "c",
         "valarray": "c",
         "ratio": "c"
-    }
+    },
+    "cortex-debug.variableUseNaturalFormat": true
 }
