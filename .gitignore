@@ -2,6 +2,8 @@ __pycache__
 .obsidian
 .idea
 .venv
+*.pyi
 
 # Libararies
 aioble
+.lastsynced
