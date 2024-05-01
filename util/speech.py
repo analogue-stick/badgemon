@@ -6,6 +6,12 @@ import math
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 
+from ctx import Context
+
+MAX_LINE_WIDTH = 200
+BOX_WIDTH = 200
+BOX_HEIGHT = 40
+
 class SpeechDialog:
     def __init__(self, app, speech: str):
         self.speech = speech
@@ -13,13 +19,17 @@ class SpeechDialog:
         self.app = app
         self.open = False
         self.state = "CLOSED"
+        self.current_line = 1
+        self.current_line_visually = 1
 
     def update(self, delta):
         if self.open:
             if self.state == "CLOSED":
                 self.state = "OPENING"
                 self.opened_amount = 0.0
-
+                self.lines = []
+                self.current_line = 1
+                self.current_line_visually = 1
                 eventbus.on(ButtonDownEvent, self._handle_buttondown, self.app)
             if self.state == "OPENING":
                 if self.opened_amount > 0.99:
@@ -33,75 +43,60 @@ class SpeechDialog:
                     self.opened_amount = 0.0
                     self.state = "CLOSED"
                     self.open = False
+                    self.lines = []
                     return
                 weight = math.pow(0.8, (delta/10000))
                 self.opened_amount = self.opened_amount * weight
-            elif self.selected_visually != self.selected:
+            if self.current_line_visually != self.current_line:
                 weight = math.pow(0.8, (delta/10000))
-                self.selected_visually = (self.selected_visually * (weight)) + (self.selected * (1-weight))
+                self.current_line_visually = (self.current_line_visually * (weight)) + (self.current_line * (1-weight))
 
-    def draw_focus_plane(self, ctx, width):
-        ctx.rgba(0.5, 0.5, 0.5, 0.5).rectangle((-80)*width, -120, (160)*width, 240).fill()
-    def draw_header_plane(self, ctx, width):
-        ctx.rgba(0.1, 0.1, 0.1, 0.5).rectangle((-80)*width, -110, (160)*width, 40).fill()
-
-    def draw_text(self, ctx, choice: str, ypos: int, select: bool, header: bool=False):
-        text_width = ctx.text_width(choice)
-        text_height = ctx.font_size
-        
-        if select:
-            col = ctx.rgb(1.0,0.3,0.0)
-        elif header:
-            col = ctx.rgb(1.0,0.9,0.9)
-        else:
-            col = ctx.gray(0)
-        col.move_to(0 - text_width / 2, text_height / 8 + ypos)\
-            .text(choice)
+    def draw_focus_plane(self, ctx, height):
+        ctx.rgba(0.5, 0.5, 0.5, 0.5).rectangle(-120, (-BOX_HEIGHT)*height, 240, (BOX_HEIGHT*2)*height).fill()
+        col = ctx.rgba(0.2, 0.2, 0.2, 0.5)
+        col.move_to(-120,(-BOX_HEIGHT)*height).line_to(120,(-BOX_HEIGHT)*height).stroke()
+        col.move_to(-120,(BOX_HEIGHT)*height).line_to(120,(BOX_HEIGHT)*height).stroke()
+    def draw_text(self, ctx, line: str, ypos: int):
+        ctx.gray(0).move_to(0, ypos).text(line)
 
     def draw(self, ctx):
         if self.open:
+            ctx.text_baseline = Context.MIDDLE
+            ctx.text_align = Context.CENTER
             if not self.lines:
                 line = ""
                 for word in self.speech.split():
-                    if ctx.
-                    
-            if self.state == "OPENING" or self.state == "CLOSING":
-                self.draw_focus_plane(ctx, self.opened_amount)
-                if self.current_header != "":
-                    self.draw_header_plane(ctx, self.opened_amount)
-            else:
-                self.draw_focus_plane(ctx, self.opened_amount)
-                for i, choice in enumerate(self.current_tree):
-                    ypos = (i-self.selected_visually)*30
-                    self.draw_text(ctx, choice[0], ypos, self.selected == i)
-                if self.current_header != "":
-                    self.draw_header_plane(ctx, self.opened_amount)
-                    self.draw_text(ctx, self.current_header, -80, False, header=True)
-
+                    if ctx.text_width(line+" "+word) < MAX_LINE_WIDTH:
+                        line = line + " " + word
+                    else:
+                        self.lines.append(line)
+                        line = word
+                if line != "":
+                    self.lines.append(line)
+                if len(self.lines) == 0:
+                    self._cleanup()
+                    return
+                elif len(self.lines) == 1:
+                    self.current_line = 0
+                    self.current_line_visually = 0
+                elif len(self.lines) == 2:
+                    self.current_line = 0.5
+                    self.current_line_visually = 0.5
+            self.draw_focus_plane(ctx, self.opened_amount)
+            clip = ctx.rectangle(-120, (-BOX_HEIGHT)*self.opened_amount, 240, (BOX_HEIGHT*2)*self.opened_amount).clip()
+            for i, line in enumerate(self.lines):
+                ypos = (i-self.current_line_visually)*ctx.font_size
+                self.draw_text(clip, line, ypos)
+            
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if event.button == 0:
-            self.selected = (self.selected - 1 + len(self.current_tree)) % len(self.current_tree)
-        if event.button == 3:
-            self.selected = (self.selected + 1 + len(self.current_tree)) % len(self.current_tree)
-        if 0 < event.button < 3:
-            c = self.current_tree[self.selected][1]
-            if isinstance(c, FunctionType):
-                c(self.app)
-                self._cleanup()
-                return
-            self.previous_trees.append(self.current_tree)
-            self.previous_headers.append(self.current_header)
-            self.current_header = self.current_tree[self.selected][0]
-            self.current_tree = c
-            self.selected = 0
-        if 3 < event.button < 6:
-            if self.previous_trees:
-                self.current_tree = self.previous_trees.pop()
-                self.current_header = self.previous_headers.pop()
-                self.selected = 0
-                return
+        if len(self.lines) < 4:
             self._cleanup()
             return
+        if self.current_line >= len(self.lines) -1:
+            self._cleanup()
+            return
+        else:
+            self.current_line += 1
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.app)
@@ -109,7 +104,7 @@ class SpeechDialog:
 
 class SpeechExample():
     def __init__(self):
-        self.speecn = SpeechDialog(
+        self.speech = SpeechDialog(
             app=self,
             speech="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
         )
@@ -132,4 +127,5 @@ class SpeechExample():
 
     def draw(self, ctx):
         self.draw_background(ctx)
+        ctx.font_size = 25
         self.speech.draw(ctx)

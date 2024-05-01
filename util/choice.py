@@ -8,6 +8,8 @@ from types import FunctionType
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 
+from ctx import Context
+
 ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
 class ChoiceDialog:
@@ -45,12 +47,15 @@ class ChoiceDialog:
                     return
                 weight = math.pow(0.8, (delta/10000))
                 self.opened_amount = self.opened_amount * weight
-            elif self.selected_visually != self.selected:
+            if self.selected_visually != self.selected:
                 weight = math.pow(0.8, (delta/10000))
                 self.selected_visually = (self.selected_visually * (weight)) + (self.selected * (1-weight))
 
     def draw_focus_plane(self, ctx, width):
         ctx.rgba(0.5, 0.5, 0.5, 0.5).rectangle((-80)*width, -120, (160)*width, 240).fill()
+        col = ctx.rgba(0.2, 0.2, 0.2, 0.5)
+        col.move_to((-80)*width,-120).line_to((-80)*width,120).stroke()
+        col.move_to((80)*width,-120).line_to((80)*width,120).stroke()
     def draw_header_plane(self, ctx, width):
         ctx.rgba(0.1, 0.1, 0.1, 0.5).rectangle((-80)*width, -110, (160)*width, 40).fill()
 
@@ -69,18 +74,17 @@ class ChoiceDialog:
 
     def draw(self, ctx):
         if self.open:
-            if self.state == "OPENING" or self.state == "CLOSING":
-                self.draw_focus_plane(ctx, self.opened_amount)
-                if self.current_header != "":
-                    self.draw_header_plane(ctx, self.opened_amount)
-            else:
-                self.draw_focus_plane(ctx, self.opened_amount)
-                for i, choice in enumerate(self.current_tree):
-                    ypos = (i-self.selected_visually)*30
-                    self.draw_text(ctx, choice[0], ypos, self.selected == i)
-                if self.current_header != "":
-                    self.draw_header_plane(ctx, self.opened_amount)
-                    self.draw_text(ctx, self.current_header, -80, False, header=True)
+            ctx.font_size = 30
+            ctx.text_baseline = Context.MIDDLE
+            ctx.text_align = Context.CENTER
+            clip = ctx.rectangle((-80)*self.opened_amount, -120, (160)*self.opened_amount, 240).clip()
+            self.draw_focus_plane(ctx, self.opened_amount)
+            for i, choice in enumerate(self.current_tree):
+                ypos = (i-self.selected_visually)*ctx.font_size
+                self.draw_text(clip, choice[0], ypos, self.selected == i)
+            if self.current_header != "":
+                self.draw_header_plane(ctx, self.opened_amount)
+                self.draw_text(clip, self.current_header, -80, False, header=True)
 
     def _handle_buttondown(self, event: ButtonDownEvent):
         if event.button == 0:
