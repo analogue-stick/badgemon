@@ -74,6 +74,7 @@ class ChoiceDialog:
 
     def draw(self, ctx):
         if self.open:
+            ctx.save()
             ctx.font_size = 30
             ctx.text_baseline = Context.MIDDLE
             ctx.text_align = Context.CENTER
@@ -85,6 +86,7 @@ class ChoiceDialog:
             if self.current_header != "":
                 self.draw_header_plane(ctx, self.opened_amount)
                 self.draw_text(clip, self.current_header, -80, False, header=True)
+            ctx.restore()
 
     def _handle_buttondown(self, event: ButtonDownEvent):
         if event.button == 0:

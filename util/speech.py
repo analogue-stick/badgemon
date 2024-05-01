@@ -61,6 +61,8 @@ class SpeechDialog:
 
     def draw(self, ctx):
         if self.open:
+            ctx.save()
+            ctx.font_size = 25
             ctx.text_baseline = Context.MIDDLE
             ctx.text_align = Context.CENTER
             if not self.lines:
@@ -87,6 +89,7 @@ class SpeechDialog:
             for i, line in enumerate(self.lines):
                 ypos = (i-self.current_line_visually)*ctx.font_size
                 self.draw_text(clip, line, ypos)
+            ctx.restore()
             
     def _handle_buttondown(self, event: ButtonDownEvent):
         if len(self.lines) < 4:
@@ -127,5 +130,4 @@ class SpeechExample():
 
     def draw(self, ctx):
         self.draw_background(ctx)
-        ctx.font_size = 25
         self.speech.draw(ctx)
