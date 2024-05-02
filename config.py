@@ -1,0 +1,1 @@
+ASSET_PATH = "../modules/apps/badgemon/assets/"

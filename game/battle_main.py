@@ -6,7 +6,7 @@ try:
 except ImportError:
     pass
 
-from game import constants, mons, moves, calculation, player
+from ..game import constants, mons, moves, calculation, player
 
 
 class Actions:

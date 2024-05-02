@@ -1,14 +1,21 @@
 import math
 import random
-from game import constants
+from ..game import constants
 
 try:
     from typing import Callable, List, Union, TYPE_CHECKING
     if TYPE_CHECKING:
-        from game import battle_main, mons
-        move_special_callback_typ = Callable[[battle_main.Battle, mons.Mon, mons.Mon, int], bool]
+        from ..game.battle_main import Battle
+        from ..game.mons import Mon
+        move_special_callback_typ = Callable[[Battle, Mon, Mon, int], bool]
+    else:
+        move_special_callback_typ = None.__class__
+        Battle = None.__class__
+        Mon = None.__class__
 except ImportError:
-    pass
+    move_special_callback_typ = None.__class__
+    Battle = None.__class__
+    Mon = None.__class__
 
 class MoveOverrideSpecial:
     """
@@ -41,7 +48,7 @@ class MoveEffect:
         :param chance_to_apply: The chance that status is applied.
         :return: A MoveEffect object containing this effect only.
         """
-        def function(battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int):
+        def function(battle: Battle, user: Mon, target: Mon, damage: int):
             if random.random() < chance_to_apply:
                 return battle.inflict_status(user, target, status)
 
@@ -56,7 +63,7 @@ class MoveEffect:
         :param pct: The amount of damage to deal back to the user.
         :return: A MoveEffect object containing this effect only.
         """
-        def function(battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int):
+        def function(battle: Battle, user: Mon, target: Mon, damage: int):
             battle.deal_damage(
                 user, target, math.floor(damage * pct), None, "{target} took {damage_taken} recoil damage!"
             )
@@ -78,7 +85,7 @@ class MoveEffect:
         if isinstance(new_fn, MoveEffect):
             new_fn_checked = new_fn.action
 
-        def new_action(battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int) -> bool:
+        def new_action(battle: Battle, user: Mon, target: Mon, damage: int) -> bool:
             outcome = old_fn(battle, user, target, damage)
             if outcome in valid_outcomes:
                 return new_fn_checked(battle, user, target, damage)
@@ -117,7 +124,7 @@ class MoveEffect:
         """
         return self._extend_with_condition(new_fn, [True])
 
-    def execute(self, battle: battle_main.Battle, user: mons.Mon, target: mons.Mon, damage: int):
+    def execute(self, battle: Battle, user: Mon, target: Mon, damage: int):
         """
         Do it. Call this when the move is used - after damage is calculated and dealt. If the move missed, still call
          this, but use the predicted damage rather than the actual damage.

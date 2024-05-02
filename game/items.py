@@ -3,7 +3,7 @@ try:
 except ImportError:
     pass
 
-from game import player, battle_main, mons
+from ..game import player, battle_main, mons
 
 
 class FieldTargetingType:

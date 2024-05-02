@@ -1,13 +1,13 @@
 from struct import pack
 import time
 
-from game.badgedex import Badgedex
+from ..game.badgedex import Badgedex
 
 try:
     from typing import List, Tuple, Union, TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from game import mons, items, moves, battle_main
+        from ..game import mons, items, moves, battle_main
 except ImportError:
     pass
 
