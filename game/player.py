@@ -7,14 +7,24 @@ try:
     from typing import List, Tuple, Union, TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ..game import mons, items, moves, battle_main
+        from ..game.mons import Mon
+        from ..game.items import Item
+        from ..game.moves import Move
+        from ..game.battle_main import Battle
+    else:
+        Mon = None.__class__
+        Item = None.__class__
+        Move = None.__class__
+        Battle = None.__class__
+        from ..game.items import items_list
 except ImportError:
     pass
 
-_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
+#_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
+_TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List[mons.Mon], badgemon_case: List[mons.Mon], inventory: List[Tuple[items.Item, int]]):
+    def __init__(self, name: str, badgemon: List[Mon], badgemon_case: List[Mon], inventory: List[Tuple[Item, int]]):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
@@ -34,7 +44,7 @@ class Player:
 
         self.random_encounters = True
 
-        self.battle_context: Union[battle_main.Battle, None] = None
+        self.battle_context: Union[Battle, None] = None
 
     def serialise(self):
         data = bytearray()
@@ -67,7 +77,7 @@ class Player:
         for _ in range(mons_len):
             mon_len = data[offset]
             offset += 1
-            mon = mons.Mon.deserialise(data[offset:offset + mon_len])
+            mon = Mon.deserialise(data[offset:offset + mon_len])
             badgemon.append(mon)
             offset += mon_len
 
@@ -76,13 +86,13 @@ class Player:
         offset += 1
         for _ in range(inv_len):
             item_id, count = data[offset:offset + 2]
-            item = items.items_list[item_id]
+            item = items_list[item_id]
             inventory.append((item, count))
             offset += 1
 
         return Player(name, badgemon, inventory)
 
-    def get_move(self) -> Tuple[int, Union[mons.Mon, items.Item, moves.Move, None]]:
+    def get_move(self) -> Tuple[int, Union[Mon, Item, Move, None]]:
         """
         This is overridden by any parent class handling user interactions.
         """

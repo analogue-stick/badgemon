@@ -20,6 +20,18 @@ class ChoiceDialog:
         self.open = False
         self.state = "CLOSED"
 
+    def set_choices(self, choices: ChoiceTree=[], header = None):
+        self.tree = choices
+        if header is not None:
+            self.header = header
+        if self.state != "CLOSED":
+            self.previous_trees = []
+            self.current_tree = self.tree
+            self.selected = 0
+            self.selected_visually = 0
+            self.previous_headers = []
+            self.current_header = self.header
+
     def update(self, delta):
         if self.open:
             if self.state == "CLOSED":
@@ -69,7 +81,7 @@ class ChoiceDialog:
             col = ctx.rgb(1.0,0.9,0.9)
         else:
             col = ctx.gray(0)
-        col.move_to(0 - text_width / 2, text_height / 8 + ypos)\
+        col.move_to(0, ypos)\
             .text(choice)
 
     def draw(self, ctx):

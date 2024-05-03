@@ -7,7 +7,7 @@ except ImportError:
     pass
 
 import random
-from ..game import mons, items, moves, battle_main, player
+from .game import mons, items, moves, battle_main, player
 
 potion = items.items_list[0]
 mon_template = mons.mons_list[0]

@@ -1,12 +1,31 @@
+from typing import Tuple
+from ..main import Cpu
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 from ..util.speech import SpeechDialog
+from ..util.choice import ChoiceDialog
 from ..util.misc import *
 
 from ..config import *
 
 from ..game.mons import Mon, mons_list
+from ..game.items import Item, items_list
+from ..game.moves import Move
+from ..game.battle_main import Battle as BContext
+from ..game.battle_main import Actions
+from ..game.player import Player
 from ctx import Context
+
+from asyncio import Event
+
+potion = items_list[0]
+mon_template1 = mons_list[0]
+mon_template2 = mons_list[1]
+mon1 = Mon(mon_template1, 5).set_nickname("small guy")
+mon2 = Mon(mon_template2, 17).set_nickname("mr. 17")
+mon3 = Mon(mon_template1, 17).set_nickname("David")
+mon4 = Mon(mon_template2, 33).set_nickname("large individual")
+mon5 = Mon(mon_template1, 100).set_nickname("biggest dude")
 
 def draw_mon(ctx, monIndex, x, y, flipx, flipy, scale):
     ctx.image_smoothing = 0
@@ -25,25 +44,54 @@ def draw_mon(ctx, monIndex, x, y, flipx, flipy, scale):
     ctx.scale(xscale,yscale)
 
 class Battle():
-    def __init__(self, this_mon: Mon, that_mon: Mon, debug=False):
+    def __init__(self, battle_context: BContext, debug=False):
         if debug:
-            self.this_mon = Mon(mons_list[0], 17).set_nickname("mr. 17")
-            self.that_mon = Mon(mons_list[1], 5).set_nickname("small guy")
-        else:    
-            self.this_mon = this_mon
-            self.that_mon = that_mon
+            player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
+            player_a.get_move = self.get_move
+            player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
+            self.battle_context = BContext(player_a, player_b, True)
+            self.battle_context.do_battle
+        else:
+            self.battle_context = battle_context
         self.speech = SpeechDialog(
             app=self,
             speech="Battle Testing!"
         )
+        self.choice = ChoiceDialog(
+            app=self,
+            header="BATTLE?!"
+        )
+        self.next_move = None
+        self.next_move_available = Event()
+        self.gen_choice_dialog()
         eventbus.on(ButtonDownEvent, self._handle_buttondown, self)
 
+    def gen_choice_dialog(self):
+        self.choice.set_choices(
+                    [
+                ("Attack", [
+                    (m.name,lambda a: a.do_move(m)) for m in self.battle_context.mon1.moves
+                ]),
+                ("Item", [
+                    (f"{count}x {item.name}",lambda a: a.do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self.battle_context.player1.inventory))
+                ]),
+                ("Swap Mon", [
+                    (m.nickname,lambda a: a.do_mon(m)) for m in filter(lambda b: not b.fainted, self.battle_context.player1.badgemon)
+                ]),
+                ("Run Away", [
+                    ("Confirm", lambda a: a.run_away())
+                ])
+            ],
+            "BATTLE?!"
+        )
+
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if not self.speech.open:
-            self.speech.open = True
+        if not self.choice.open:
+            self.gen_choice_dialog()
+            self.choice.open = True
 
     def update(self, delta):
-        self.speech.update(delta)
+        self.choice.update(delta)
 
     async def background_update(self):
         pass
@@ -52,8 +100,8 @@ class Battle():
         ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
 
     def draw_mons(self, ctx):
-        draw_mon(ctx, self.that_mon.template.sprite, 0, -(32*3), False, False, 3)
-        draw_mon(ctx, self.this_mon.template.sprite, 0, 0, True, False, 3)
+        draw_mon(ctx, self.battle_context.mon2.template.sprite, 0, -(32*3), False, False, 3)
+        draw_mon(ctx, self.battle_context.mon1.template.sprite, 0, 0, True, False, 3)
 
     def draw_health(self, ctx: Context):
         x = 10
@@ -62,8 +110,8 @@ class Battle():
         radius = 10
         border = 3
         
-        other_health = (self.that_mon.hp / self.that_mon.template.base_hp)
-        us_health = (self.this_mon.hp / self.this_mon.template.base_hp)
+        other_health = (self.battle_context.mon2.hp / self.battle_context.mon2.template.base_hp)
+        us_health = (self.battle_context.mon1.hp / self.battle_context.mon1.template.base_hp)
 
         ctx.gray(0)
         ctx.round_rectangle(-x-width-border, -y-border, width+border*2, radius+border*2, radius).fill()
@@ -81,9 +129,9 @@ class Battle():
         ctx.font_size = 20
         ctx.text_baseline = Context.MIDDLE
         ctx.text_align = Context.RIGHT
-        ctx.move_to(-x,-y).text(self.that_mon.nickname)
+        ctx.move_to(-x,-y).text(self.battle_context.mon2.nickname)
         ctx.text_align = Context.LEFT
-        ctx.move_to(x,y).text(self.this_mon.nickname)
+        ctx.move_to(x,y).text(self.battle_context.mon1.nickname)
 
     def your_turn(self, ctx: Context):
         ctx.text_baseline = Context.MIDDLE
@@ -149,4 +197,38 @@ class Battle():
         self.draw_health(ctx)
         self.draw_names(ctx)
         self.their_turn(ctx)
-        self.speech.draw(ctx)
+        self.choice.draw(ctx)
+
+    def do_move(self, move: Move):
+        self.next_move = move
+        self.next_move_available.set()
+
+    def run_away(self):
+        self.next_move = None
+        self.next_move_available.set()
+    
+    def do_item(self, index: int, item: Item, count: int):
+        count -= 1
+        if count == 0:
+            self.battle_context.player1.inventory.pop(index)
+        else:
+            self.battle_context.player1.inventory[index] = (item, count)  # decrease stock
+        self.next_move = item
+        self.next_move_available.set()
+        
+    def do_mon(self, mon: Mon):
+        self.next_move = mon
+        self.next_move_available.set()
+
+    async def get_move(self):
+        await self.next_move_available.wait()
+        self.next_move_available.clear()
+        if isinstance(self.next_move, Mon):
+            return (Actions.SWAP_MON, self.next_move)
+        elif isinstance(self.next_move, Item):
+            return (Actions.USE_ITEM, self.next_move)
+        elif isinstance(self.next_move, Move):
+            return (Actions.MAKE_MOVE, self.next_move)
+        elif isinstance(self.next_move, None):
+            return (Actions.RUN_AWAY, self.next_move)
+        return (Actions.RUN_AWAY, None)
