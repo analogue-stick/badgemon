@@ -1,22 +1,16 @@
 from struct import pack
 import time
 
-from ..game.badgedex import Badgedex
+from . import items, badgedex
 
 try:
     from typing import List, Tuple, Union, TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from ..game.mons import Mon
-        from ..game.items import Item
-        from ..game.moves import Move
-        from ..game.battle_main import Battle
-    else:
-        Mon = None.__class__
-        Item = None.__class__
-        Move = None.__class__
-        Battle = None.__class__
-        from ..game.items import items_list
+        from .mons import Mon
+        from .items import Item
+        from .moves import Move
+        from .battle_main import Battle
 except ImportError:
     pass
 
@@ -24,7 +18,7 @@ except ImportError:
 _TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List[Mon], badgemon_case: List[Mon], inventory: List[Tuple[Item, int]]):
+    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: List[Tuple['Item', int]]):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
@@ -40,11 +34,11 @@ class Player:
         self.inventory = inventory
         self.last_heal = time.ticks_ms()
 
-        self.badgedex = Badgedex()
+        self.badgedex = badgedex.Badgedex()
 
         self.random_encounters = True
 
-        self.battle_context: Union[Battle, None] = None
+        self.battle_context: Union['Move', None] = None
 
     def serialise(self):
         data = bytearray()
@@ -86,18 +80,19 @@ class Player:
         offset += 1
         for _ in range(inv_len):
             item_id, count = data[offset:offset + 2]
-            item = items_list[item_id]
+            item = items.items_list[item_id]
             inventory.append((item, count))
             offset += 1
 
         return Player(name, badgemon, inventory)
 
-    def get_move(self) -> Tuple[int, Union[Mon, Item, Move, None]]:
+    def get_move(self) -> Tuple[int, Union['Mon', 'Item', 'Move', None]]:
         """
         This is overridden by any parent class handling user interactions.
         """
         pass
 
+    @staticmethod
     def get_meters_walked():
         return time.ticks_ms()/1000
 

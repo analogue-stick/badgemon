@@ -1,4 +1,4 @@
-from ..game.mons import mons_list
+from .mons import mons_list
 
 class Badgedex:
     def __init__(self):

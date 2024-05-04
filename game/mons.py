@@ -7,7 +7,7 @@ try:
 except ImportError:
     pass
 
-from ..game import moves, abilities, constants
+from . import moves, abilities, constants
 
 
 class MonTemplate:
@@ -18,7 +18,7 @@ class MonTemplate:
 
     def __init__(self, name: str, desc: str, type1: constants.MonType, type2: constants.MonType,
                  ability: int,
-                 evolve_mon: Union["MonTemplate", None], evolve_level: Union[int, None],
+                 evolve_mon: Union['MonTemplate', None], evolve_level: Union[int, None],
                  base_hp: int, base_atk: int, base_def: int,
                  base_spatk: int, base_spdef: int, base_spd: int,
                  learnset: List[Tuple[moves.Move, int]],
