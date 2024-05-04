@@ -1,5 +1,4 @@
 import asyncio
-import gc9a01
 from machine import Pin, SPI
 import app
 import protocol
@@ -12,16 +11,7 @@ async def main():
         # set up the screen and bluetooth
         ctx.bluetooth_device = protocol.BluetoothDevice()
 
-        spi = SPI(1, baudrate=60000000, sck=Pin(10), mosi=Pin(11))
-        ctx.screen = gc9a01.GC9A01(
-            spi,
-            240,
-            240,
-            reset=Pin(12, Pin.OUT),
-            cs=Pin(9, Pin.OUT),
-            dc=Pin(8, Pin.OUT),
-            backlight=Pin(40, Pin.OUT),
-        )
+        ctx.screen = None
         ctx.screen.init()
 
         # set up and run the input handler
