@@ -3,14 +3,14 @@ import display
 import gc
 import math
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from types import FunctionType
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 
 from ctx import Context
 
-ChoiceTree = List[Tuple[str, 'ChoiceTree' | FunctionType]]
+ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
 class ChoiceDialog:
     def __init__(self, app, choices: ChoiceTree=[], header = ""):
@@ -31,7 +31,7 @@ class ChoiceDialog:
         if self.is_open():
             self._cleanup()
 
-    def set_choices(self, choices: ChoiceTree=[], header: str | None = None):
+    def set_choices(self, choices: ChoiceTree=[], header: Union[str, None] = None):
         self._tree = choices
         if header is not None:
             self._header = header
