@@ -266,6 +266,8 @@ class Mon:
         self.hp = max(0, min(self.stats[0], self.hp))
 
         self.fainted = self.hp <= 0
+        if self.fainted:
+            self.status = constants.StatusEffect.NO_EFFECT
 
         return self.hp - original
 
@@ -291,7 +293,33 @@ class Mon:
             return True
         else:
             return False
+        
+    def heal_status(self, status: Union[constants.StatusEffect, None]):
+        '''
+        Heals the status "status", or does nothing
 
+        @returns True if the status was healed
+        '''
+        if status is None or self.status == status:
+            self.status = constants.StatusEffect.NO_EFFECT
+            return True
+        else:
+            return False
+
+    def revive(self, half = False):
+        if self.fainted:
+            self.fainted = False
+            self.hp = self.stats[0]
+            if half:
+                self.hp >>= 1
+            return True
+        else:
+            return False
+        
+    def modify_pp(self, by: int) -> int:
+        for i in range(min(len(self.pp), len(self.moves))):
+            self.pp[i] += by
+            self.pp[i] = max(0, min(self.moves[i].max_pp, self.pp[i]))
 
 mons_list = [
     MonTemplate(
