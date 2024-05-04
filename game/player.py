@@ -1,4 +1,5 @@
 from struct import pack
+import random
 import time
 
 from . import items, badgedex
@@ -10,7 +11,6 @@ try:
         from .mons import Mon
         from .items import Item
         from .moves import Move
-        from .battle_main import Battle
 except ImportError:
     pass
 
@@ -111,3 +111,9 @@ class Player:
             print("Healed!")
         else:
             print(f"Heal is not allowed for another {(_TIME_BETWEEN_HEALS-diff)/1000} seconds")
+
+class Cpu(Player):
+
+    def get_move(self) -> Tuple[int, Union['Mon', 'Item', 'Move', None]]:
+        mon = self.battle_context.mon2
+        return 0, random.choice(mon.moves)

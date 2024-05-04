@@ -1,4 +1,3 @@
-from ..main import Cpu
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 from ..util.speech import SpeechDialog
@@ -12,7 +11,7 @@ from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
 from ..game.battle_main import Actions
-from ..game.player import Player
+from ..game.player import Player, Cpu
 from ctx import Context
 
 from asyncio import Event
