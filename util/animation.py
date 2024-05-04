@@ -105,6 +105,10 @@ class AnimationEvent(Animation):
     def on_anim_end(self, *args, **kwargs) -> None:
         self._trigger_event.set()
         return super().on_anim_end(*args, **kwargs)
+    
+    def reset(self) -> None:
+        self._trigger_event.clear()
+        return super().reset()
 
 class AnimationWait(Animation):
     pass
