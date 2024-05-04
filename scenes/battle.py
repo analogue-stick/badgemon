@@ -1,4 +1,3 @@
-from typing import Tuple
 from ..main import Cpu
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
@@ -27,7 +26,7 @@ mon3 = Mon(mon_template1, 17).set_nickname("David")
 mon4 = Mon(mon_template2, 33).set_nickname("large individual")
 mon5 = Mon(mon_template1, 100).set_nickname("biggest dude")
 
-def draw_mon(ctx, monIndex, x, y, flipx, flipy, scale):
+def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx, bool, flipy: bool, scale: int):
     ctx.image_smoothing = 0
     if flipx:
         xscale = -1
@@ -44,13 +43,13 @@ def draw_mon(ctx, monIndex, x, y, flipx, flipy, scale):
     ctx.scale(xscale,yscale)
 
 class Battle():
-    def __init__(self, battle_context: BContext, debug=False):
+    def __init__(self, battle_context: BContext, debug: bool = False):
         if debug:
             player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
             player_a.get_move = self.get_move
             player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
             self.battle_context = BContext(player_a, player_b, True)
-            self.battle_context.do_battle
+            #TODO: self.battle_context.do_battle
         else:
             self.battle_context = battle_context
         self.speech = SpeechDialog(
@@ -61,7 +60,7 @@ class Battle():
             app=self,
             header="BATTLE?!"
         )
-        self.next_move = None
+        self.next_move: Mon | Item | Move | None = None
         self.next_move_available = Event()
         self.gen_choice_dialog()
         eventbus.on(ButtonDownEvent, self._handle_buttondown, self)
@@ -90,16 +89,16 @@ class Battle():
             self.gen_choice_dialog()
             self.choice.open = True
 
-    def update(self, delta):
+    def update(self, delta: float):
         self.choice.update(delta)
 
     async def background_update(self):
         pass
 
-    def draw_background(self, ctx):
+    def draw_background(self, ctx: Context):
         ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
 
-    def draw_mons(self, ctx):
+    def draw_mons(self, ctx: Context):
         draw_mon(ctx, self.battle_context.mon2.template.sprite, 0, -(32*3), False, False, 3)
         draw_mon(ctx, self.battle_context.mon1.template.sprite, 0, 0, True, False, 3)
 
@@ -190,7 +189,7 @@ class Battle():
         ctx.line_width = 5
         ctx.arc(0,0,115,0,6.28,0).stroke()
 
-    def draw(self, ctx):
+    def draw(self, ctx: Context):
         ctx.line = ctx_line
         self.draw_background(ctx)
         self.draw_mons(ctx)

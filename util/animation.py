@@ -1,6 +1,6 @@
 from asyncio import Event
 import math
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 class Animation:
     def __init__(self, length: int=1000, infinite=False) -> None:
@@ -182,6 +182,14 @@ class EditorAnim(Animation):
     def update(self, time: float) -> None:
         self._editor(self._fun(self._start,self._end,time))
         return super().update(time)
+    
+    def on_anim_start(self) -> None:
+        self._editor(self._start)
+        return super().on_anim_start()
+
+    def on_anim_end(self) -> None:
+        self._editor(self._end)
+        return super().on_anim_end()
 
 class AnimLerp(EditorAnim):
     _fun = lerp
