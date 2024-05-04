@@ -3,8 +3,7 @@ try:
 except ImportError:
     pass
 
-from game import constants, player, battle_main, mons
-
+from . import constants, player, battle_main, mons
 
 class FieldTargetingType:
     NOT_USABLE = 0

@@ -5,7 +5,7 @@ try:
 except ImportError:
     pass
 
-from game import constants
+from . import constants
 
 STAGES = [33, 36, 43, 50, 60, 75, 100, 133, 166, 200, 233, 266, 300]
 

@@ -7,7 +7,7 @@ try:
 except ImportError:
     pass
 
-from game import moves, abilities, constants
+from . import moves, abilities, constants
 
 
 class MonTemplate:
@@ -18,10 +18,11 @@ class MonTemplate:
 
     def __init__(self, name: str, desc: str, type1: constants.MonType, type2: constants.MonType,
                  ability: int,
-                 evolve_mon: Union["MonTemplate", None], evolve_level: Union[int, None],
+                 evolve_mon: Union['MonTemplate', None], evolve_level: Union[int, None],
                  base_hp: int, base_atk: int, base_def: int,
                  base_spatk: int, base_spdef: int, base_spd: int,
-                 learnset: List[Tuple[moves.Move, int]]):
+                 learnset: List[Tuple[moves.Move, int]],
+                 sprite: int):
         """
         :param name: Name of the mon
         :param desc: Description (dex entry)
@@ -38,6 +39,7 @@ class MonTemplate:
         :param base_spd: Base SPD
         :param learnset: The moves this mon learns. At each specified level,
         the mon tries to learn the move. Must be sorted from low to high, e.g. [[Move1, 2], [Move2, 10], ...]
+        :param sprite: The sprite index to use for this mon, E.G. mon-X.png
         """
         self.id = MonTemplate.id_inc
         MonTemplate.id_inc += 1
@@ -61,6 +63,8 @@ class MonTemplate:
         ]
 
         self.learnset = learnset
+
+        self.sprite = sprite
 
 
 class Mon:
@@ -319,7 +323,7 @@ class Mon:
 
 mons_list = [
     MonTemplate(
-        "guy", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
+        "Tetris", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
         abilities.Ability.NO_ABILITY, None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[0], 5),
@@ -329,6 +333,21 @@ mons_list = [
             (moves.moves_list[4], 21),
             (moves.moves_list[5], 30),
             (moves.moves_list[6], 40)
-        ]
+        ],
+        0
+    ),
+    MonTemplate(
+        "EMF Duck", "quack", constants.MonType.FIGHTING, constants.MonType.FIRE,
+        abilities.Ability.NO_ABILITY, None, None,
+        85, 135, 130, 60, 70, 25, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[2], 8),
+            (moves.moves_list[3], 13),
+            (moves.moves_list[4], 21),
+            (moves.moves_list[5], 30),
+            (moves.moves_list[6], 40)
+        ],
+        1
     )
 ]
