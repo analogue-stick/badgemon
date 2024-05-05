@@ -6,19 +6,28 @@ import math
 from typing import List, Tuple, Union
 from types import FunctionType
 from system.eventbus import eventbus
-from events.input import ButtonDownEvent
+from events.input import ButtonDownEvent, Button
+from app import App
 
 from ctx import Context
 
 ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
 class ChoiceDialog:
-    def __init__(self, app, choices: ChoiceTree=[], header = ""):
+    def __init__(self, app: App, choices: ChoiceTree=[], header = ""):
         self._tree = choices
         self._app = app
         self._header = header
         self._open = False
         self._state = "CLOSED"
+        
+        self._previous_trees = []
+        self._current_tree = self._tree
+        self._selected = 0
+        self._selected_visually = 0
+        self._opened_amount = 0.0
+        self._previous_headers = []
+        self._current_header = self._header
 
     def is_open(self):
         return self._open
@@ -60,7 +69,7 @@ class ChoiceDialog:
                     self._opened_amount = 1.0
                     self._state = "OPEN"
                     return
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._opened_amount = (self._opened_amount * (weight)) + (1-weight)
             elif self._state == "CLOSING":
                 if self._opened_amount < 0.01:
@@ -68,10 +77,10 @@ class ChoiceDialog:
                     self._state = "CLOSED"
                     self._open = False
                     return
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
             if self._selected_visually != self._selected:
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._selected_visually = (self._selected_visually * (weight)) + (self._selected * (1-weight))
 
     def _draw_focus_plane(self, ctx: Context, width: float):
@@ -112,35 +121,39 @@ class ChoiceDialog:
             ctx.restore()
 
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if event.button == 0:
-            self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
-        if event.button == 3:
-            self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
-        if 0 < event.button < 3:
-            c = self._current_tree[self._selected][1]
-            if isinstance(c, FunctionType):
-                c(self._app)
+        parent: Button = event.button.parent
+        while parent.parent is not None and parent.group != "System":
+            parent = parent.parent
+        if parent.group == "System":
+            if parent.name == "UP":
+                self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
+            if parent.name == "DOWN":
+                self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
+            if parent.name == "CONFIRM" or parent.name == "RIGHT":
+                c = self._current_tree[self._selected][1]
+                if isinstance(c, FunctionType):
+                    c(self._app)
+                    self._cleanup()
+                    return
+                self._previous_trees.append(self._current_tree)
+                self._previous_headers.append(self._current_header)
+                self._current_header = self._current_tree[self._selected][0]
+                self._current_tree = c
+                self._selected = 0
+            if parent.name == "CANCEL" or parent.name == "LEFT":
+                if self._previous_trees:
+                    self._current_tree = self._previous_trees.pop()
+                    self._current_header = self._previous_headers.pop()
+                    self._selected = 0
+                    return
                 self._cleanup()
                 return
-            self._previous_trees.append(self._current_tree)
-            self._previous_headers.append(self._current_header)
-            self._current_header = self._current_tree[self._selected][0]
-            self._current_tree = c
-            self._selected = 0
-        if 3 < event.button < 6:
-            if self._previous_trees:
-                self._current_tree = self._previous_trees.pop()
-                self._current_header = self._previous_headers.pop()
-                self._selected = 0
-                return
-            self._cleanup()
-            return
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
         self._state = "CLOSING"
 
-class ChoiceExample():
+class ChoiceExample(App):
     def __init__(self):
         self._choice = ChoiceDialog(
             app=self,

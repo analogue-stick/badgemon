@@ -1,6 +1,7 @@
 from ..main import Cpu
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
+from app import App
 from ..util.speech import SpeechDialog
 from ..util.choice import ChoiceDialog
 from ..util.misc import *
@@ -42,7 +43,7 @@ def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx: bool, flipy
     ctx.translate(-x,-y)
     ctx.scale(xscale,yscale)
 
-class Battle():
+class Battle(App):
     def __init__(self, battle_context: BContext, debug: bool = False):
         if debug:
             player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
