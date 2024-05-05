@@ -5,6 +5,7 @@ import math
 
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent
+from app import App
 
 from ctx import Context
 
@@ -13,7 +14,7 @@ BOX_WIDTH = 200
 BOX_HEIGHT = 40
 
 class SpeechDialog:
-    def __init__(self, app, speech: str):
+    def __init__(self, app: App, speech: str):
         self._speech = speech
         self._lines: list[str] = []
         self._app = app
@@ -21,6 +22,8 @@ class SpeechDialog:
         self._state = "CLOSED"
         self._current_line = 1.0
         self._current_line_visually = 1.0
+
+        self._opened_amount = 0.0
 
     def is_open(self):
         return self._open
@@ -53,7 +56,7 @@ class SpeechDialog:
                     self._opened_amount = 1.0
                     self._state = "OPEN"
                     return
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._opened_amount = (self._opened_amount * (weight)) + (1-weight)
             elif self._state == "CLOSING":
                 if self._opened_amount < 0.01:
@@ -62,10 +65,10 @@ class SpeechDialog:
                     self._open = False
                     self._lines = []
                     return
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
             if self._current_line_visually != self._current_line:
-                weight = math.pow(0.8, (delta/10000))
+                weight = math.pow(0.8, (delta/10))
                 self._current_line_visually = (self._current_line_visually * (weight)) + (self._current_line * (1-weight))
 
     def _draw_focus_plane(self, ctx: Context, height: float):
@@ -121,7 +124,7 @@ class SpeechDialog:
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
         self._state = "CLOSING"
 
-class SpeechExample():
+class SpeechExample(App):
     def __init__(self):
         self._speech = SpeechDialog(
             app=self,
