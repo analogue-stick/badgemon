@@ -49,7 +49,7 @@ class SpeechDialog:
         self._current_line_visually = 1.0
 
     def _goto_start(self):
-        if len(self._lines) =#= 0:
+        if len(self._lines) == 0:
             self._cleanup()
         elif len(self._lines) == 1:
             self._current_line = 0.0
