@@ -38,8 +38,6 @@ class Player:
 
         self.random_encounters = True
 
-        self.battle_context: Union['Move', None] = None
-
     def serialise(self):
         data = bytearray()
 
@@ -86,11 +84,17 @@ class Player:
 
         return Player(name, badgemon, inventory)
 
-    def get_move(self) -> Tuple[int, Union['Mon', 'Item', 'Move', None]]:
+    async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
         """
         This is overridden by any parent class handling user interactions.
         """
-        pass
+        return None
+
+    async def get_new_badgemon(self) -> 'Mon':
+        """
+        This is overridden by any parent class handling user interactions.
+        """
+        return None
 
     @staticmethod
     def get_meters_walked():
@@ -114,6 +118,10 @@ class Player:
 
 class Cpu(Player):
 
-    def get_move(self) -> Tuple[int, Union['Mon', 'Item', 'Move', None]]:
-        mon = self.battle_context.mon2
-        return 0, random.choice(mon.moves)
+    async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
+        return random.choice(mon.moves)
+    
+    async def get_new_badgemon(self) -> 'Mon':
+        for mon in self.badgemon:
+            if not mon.fainted:
+                return mon

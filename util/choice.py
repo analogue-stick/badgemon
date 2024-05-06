@@ -14,7 +14,7 @@ from ctx import Context
 ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
 class ChoiceDialog:
-    def __init__(self, app: App, choices: ChoiceTree=[], header = ""):
+    def __init__(self, app: App, choices: ChoiceTree=[], header = "", no_exit = False):
         self._tree = choices
         self._app = app
         self._header = header
@@ -28,6 +28,7 @@ class ChoiceDialog:
         self._opened_amount = 0.0
         self._previous_headers = []
         self._current_header = self._header
+        self._no_exit = no_exit
 
     def is_open(self):
         return self._open
@@ -40,7 +41,7 @@ class ChoiceDialog:
         if self.is_open():
             self._cleanup()
 
-    def set_choices(self, choices: ChoiceTree=[], header: Union[str, None] = None):
+    def set_choices(self, choices: ChoiceTree=[], header: Union[str, None] = None, no_exit = False):
         self._tree = choices
         if header is not None:
             self._header = header
@@ -51,6 +52,9 @@ class ChoiceDialog:
             self._selected_visually = 0
             self._previous_headers = []
             self._current_header = self._header
+        self._no_exit = no_exit
+        if no_exit:
+            self.open()
 
     def update(self, delta: float):
         if self.is_open():
@@ -121,7 +125,7 @@ class ChoiceDialog:
             ctx.restore()
 
     def _handle_buttondown(self, event: ButtonDownEvent):
-        parent: Button = event.button.parent
+        parent: Button = event.button
         while parent.parent is not None and parent.group != "System":
             parent = parent.parent
         if parent.group == "System":
@@ -146,7 +150,8 @@ class ChoiceDialog:
                     self._current_header = self._previous_headers.pop()
                     self._selected = 0
                     return
-                self._cleanup()
+                if not self._no_exit:
+                    self._cleanup()
                 return
 
     def _cleanup(self):
