@@ -1,5 +1,6 @@
 {
     "callable": "Battle",
     "name": "Badgemon Green",
-    "category": "Games"
+    "category": "Games",
+    "logo": "assets/logo.png"
 }
