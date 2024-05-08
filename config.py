@@ -1,1 +1,1 @@
-ASSET_PATH = "../modules/apps/badgemon/assets/"
+ASSET_PATH = "/apps/badgemon/assets/"
