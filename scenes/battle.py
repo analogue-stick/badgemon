@@ -125,8 +125,10 @@ class Battle(App):
         ctx.font_size = 20
         ctx.text_baseline = Context.MIDDLE
         ctx.text_align = Context.RIGHT
+        shrink_until_fit(ctx, self._battle_context.mon2.nickname, 90)
         ctx.move_to(-x,-y).text(self._battle_context.mon2.nickname)
         ctx.text_align = Context.LEFT
+        shrink_until_fit(ctx, self._battle_context.mon1.nickname, 90)
         ctx.move_to(x,y).text(self._battle_context.mon1.nickname)
 
     def _your_turn(self, ctx: Context):
