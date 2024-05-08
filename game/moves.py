@@ -43,9 +43,9 @@ class MoveEffect:
         :param chance_to_apply: The chance that status is applied.
         :return: A MoveEffect object containing this effect only.
         """
-        def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
+        async def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
             if random.random() < chance_to_apply:
-                return battle.inflict_status(user, target, status)
+                return await battle.inflict_status(user, target, status)
 
             return False
 
@@ -58,8 +58,8 @@ class MoveEffect:
         :param pct: The amount of damage to deal back to the user.
         :return: A MoveEffect object containing this effect only.
         """
-        def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
-            battle.deal_damage(
+        async def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
+            await battle.deal_damage(
                 user, target, math.floor(damage * pct), None, "{target} took {damage_taken} recoil damage!"
             )
             return True
@@ -80,10 +80,10 @@ class MoveEffect:
         if isinstance(new_fn, MoveEffect):
             new_fn_checked = new_fn.action
 
-        def new_action(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int) -> bool:
-            outcome = old_fn(battle, user, target, damage)
+        async def new_action(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int) -> bool:
+            outcome = await old_fn(battle, user, target, damage)
             if outcome in valid_outcomes:
-                return new_fn_checked(battle, user, target, damage)
+                return await new_fn_checked(battle, user, target, damage)
 
             return False
 
@@ -119,7 +119,7 @@ class MoveEffect:
         """
         return self._extend_with_condition(new_fn, [True])
 
-    def execute(self, battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
+    async def execute(self, battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
         """
         Do it. Call this when the move is used - after damage is calculated and dealt. If the move missed, still call
          this, but use the predicted damage rather than the actual damage.
@@ -129,7 +129,7 @@ class MoveEffect:
         :param damage: The amount of damage the move dealt (or would have done, in the case of a miss)
         :return:
         """
-        self.action(battle, user, target, damage)
+        await self.action(battle, user, target, damage)
 
 
 class Move:

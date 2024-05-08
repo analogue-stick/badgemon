@@ -11,7 +11,6 @@ from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
-from ..game.battle_main import Actions
 from ..game.player import Player, Cpu
 from ctx import Context
 
@@ -44,14 +43,6 @@ def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx: bool, flipy
 
 class Battle(App):
     def __init__(self, battle_context: BContext, debug: bool = False):
-        if debug:
-            player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
-            player_a.get_move = self._get_move
-            player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
-            self._battle_context = BContext(player_a, player_b, True)
-            #TODO: self.battle_context.do_battle
-        else:
-            self._battle_context = battle_context
         self._speech = SpeechDialog(
             app=self,
             speech="Battle Testing!"
@@ -60,6 +51,14 @@ class Battle(App):
             app=self,
             header="BATTLE?!"
         )
+        if debug:
+            player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
+            player_a.get_move = self._get_move
+            player_a.get_new_badgemon = self._get_new_badgemon
+            player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
+            self._battle_context = BContext(player_a, player_b, True, self._speech)
+        else:
+            self._battle_context = battle_context
         self._next_move: Mon | Item | Move | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()
@@ -84,13 +83,23 @@ class Battle(App):
             "BATTLE?!"
         )
 
+    def _gen_new_badgemon_dialog(self):
+        self._choice.set_choices(
+            [
+                (m.nickname,lambda a: a._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+            ],
+            "NEW BDGMON?!",
+            True
+        )
+
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if not self._choice.is_open():
+        if self._battle_context.turn and not self._choice.is_open() and not self._speech.is_open():
             self._gen_choice_dialog()
             self._choice.open()
 
     def update(self, delta: float):
         self._choice.update(delta)
+        self._speech.update(delta)
 
     def _draw_background(self, ctx: Context):
         ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
@@ -194,8 +203,12 @@ class Battle(App):
         self._draw_mons(ctx)
         self._draw_health(ctx)
         self._draw_names(ctx)
-        self._their_turn(ctx)
+        if self._battle_context.turn:
+            self._your_turn(ctx)
+        else:
+            self._their_turn(ctx)
         self._choice.draw(ctx)
+        self._speech.draw(ctx)
 
     def _do_move(self, move: Move):
         self._next_move = move
@@ -218,15 +231,80 @@ class Battle(App):
         self._next_move = mon
         self._next_move_available.set()
 
-    async def _get_move(self):
+    async def _get_move(self, mon):
+        self._gen_choice_dialog()
         await self._next_move_available.wait()
         self._next_move_available.clear()
-        if isinstance(self._next_move, Mon):
-            return (Actions.SWAP_MON, self._next_move)
-        elif isinstance(self._next_move, Item):
-            return (Actions.USE_ITEM, self._next_move)
-        elif isinstance(self._next_move, Move):
-            return (Actions.MAKE_MOVE, self._next_move)
-        elif isinstance(self._next_move, None):
-            return (Actions.RUN_AWAY, self._next_move)
-        return (Actions.RUN_AWAY, None)
+        return self._next_move
+    
+    async def _get_new_badgemon(self):
+        self._gen_new_badgemon_dialog()
+        await self._next_move_available.wait()
+        self._next_move_available.clear()
+        return self._next_move
+    
+    async def background_task(self):
+        while True:
+            if self._battle_context.turn:
+                curr_player, curr_target = self._battle_context.player1, self._battle_context.player2
+                player_mon, target_mon = self._battle_context.mon1, self._battle_context.mon2
+            else:
+                curr_player, curr_target = self._battle_context.player2, self._battle_context.player1
+                player_mon, target_mon = self._battle_context.mon2, self._battle_context.mon1
+            
+            if target_mon.fainted:
+                await self._speech.write(f"{target_mon.nickname} fainted!")
+                all_fainted = True
+                for mon in curr_target.badgemon:
+                    all_fainted = all_fainted and mon.fainted
+                if all_fainted:
+                    await self._speech.write(f"{curr_player.name} wins!")
+                    return curr_player
+                else:
+                    new_badgemon = await curr_target.get_new_badgemon()
+                    if self._battle_context.turn:
+                        self._battle_context.mon2 = new_badgemon
+                    else:
+                        self._battle_context.mon1 = new_badgemon
+                    target_mon = new_badgemon
+
+            if player_mon.fainted:
+                await self._speech.write(f"{player_mon.nickname} fainted!")
+                all_fainted = True
+                for mon in curr_player.badgemon:
+                    all_fainted = all_fainted and mon.fainted
+                if all_fainted:
+                    await self._speech.write(f"{curr_target.name} wins!")
+                    return curr_target
+                else:
+                    new_badgemon = await curr_player.get_new_badgemon()
+                    if self._battle_context.turn:
+                        self._battle_context.mon1 = new_badgemon
+                    else:
+                        self._battle_context.mon2 = new_badgemon
+                    player_mon = new_badgemon
+
+            print("getting move")
+
+            action = await curr_player.get_move(player_mon)
+
+            print(f"move got: {action}")
+
+            if isinstance(action, Move):
+                print(f"USING MOVE {action}")
+                await self._battle_context.use_move(player_mon, target_mon, action)
+
+            elif isinstance(action, Mon):
+                if self._battle_context.turn:
+                    self._battle_context.mon1 = action
+                else:
+                    self._battle_context.mon2 = action
+
+            elif isinstance(action, Item):
+                action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
+
+            elif action is None:
+                await self._speech.write(f"{curr_target.name} wins by default!")
+                return curr_target
+
+            self._battle_context.turn = not self._battle_context.turn

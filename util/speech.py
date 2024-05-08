@@ -1,6 +1,4 @@
 import asyncio
-import display
-import gc
 import math
 
 from system.eventbus import eventbus
@@ -22,19 +20,27 @@ class SpeechDialog:
         self._state = "CLOSED"
         self._current_line = 1.0
         self._current_line_visually = 1.0
-
         self._opened_amount = 0.0
+        self._ready_event = asyncio.Event()
+        self._ready_event.set()
 
-    def is_open(self):
+    def is_open(self) -> bool:
         return self._open
     
     def open(self):
         if not self.is_open():
             self._open = True
+            self._ready_event.clear()
     
     def close(self):
         if self.is_open():
             self._cleanup()
+
+    async def write(self, s):
+        await self._ready_event.wait()
+        self.set_speech(s)
+        self.open()
+        await self._ready_event.wait()
 
     def set_speech(self, speech: str):
         self._speech = speech
@@ -42,14 +48,22 @@ class SpeechDialog:
         self._current_line = 1.0
         self._current_line_visually = 1.0
 
+    def _goto_start(self):
+        if len(self._lines) == 0:
+            self._cleanup()
+        elif len(self._lines) == 1:
+            self._current_line = 0.0
+            self._current_line_visually = 0.0
+        elif len(self._lines) == 2:
+            self._current_line = 0.5
+            self._current_line_visually = 0.5
+
     def update(self, delta: float):
         if self.is_open():
             if self._state == "CLOSED":
                 self._state = "OPENING"
                 self._opened_amount = 0.0
-                self._lines = []
-                self._current_line = 1.0
-                self._current_line_visually = 1.0
+                self._goto_start()
                 eventbus.on(ButtonDownEvent, self._handle_buttondown, self._app)
             if self._state == "OPENING":
                 if self._opened_amount > 0.99:
@@ -64,6 +78,7 @@ class SpeechDialog:
                     self._state = "CLOSED"
                     self._open = False
                     self._lines = []
+                    self._ready_event.set()
                     return
                 weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
@@ -95,14 +110,7 @@ class SpeechDialog:
                         line = word
                 if line != "":
                     self._lines.append(line)
-                if len(self.lines) == 0:
-                    self._cleanup()
-                elif len(self._lines) == 1:
-                    self._current_line = 0.0
-                    self._current_line_visually = 0.0
-                elif len(self._lines) == 2:
-                    self._current_line = 0.5
-                    self._current_line_visually = 0.5
+                self._goto_start()
             self._draw_focus_plane(ctx, self._opened_amount)
             clip = ctx.rectangle(-120, (-BOX_HEIGHT)*self._opened_amount, 240, (BOX_HEIGHT*2)*self._opened_amount).clip()
             for i, line in enumerate(self._lines):
@@ -137,11 +145,6 @@ class SpeechExample(App):
 
     def update(self, delta: float):
         self._speech.update(delta)
-
-    async def background_update(self):
-        while True:
-            await asyncio.sleep(1)
-            print("fps:", display.get_fps(), f"mem used: {gc.mem_alloc()}, mem free:{gc.mem_free()}")
 
     def _draw_background(self, ctx: Context):
         ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
