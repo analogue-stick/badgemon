@@ -14,6 +14,8 @@ from ..game.battle_main import Battle as BContext
 from ..game.player import Player, Cpu
 from ctx import Context
 
+from ..game import constants
+
 from asyncio import Event
 
 potion = items_list[0]
@@ -115,8 +117,8 @@ class Battle(App):
         radius = 10
         border = 3
         
-        other_health = (self._battle_context.mon2.hp / self._battle_context.mon2.template.base_hp)
-        us_health = (self._battle_context.mon1.hp / self._battle_context.mon1.template.base_hp)
+        other_health = (self._battle_context.mon2.hp / self._battle_context.mon2.stats[constants.STAT_HP])
+        us_health = (self._battle_context.mon1.hp / self._battle_context.mon1.stats[constants.STAT_HP])
 
         ctx.gray(0)
         ctx.round_rectangle(-x-width-border, -y-border, width+border*2, radius+border*2, radius).fill()
