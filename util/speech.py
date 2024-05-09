@@ -119,14 +119,15 @@ class SpeechDialog:
             ctx.restore()
             
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if len(self._lines) < 4:
-            self._cleanup()
-            return
-        if self._current_line >= len(self._lines) -1:
-            self._cleanup()
-            return
-        else:
-            self._current_line += 1
+        if self.is_open():
+            if len(self._lines) < 4:
+                self._cleanup()
+                return
+            if self._current_line >= len(self._lines) -1:
+                self._cleanup()
+                return
+            else:
+                self._current_line += 1
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)

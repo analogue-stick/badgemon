@@ -126,34 +126,35 @@ class ChoiceDialog:
             ctx.restore()
 
     def _handle_buttondown(self, event: ButtonDownEvent):
-        parent: Button = event.button
-        while parent.parent is not None and parent.group != "System":
-            parent = parent.parent
-        if parent.group == "System":
-            if parent.name == "UP":
-                self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
-            if parent.name == "DOWN":
-                self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
-            if parent.name == "CONFIRM" or parent.name == "RIGHT":
-                c = self._current_tree[self._selected][1]
-                if isinstance(c, FunctionType):
-                    c(self._app)
-                    self._cleanup()
-                    return
-                self._previous_trees.append(self._current_tree)
-                self._previous_headers.append(self._current_header)
-                self._current_header = self._current_tree[self._selected][0]
-                self._current_tree = c
-                self._selected = 0
-            if parent.name == "CANCEL" or parent.name == "LEFT":
-                if self._previous_trees:
-                    self._current_tree = self._previous_trees.pop()
-                    self._current_header = self._previous_headers.pop()
+        if self.is_open():
+            parent: Button = event.button
+            while parent.parent is not None and parent.group != "System":
+                parent = parent.parent
+            if parent.group == "System":
+                if parent.name == "UP":
+                    self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
+                if parent.name == "DOWN":
+                    self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
+                if parent.name == "CONFIRM" or parent.name == "RIGHT":
+                    c = self._current_tree[self._selected][1]
+                    if isinstance(c, FunctionType):
+                        c()
+                        self._cleanup()
+                        return
+                    self._previous_trees.append(self._current_tree)
+                    self._previous_headers.append(self._current_header)
+                    self._current_header = self._current_tree[self._selected][0]
+                    self._current_tree = c
                     self._selected = 0
+                if parent.name == "CANCEL" or parent.name == "LEFT":
+                    if self._previous_trees:
+                        self._current_tree = self._previous_trees.pop()
+                        self._current_header = self._previous_headers.pop()
+                        self._selected = 0
+                        return
+                    if not self._no_exit:
+                        self._cleanup()
                     return
-                if not self._no_exit:
-                    self._cleanup()
-                return
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
