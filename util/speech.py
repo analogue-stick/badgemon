@@ -87,12 +87,12 @@ class SpeechDialog:
                 self._current_line_visually = (self._current_line_visually * (weight)) + (self._current_line * (1-weight))
 
     def _draw_focus_plane(self, ctx: Context, height: float):
-        ctx.rgba(0.5, 0.5, 0.5, 0.5).rectangle(-120, (-BOX_HEIGHT)*height, 240, (BOX_HEIGHT*2)*height).fill()
-        col = ctx.rgba(0.2, 0.2, 0.2, 0.5)
+        ctx.rgba(0.3, 0.3, 0.3, 0.8).rectangle(-120, (-BOX_HEIGHT)*height, 240, (BOX_HEIGHT*2)*height).fill()
+        col = ctx.rgba(0.2, 0.2, 0.2, 0.8)
         col.move_to(-120,(-BOX_HEIGHT)*height).line_to(120,(-BOX_HEIGHT)*height).stroke()
         col.move_to(-120,(BOX_HEIGHT)*height).line_to(120,(BOX_HEIGHT)*height).stroke()
     def _draw_text(self, ctx: Context, line: str, ypos: int):
-        ctx.gray(0).move_to(0, ypos).text(line)
+        ctx.gray(0.8).move_to(0, ypos).text(line)
 
     def draw(self, ctx: Context):
         if self.is_open():
@@ -119,14 +119,15 @@ class SpeechDialog:
             ctx.restore()
             
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if len(self._lines) < 4:
-            self._cleanup()
-            return
-        if self._current_line >= len(self._lines) -1:
-            self._cleanup()
-            return
-        else:
-            self._current_line += 1
+        if self.is_open():
+            if len(self._lines) < 4:
+                self._cleanup()
+                return
+            if self._current_line >= len(self._lines) -1:
+                self._cleanup()
+                return
+            else:
+                self._current_line += 1
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)

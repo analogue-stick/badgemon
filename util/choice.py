@@ -10,6 +10,7 @@ from events.input import ButtonDownEvent, Button
 from app import App
 
 from ctx import Context
+from ..util.misc import *
 
 ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
@@ -88,71 +89,72 @@ class ChoiceDialog:
                 self._selected_visually = (self._selected_visually * (weight)) + (self._selected * (1-weight))
 
     def _draw_focus_plane(self, ctx: Context, width: float):
-        ctx.rgba(0.5, 0.5, 0.5, 0.5).rectangle((-80)*width, -120, (160)*width, 240).fill()
-        col = ctx.rgba(0.2, 0.2, 0.2, 0.5)
+        ctx.rgba(0.3, 0.3, 0.3, 0.8).rectangle((-80)*width, -120, (160)*width, 240).fill()
+        col = ctx.rgba(0.2, 0.2, 0.2, 0.8)
         col.move_to((-80)*width,-120).line_to((-80)*width,120).stroke()
         col.move_to((80)*width,-120).line_to((80)*width,120).stroke()
     def _draw_header_plane(self, ctx: Context, width: float):
-        ctx.rgba(0.1, 0.1, 0.1, 0.5).rectangle((-80)*width, -110, (160)*width, 40).fill()
+        ctx.rgba(0.1, 0.1, 0.1, 0.5).rectangle((-80)*width, -100, (160)*width, 40).fill()
 
     def _draw_text(self, ctx: Context, choice: str, ypos: int, select: bool, header: bool=False):
-        text_width = ctx.text_width(choice)
-        text_height = ctx.font_size
+        font_size = 30
+        shrink_until_fit(ctx, choice, 150, font_size)
         
         if select:
             col = ctx.rgb(1.0,0.3,0.0)
         elif header:
             col = ctx.rgb(1.0,0.9,0.9)
         else:
-            col = ctx.gray(0)
+            col = ctx.gray(0.8)
         col.move_to(0, ypos)\
             .text(choice)
 
     def draw(self, ctx: Context):
         if self.is_open():
             ctx.save()
-            ctx.font_size = 30
             ctx.text_baseline = Context.MIDDLE
             ctx.text_align = Context.CENTER
-            clip = ctx.rectangle((-80)*self._opened_amount, -120, (160)*self._opened_amount, 240).clip()
             self._draw_focus_plane(ctx, self._opened_amount)
+            if self._current_header != "":
+                ctx.rectangle((-80)*self._opened_amount, -120, (160)*self._opened_amount, 240).clip()
+                self._draw_header_plane(ctx, self._opened_amount)
+                self._draw_text(ctx, self._current_header, -80, False, header=True)
+            ctx.rectangle((-80)*self._opened_amount, -60, (160)*self._opened_amount, 180).clip()
             for i, choice in enumerate(self._current_tree):
                 ypos = (i-self._selected_visually)*ctx.font_size
-                self._draw_text(clip, choice[0], ypos, self._selected == i)
-            if self._current_header != "":
-                self._draw_header_plane(ctx, self._opened_amount)
-                self._draw_text(clip, self._current_header, -80, False, header=True)
+                self._draw_text(ctx, choice[0], ypos, self._selected == i)
             ctx.restore()
 
     def _handle_buttondown(self, event: ButtonDownEvent):
-        parent: Button = event.button
-        while parent.parent is not None and parent.group != "System":
-            parent = parent.parent
-        if parent.group == "System":
-            if parent.name == "UP":
-                self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
-            if parent.name == "DOWN":
-                self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
-            if parent.name == "CONFIRM" or parent.name == "RIGHT":
-                c = self._current_tree[self._selected][1]
-                if isinstance(c, FunctionType):
-                    c(self._app)
-                    self._cleanup()
-                    return
-                self._previous_trees.append(self._current_tree)
-                self._previous_headers.append(self._current_header)
-                self._current_header = self._current_tree[self._selected][0]
-                self._current_tree = c
-                self._selected = 0
-            if parent.name == "CANCEL" or parent.name == "LEFT":
-                if self._previous_trees:
-                    self._current_tree = self._previous_trees.pop()
-                    self._current_header = self._previous_headers.pop()
+        if self.is_open():
+            parent: Button = event.button
+            while parent.parent is not None and parent.group != "System":
+                parent = parent.parent
+            if parent.group == "System":
+                if parent.name == "UP":
+                    self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
+                if parent.name == "DOWN":
+                    self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
+                if parent.name == "CONFIRM" or parent.name == "RIGHT":
+                    c = self._current_tree[self._selected][1]
+                    if isinstance(c, FunctionType):
+                        c()
+                        self._cleanup()
+                        return
+                    self._previous_trees.append(self._current_tree)
+                    self._previous_headers.append(self._current_header)
+                    self._current_header = self._current_tree[self._selected][0]
+                    self._current_tree = c
                     self._selected = 0
+                if parent.name == "CANCEL" or parent.name == "LEFT":
+                    if self._previous_trees:
+                        self._current_tree = self._previous_trees.pop()
+                        self._current_header = self._previous_headers.pop()
+                        self._selected = 0
+                        return
+                    if not self._no_exit:
+                        self._cleanup()
                     return
-                if not self._no_exit:
-                    self._cleanup()
-                return
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)

@@ -138,7 +138,7 @@ def scaled_hash_without_sine(start,end,p):
     return lerp(start,end,hash_without_sine(lerp(start,end*100,p)))
 
 class AnimCycle(Animation):
-    def _fun(time: float) -> float:
+    def _fun(self, time: float) -> float:
         return time % 1.0
 
     def __init__(self, other: Animation, *args, **kwargs) -> None:
@@ -147,45 +147,45 @@ class AnimCycle(Animation):
         self._infinite = True
 
     def reset(self) -> None:
-        self.other.reset()
+        self._other.reset()
         return super().reset()
     
     def on_anim_end(self) -> None:
-        self.other.on_anim_end()
+        self._other.on_anim_end()
         return super().on_anim_end()
     
     def on_anim_start(self) -> None:
-        self.other.on_anim_start()
+        self._other.on_anim_start()
         return super().on_anim_start()
     
     def _update(self, time: float) -> None:
-        self.other.update(self._fun(time))
-        return super().update(time)
+        self._other._update(self._fun(time))
+        return super()._update(time)
     
 class AnimBounce(AnimCycle):
-    def _fun(time: float) -> float:
+    def _fun(self, time: float) -> float:
         if time % 2.0 < 1:
             return time % 1.0
         else:
             return 1.0 - (time % 1.0)
 
 class AnimSin(AnimCycle):
-    def _fun(time: float) -> float:
+    def _fun(self, time: float) -> float:
         return math.sin(time*math.tau)
 
 class EditorAnim(Animation):
-    def _fun(start:float,end:float,time:float):
+    def _fun(self, start:float,end:float,time:float):
         return start
 
-    def __init__(self, editor:function, start:float=0, end:float=1, *args, **kwargs) -> None:
+    def __init__(self, editor:callable, start:float=0, end:float=1, *args, **kwargs) -> None:
         self._start = start
         self._end = end
         self._editor = editor
         super().__init__(*args, **kwargs)
 
-    def update(self, time: float) -> None:
+    def _update(self, time: float) -> None:
         self._editor(self._fun(self._start,self._end,time))
-        return super().update(time)
+        return super()._update(time)
     
     def on_anim_start(self) -> None:
         self._editor(self._start)
@@ -196,19 +196,24 @@ class EditorAnim(Animation):
         return super().on_anim_end()
 
 class AnimLerp(EditorAnim):
-    _fun = lerp
+    def _fun(self, start: float, end: float, time: float):
+        return lerp(start, end, time)
 
 class AnimSStep(EditorAnim):
-    _fun = sstep
+    def _fun(self, start: float, end: float, time: float):
+        return sstep(start, end, time)
 
 class AnimFaster(EditorAnim):
-    _fun = faster
+    def _fun(self, start: float, end: float, time: float):
+        return faster(start, end, time)
 
 class AnimSlower(EditorAnim):
-    _fun = slower
+    def _fun(self, start: float, end: float, time: float):
+        return slower(start, end, time)
 
 class AnimRandom(EditorAnim):
-    _fun = scaled_hash_without_sine
+    def _fun(self, start: float, end: float, time: float):
+        return scaled_hash_without_sine(start, end, time)
 
 class AnimationScheduler:
     def __init__(self) -> None:
@@ -251,7 +256,7 @@ class AnimationScheduler:
     def trigger(self, anim: Animation) -> None:
         self._active.append((self._time,anim))
         anim.on_anim_start()
-        if anim._needed_to_end <= 0:
+        if anim._needed_to_end <= 0 and len(anim._ended_by) > 0:
             self._end(anim, self._time)
         elif not anim._infinite:
             self._end(anim, self._time + anim._length)
@@ -261,3 +266,7 @@ class AnimationScheduler:
         while index < len(self._event_stream) and self._event_stream[index][0] < end:
             index += 1
         self._event_stream.insert(index,(end,anim))
+
+    def kill_animation(self) -> None:
+        for anim in self._active:
+            self._end(anim, self._time)
