@@ -13,12 +13,12 @@ except ImportError:
     pass
 
 class Scene:
-    def __init__(self, choice: ChoiceDialog, speech: SpeechDialog, animation_scheduler: AnimationScheduler, sm: 'SceneManager'):
-        self.choice = choice
-        self.speech = speech
-        self.animation_scheduler = animation_scheduler
-        self._fader = FadeToShade((1.0,1.0,1.0), length=200)
+    def __init__(self, sm: 'SceneManager'):
         self.sm = sm
+        self.choice = sm._choice
+        self.speech = sm._speech
+        self.animation_scheduler = sm._animation_scheduler
+        self._fader = sm._fader
 
     async def fade_to_scene(self, scene):
         end_event = Event()
@@ -39,6 +39,9 @@ class Scene:
 
     def scene_end(self):
         self.animation_scheduler.kill_animation()
+
+    def _draw_background(self, ctx: Context):
+        ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
 
     async def background_task(self):
         pass

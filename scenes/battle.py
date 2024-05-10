@@ -96,9 +96,6 @@ class Battle(Scene):
             self._gen_choice_dialog()
             self.choice.open()
 
-    def _draw_background(self, ctx: Context):
-        ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
-
     def _draw_mons(self, ctx: Context):
         draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3), False, False, 3)
         draw_mon(ctx, self._battle_context.mon1.template.sprite, 0, 0, True, False, 3)
