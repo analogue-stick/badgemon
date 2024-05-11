@@ -15,6 +15,12 @@ from ..util.misc import *
 ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
 
 class ChoiceDialog:
+    def _calc_sizes(self, ctx):
+        self._sizes = [shrink_until_fit(ctx, choice[0], 150, 30) for choice in self._current_tree]
+    
+    def _get_pos(self, index):
+        return sum(self._sizes[0:index])
+            
     def __init__(self, app: App, choices: ChoiceTree=[], header = "", no_exit = False):
         self._tree = choices
         self._app = app
@@ -30,6 +36,7 @@ class ChoiceDialog:
         self._previous_headers = []
         self._current_header = self._header
         self._no_exit = no_exit
+        self._sizes = []
 
     def is_open(self):
         return self._open
@@ -84,9 +91,11 @@ class ChoiceDialog:
                     return
                 weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
-            if self._selected_visually != self._selected:
-                weight = math.pow(0.8, (delta/10))
-                self._selected_visually = (self._selected_visually * (weight)) + (self._selected * (1-weight))
+            if self._sizes:
+                ypos = self._get_pos(self._selected)
+                if self._selected_visually != ypos:
+                    weight = math.pow(0.8, (delta/10))
+                    self._selected_visually = (self._selected_visually * (weight)) + (ypos * (1-weight))
 
     def _draw_focus_plane(self, ctx: Context, width: float):
         ctx.rgba(0.3, 0.3, 0.3, 0.8).rectangle((-80)*width, -120, (160)*width, 240).fill()
@@ -96,10 +105,7 @@ class ChoiceDialog:
     def _draw_header_plane(self, ctx: Context, width: float):
         ctx.rgba(0.1, 0.1, 0.1, 0.5).rectangle((-80)*width, -100, (160)*width, 40).fill()
 
-    def _draw_text(self, ctx: Context, choice: str, ypos: int, select: bool, header: bool=False):
-        font_size = 30
-        shrink_until_fit(ctx, choice, 150, font_size)
-        
+    def _draw_text(self, ctx: Context, choice: str, ypos: int, select: bool, header: bool=False):        
         if select:
             col = ctx.rgb(1.0,0.3,0.0)
         elif header:
@@ -118,10 +124,13 @@ class ChoiceDialog:
             if self._current_header != "":
                 ctx.rectangle((-80)*self._opened_amount, -120, (160)*self._opened_amount, 240).clip()
                 self._draw_header_plane(ctx, self._opened_amount)
+                shrink_until_fit(ctx, self._current_header, 150, 30)
                 self._draw_text(ctx, self._current_header, -80, False, header=True)
             ctx.rectangle((-80)*self._opened_amount, -60, (160)*self._opened_amount, 180).clip()
+            self._calc_sizes(ctx)
             for i, choice in enumerate(self._current_tree):
-                ypos = (i-self._selected_visually)*ctx.font_size
+                ctx.font_size = self._sizes[i]
+                ypos = self._get_pos(i)-self._selected_visually
                 self._draw_text(ctx, choice[0], ypos, self._selected == i)
             ctx.restore()
 

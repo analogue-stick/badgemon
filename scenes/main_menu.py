@@ -12,7 +12,7 @@ class MainMenu(Scene):
 
     def _get_answer(self, ans: str):
         self._next_move = ans
-        self._gen_main_menu_dialog
+        self._next_move_available.set()
 
     def _gen_main_menu_dialog(self):
         last_chance = [("LAST CHANCE!", lambda: self._get_answer("RESET"))]
@@ -42,14 +42,14 @@ class MainMenu(Scene):
         while True:
             print("getting move")
 
-            action = await self._next_move_available.wait()
+            await self._next_move_available.wait()
             self._next_move_available.clear()
 
-            print(f"move got: {action}")
+            print(f"move got: {self._next_move}")
 
-            if move == "CONTINUE":
-                self.fade_to_scene(Field())
-            elif move == "RESET":
-                self.fade_to_scene(Intro())
-            elif move == "QUIT":
-                self.fade_to_scene(None)
+            if self._next_move == "CONTINUE":
+                await self.fade_to_scene(Field)
+            elif self._next_move == "RESET":
+                await self.fade_to_scene(Intro)
+            elif self._next_move == "QUIT":
+                await self.fade_to_scene(None)

@@ -41,10 +41,13 @@ class SceneManager(App):
         self._animation_scheduler.update(delta)
         self._speech.update(delta)
         self._choice.update(delta)
-        self._scene.update(delta)
+        if self._scene is not None:
+            self._scene.update(delta)
 
     def draw(self, ctx: Context):
-        self._scene.draw(ctx)        
+        if self._scene is not None:
+            self._scene.draw(ctx)
+        super().draw(ctx)     
 
     async def background_task(self):
         while True:

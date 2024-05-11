@@ -198,9 +198,6 @@ class Battle(Scene):
             self._your_turn(ctx)
         else:
             self._their_turn(ctx)
-        self.choice.draw(ctx)
-        self.speech.draw(ctx)
-        super().draw(ctx)
 
     def _do_move(self, move: Move):
         print("DO MOVE")

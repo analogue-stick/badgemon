@@ -9,3 +9,4 @@ def shrink_until_fit(ctx: Context, text: str, max_width: float, max_font: int = 
     while ctx.text_width(text) > max_width:
         width -= 1
         ctx.font_size = width
+    return width

@@ -32,7 +32,7 @@ class Scene:
         pass
 
     def draw(self, ctx: Context):
-        self._fader.draw(ctx)
+        pass
 
     def scene_start(self):
         pass
