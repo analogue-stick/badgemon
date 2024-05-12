@@ -10,7 +10,7 @@ from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
-from ..game.player import Player, Cpu
+from ..game.player import Cpu, Player
 from ctx import Context
 
 from ..game import constants
@@ -46,48 +46,43 @@ class Battle(Scene):
     def _set_text_tilt(self, x):
         self._text_tilt = x/16.0
     
-    def __init__(self, battle_context: BContext, debug: bool = False, *args, **kwargs):
+    def __init__(self, opponent: Player, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if debug:
-            player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
-            player_a.get_move = self._get_move
-            player_a.get_new_badgemon = self._get_new_badgemon
-            player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
-            self._battle_context = BContext(player_a, player_b, True, self.speech)
-        else:
-            self._battle_context = battle_context
+        self.context.player.get_move = self._get_move
+        self.context.player.get_new_badgemon = self._get_new_badgemon
+        self._battle_context = BContext(self.context.player, opponent, True, self.speech)
         self._next_move: Mon | Item | Move | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()
         self._text_tilt = 0
         self.animation_scheduler.trigger(AnimSin(AnimLerp(editor=lambda x: self._set_text_tilt(x)), length=3000))
-        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
 
     def _gen_choice_dialog(self):
         self.choice.set_choices(
-                    [
-                ("Attack", [
-                    (m.name, lambda: self._do_move(m)) for m in self._battle_context.mon1.moves
-                ]),
-                ("Item", [
-                    (f"{count}x {item.name}",lambda: self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
-                ]),
-                ("Swap Mon", [
-                    (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
-                ]),
-                ("Run Away", [
-                    ("Confirm", lambda: self._run_away())
-                ])
-            ],
-            "BATTLE?!"
+            (
+                "BATTLE?!",
+                [
+                    ("Attack", ("Attack", [
+                        (m.name, lambda: self._do_move(m)) for m in self._battle_context.mon1.moves
+                    ])),
+                    ("Item", ("Item", [
+                        (f"{count}x {item.name}",lambda: self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
+                    ])),
+                    ("Swap Mon", ("Swap Mon", [
+                        (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+                    ])),
+                    ("Run Away", ("Run Away??", [
+                        ("Confirm", lambda: self._run_away())
+                    ]))
+                ]
+            )
         )
 
     def _gen_new_badgemon_dialog(self):
         self.choice.set_choices(
-            [
+            ("NEW BDGMON?!", [
                 (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
-            ],
-            "NEW BDGMON?!",
+            ]),
             True
         )
 
@@ -189,8 +184,7 @@ class Battle(Scene):
         ctx.arc(0,0,115,0,6.28,0).stroke()
 
     def draw(self, ctx: Context):
-        ctx.line = ctx_line
-        self._draw_background(ctx)
+        super().draw(ctx)
         self._draw_mons(ctx)
         self._draw_health(ctx)
         self._draw_names(ctx)
@@ -235,6 +229,7 @@ class Battle(Scene):
         return self._next_move
     
     async def background_task(self):
+        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
         while True:
             if self._battle_context.turn:
                 curr_player, curr_target = self._battle_context.player1, self._battle_context.player2

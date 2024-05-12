@@ -65,7 +65,7 @@ class Animation:
         prev._next.append(self)
         self._prev.append(prev)
         self._needed_to_start += 1
-        self._needed_to_start_bak = self._needed_to_start
+        self._needed_to_start_bak += 1
         return self
 
     def start_on_all(self) -> "Animation":
@@ -94,7 +94,7 @@ class Animation:
         self._ends.append(next)
         next._ended_by.append(self)
         next._needed_to_end += 1
-        next._needed_to_end_bak = next._needed_to_end
+        next._needed_to_end_bak += 1
         return self
     
     def ended_by(self, next: "Animation") -> "Animation":
@@ -104,7 +104,7 @@ class Animation:
         next._ends.append(self)
         self._ended_by.append(next)
         self._needed_to_end += 1
-        self._needed_to_end_bak = self._needed_to_end
+        self._needed_to_end_bak += 1
         return self
     
     def end_on_all(self) -> "Animation":
@@ -125,6 +125,50 @@ class Animation:
             self._needed_to_end = 0
         self._needed_to_end_bak = self._needed_to_end
         return self
+    
+    def clear_ends(self):
+        '''
+        This animation will end no other animations.
+        '''
+        for anim in self._ends:
+            anim._ended_by.remove(self)
+            anim._needed_to_end -= 1
+            anim._needed_to_end_bak -= 1
+        self._ends.clear()
+
+    def clear_triggers(self):
+        '''
+        This animation will start no other animations.
+        '''
+        for anim in self._next:
+            anim._prev.remove(self)
+        self._next.clear()
+
+    def clear_ended_by(self):
+        '''
+        This animation will by ended by no other animations.
+        '''
+        for anim in self._ended_by:
+            anim._ends.remove(self)
+        self._ended_by.clear()
+
+    def clear_triggered_by(self):
+        '''
+        This animation will by started by no other animations.
+        '''
+        for anim in self._prev:
+            anim._next.remove(self)
+        self._prev.clear()
+
+    def detach(self):
+        '''
+        This animation is removed from the animation flow.
+        Runs all 4 clear commands.
+        '''
+        self.clear_ended_by()
+        self.clear_ends()
+        self.clear_triggered_by()
+        self.clear_triggers()
 
 class AnimationEvent(Animation):
     '''

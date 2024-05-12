@@ -1,3 +1,5 @@
+import asyncio
+from typing import Type
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade
 from ..scenes.main_menu import MainMenu
@@ -22,7 +24,6 @@ class SceneManager(App):
         )
         self._choice = ChoiceDialog(
             app=self,
-            header="SCENE?!"
         )
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
         self.overlays = [self._speech, self._choice, self._fader]
@@ -51,10 +52,13 @@ class SceneManager(App):
 
     async def background_task(self):
         while True:
-            next_scene = await self._scene.background_task()
-            self.switch_scene(next_scene)
+            if self._scene is None:
+                return
+            await self._scene._scene_ready.wait()
+            await self._scene.background_task()
+            await asyncio.sleep(0.05)
 
-    def switch_scene(self, scene):
+    def switch_scene(self, scene: Type[Scene], *args, **kwargs):
         if self._scene is not None:
             self._scene.scene_end()
             del self._scene
@@ -68,6 +72,7 @@ class SceneManager(App):
             del self._fader
             del self._speech
         else:
-            self._scene = scene(self)
+            self._scene: Scene = scene(self, *args, **kwargs)
+            self._scene._fadein()
             self._scene.scene_start()
     

@@ -12,19 +12,18 @@ from app import App
 from ctx import Context
 from ..util.misc import *
 
-ChoiceTree = List[Tuple[str, Union['ChoiceTree', FunctionType]]]
+ChoiceTree = Tuple[str, List[Tuple[str, Union['ChoiceTree', FunctionType]]]]
 
 class ChoiceDialog:
     def _calc_sizes(self, ctx):
-        self._sizes = [shrink_until_fit(ctx, choice[0], 150, 30) for choice in self._current_tree]
+        self._sizes = [shrink_until_fit(ctx, choice[0], 150, 30) for choice in self._current_tree[1]]
     
     def _get_pos(self, index):
         return sum(self._sizes[0:index])
             
-    def __init__(self, app: App, choices: ChoiceTree=[], header = "", no_exit = False):
+    def __init__(self, app: App, choices: ChoiceTree=("",[]), no_exit = False):
         self._tree = choices
         self._app = app
-        self._header = header
         self._open = False
         self._state = "CLOSED"
         
@@ -33,10 +32,11 @@ class ChoiceDialog:
         self._selected = 0
         self._selected_visually = 0
         self._opened_amount = 0.0
-        self._previous_headers = []
-        self._current_header = self._header
         self._no_exit = no_exit
         self._sizes = []
+        self.opened_event = asyncio.Event()
+        self.closed_event = asyncio.Event()
+        self.closed_event.set()
 
     def is_open(self):
         return self._open
@@ -49,17 +49,23 @@ class ChoiceDialog:
         if self.is_open():
             self._cleanup()
 
-    def set_choices(self, choices: ChoiceTree=[], header: Union[str, None] = None, no_exit = False):
+    async def open_and_wait(self):
+        await self.closed_event.wait()
+        self._open = True
+        await self.opened_event.wait()
+    
+    async def close_and_wait(self):
+        await self.opened_event.wait()
+        self._cleanup()
+        await self.closed_event.wait()
+
+    def set_choices(self, choices: ChoiceTree=(None, []), no_exit = False):
         self._tree = choices
-        if header is not None:
-            self._header = header
         if self._state != "CLOSED":
             self._previous_trees = []
             self._current_tree = self._tree
             self._selected = 0
             self._selected_visually = 0
-            self._previous_headers = []
-            self._current_header = self._header
         self._no_exit = no_exit
         if no_exit:
             self.open()
@@ -72,14 +78,15 @@ class ChoiceDialog:
                 self._selected = 0
                 self._selected_visually = 0
                 self._state = "OPENING"
+                self.closed_event.clear()
+                self.opened_event.clear()
                 self._opened_amount = 0.0
-                self._previous_headers = []
-                self._current_header = self._header
                 eventbus.on(ButtonDownEvent, self._handle_buttondown, self._app)
             if self._state == "OPENING":
                 if self._opened_amount > 0.99:
                     self._opened_amount = 1.0
                     self._state = "OPEN"
+                    self.opened_event.set()
                     return
                 weight = math.pow(0.8, (delta/10))
                 self._opened_amount = (self._opened_amount * (weight)) + (1-weight)
@@ -88,6 +95,7 @@ class ChoiceDialog:
                     self._opened_amount = 0.0
                     self._state = "CLOSED"
                     self._open = False
+                    self.closed_event.set()
                     return
                 weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
@@ -121,14 +129,15 @@ class ChoiceDialog:
             ctx.text_baseline = Context.MIDDLE
             ctx.text_align = Context.CENTER
             self._draw_focus_plane(ctx, self._opened_amount)
-            if self._current_header != "":
+            current_header = self._current_tree[0]
+            if current_header != "":
                 ctx.rectangle((-80)*self._opened_amount, -120, (160)*self._opened_amount, 240).clip()
                 self._draw_header_plane(ctx, self._opened_amount)
-                shrink_until_fit(ctx, self._current_header, 150, 30)
-                self._draw_text(ctx, self._current_header, -80, False, header=True)
+                shrink_until_fit(ctx, current_header, 150, 30)
+                self._draw_text(ctx, current_header, -80, False, header=True)
             ctx.rectangle((-80)*self._opened_amount, -60, (160)*self._opened_amount, 180).clip()
             self._calc_sizes(ctx)
-            for i, choice in enumerate(self._current_tree):
+            for i, choice in enumerate(self._current_tree[1]):
                 ctx.font_size = self._sizes[i]
                 ypos = self._get_pos(i)-self._selected_visually
                 self._draw_text(ctx, choice[0], ypos, self._selected == i)
@@ -141,24 +150,21 @@ class ChoiceDialog:
                 parent = parent.parent
             if parent.group == "System":
                 if parent.name == "UP":
-                    self._selected = (self._selected - 1 + len(self._current_tree)) % len(self._current_tree)
+                    self._selected = (self._selected - 1 + len(self._current_tree[1])) % len(self._current_tree[1])
                 if parent.name == "DOWN":
-                    self._selected = (self._selected + 1 + len(self._current_tree)) % len(self._current_tree)
+                    self._selected = (self._selected + 1 + len(self._current_tree[1])) % len(self._current_tree[1])
                 if parent.name == "CONFIRM" or parent.name == "RIGHT":
-                    c = self._current_tree[self._selected][1]
+                    c = self._current_tree[1][self._selected][1]
                     if isinstance(c, FunctionType):
                         c()
                         self._cleanup()
                         return
                     self._previous_trees.append(self._current_tree)
-                    self._previous_headers.append(self._current_header)
-                    self._current_header = self._current_tree[self._selected][0]
                     self._current_tree = c
                     self._selected = 0
                 if parent.name == "CANCEL" or parent.name == "LEFT":
                     if self._previous_trees:
                         self._current_tree = self._previous_trees.pop()
-                        self._current_header = self._previous_headers.pop()
                         self._selected = 0
                         return
                     if not self._no_exit:
@@ -168,17 +174,18 @@ class ChoiceDialog:
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
         self._state = "CLOSING"
+        self.closed_event.clear()
+        self.opened_event.clear()
 
 class ChoiceExample(App):
     def __init__(self):
         self._choice = ChoiceDialog(
             app=self,
-            choices=[("thing 1", lambda a: a._set_answer("1")),
+            choices=("Choice Test",[("thing 1", lambda a: a._set_answer("1")),
                      ("thing 2", lambda a: a._set_answer("2")),
                      ("thing 3", lambda a: a._set_answer("3")),
-                     ("more", [("thing 41", lambda a: a._set_answer("41")),
-                               ("thing 42", lambda a: a._set_answer("42"))])],
-            header="Choice Test"
+                     ("more", ("More Options", [("thing 41", lambda a: a._set_answer("41")),
+                               ("thing 42", lambda a: a._set_answer("42"))]))])
         )
         self._answer = ""
         eventbus.on(ButtonDownEvent, self._handle_buttondown, self)
