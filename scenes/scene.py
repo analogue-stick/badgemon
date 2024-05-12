@@ -25,6 +25,7 @@ class Scene:
     async def fade_to_scene(self, scene, *args, **kwargs):
         self._scene_ready.clear()
         end_event = Event()
+        self._fader.detach()
         self._fader.reset()
         self._fader._colour = (0,0,0)
         self._fader.and_then(AnimationEvent(end_event))
@@ -34,6 +35,7 @@ class Scene:
 
     def _fadein(self):
         self._scene_ready.clear()
+        self._fader.detach()
         self._fader.reset(fadein=True)
         self._fader._colour = (0,0,0)
         self._fader.and_then(AnimationEvent(self._scene_ready))
