@@ -15,7 +15,8 @@ from system import eventbus
 from system.scheduler.events import RequestStopAppEvent
 from ..util.animation import AnimationScheduler
 from app import App
-from ctx import Context
+from ctx import Context, _img_cache, _wasm
+from ..config import ASSET_PATH
 
 SCENE_LIST = [MainMenu, None, Field, Battle]
 
@@ -29,12 +30,20 @@ class SceneManager(App):
         self._choice = ChoiceDialog(
             app=self,
         )
+        self._cache_sprites()
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
         self.overlays = [self._speech, self._choice, self._fader]
         self._animation_scheduler = AnimationScheduler()
         self._context = GameContext()
         self._scene = None
         self.switch_scene(0)
+
+    def _cache_sprites(self):
+        paths = [f"{ASSET_PATH}mons/mon-{x}.png" for x in range(5)]
+        for path in paths:
+            if not path in _img_cache:
+                buf = open(path, "rb").read()
+                _img_cache[path] = _wasm.stbi_load_from_memory(buf)
 
     def _emergency_save(self):
         '''
