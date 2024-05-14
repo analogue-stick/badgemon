@@ -400,5 +400,5 @@ class AnimationScheduler:
         because time will simply go on forever if not.
         '''
         for anim in self._active:
-            anim.on_anim_end()
+            anim[1].on_anim_end()
         self.__init__()

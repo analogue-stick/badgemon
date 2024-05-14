@@ -22,7 +22,7 @@ class Scene:
         self._fader = sm._fader
         self._scene_ready = Event()
 
-    async def fade_to_scene(self, scene, *args, **kwargs):
+    async def fade_to_scene(self, scene: int, *args, **kwargs):
         self._scene_ready.clear()
         end_event = Event()
         self._fader.detach()

@@ -23,6 +23,14 @@ class FadeToShade(Animation):
         else:
             self._fade = 0
         return super().reset()
+    
+    def on_anim_start(self) -> None:
+        self._update(0)
+        return super().on_anim_start()
+
+    def on_anim_end(self) -> None:
+        self._update(1)
+        return super().on_anim_end()
 
     def draw(self, ctx: Context):
         ctx.rgba(*self._colour, self._fade).rectangle(-120,-120,240,240).fill()

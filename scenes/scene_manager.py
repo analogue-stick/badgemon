@@ -1,5 +1,9 @@
 import asyncio
+import gc
+import sys
 from typing import Type
+
+from ..scenes.field import Field
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade
 from ..scenes.main_menu import MainMenu
@@ -13,7 +17,7 @@ from ..util.animation import AnimationScheduler
 from app import App
 from ctx import Context
 
-
+SCENE_LIST = [MainMenu, None, Field, Battle]
 
 class SceneManager(App):
     def __init__(self):
@@ -30,7 +34,7 @@ class SceneManager(App):
         self._animation_scheduler = AnimationScheduler()
         self._context = GameContext()
         self._scene = None
-        self.switch_scene(MainMenu)
+        self.switch_scene(0)
 
     def _emergency_save(self):
         '''
@@ -39,31 +43,46 @@ class SceneManager(App):
         pass
 
     def update(self, delta: float):
-        self._animation_scheduler.update(delta)
-        self._speech.update(delta)
-        self._choice.update(delta)
-        if self._scene is not None:
-            self._scene.update(delta)
+        try:
+            self._animation_scheduler.update(delta)
+            self._speech.update(delta)
+            self._choice.update(delta)
+            if self._scene is not None:
+                self._scene.update(delta)
+        except Exception as e:
+            print("UPDATE FAIL")
+            print(e)
+            sys.exit()
 
     def draw(self, ctx: Context):
-        if self._scene is not None:
-            self._scene.draw(ctx)
-        super().draw(ctx)     
+        try:
+            if self._scene is not None:
+                self._scene.draw(ctx)
+            super().draw(ctx)
+        except Exception as e:
+            print("DRAW FAIL")
+            print(e)
+            sys.exit()
 
     async def background_task(self):
         while True:
             if self._scene is None:
                 return
+            print("AWAIT READY")
             await self._scene._scene_ready.wait()
-            await self._scene.background_task()
+            print("AWAIT BACKGROUND TASK")
+            try:
+                await self._scene.background_task()
+            except Exception as e:
+                print("BACKGROUND FAIL")
+                print(e)
+                sys.exit()
             await asyncio.sleep(0.05)
 
-    def switch_scene(self, scene: Type[Scene], *args, **kwargs):
+    def switch_scene(self, scene: int, *args, **kwargs):
         if self._scene is not None:
             self._scene.scene_end()
-            del self._scene
-        self._scene = scene
-        if self._scene is None:
+        if scene is None:
             self._animation_scheduler.kill_animation()
             self._emergency_save()
             eventbus.emit(RequestStopAppEvent(self))
@@ -72,7 +91,12 @@ class SceneManager(App):
             del self._fader
             del self._speech
         else:
-            self._scene: Scene = scene(self, *args, **kwargs)
+            print("LOAD SCENE")
+            print((SCENE_LIST[scene]))
+            self._scene: Scene = (SCENE_LIST[scene])(self, *args, **kwargs)
+            gc.collect()
+            print(f"mem used: {gc.mem_alloc()}, mem free:{gc.mem_free()}")
             self._scene._fadein()
+            print("scene start")
             self._scene.scene_start()
     

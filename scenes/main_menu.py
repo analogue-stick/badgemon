@@ -1,6 +1,5 @@
 from asyncio import Event
 
-from ..scenes.field import Field
 from ..scenes.scene import Scene
 
 class MainMenu(Scene):
@@ -44,8 +43,8 @@ class MainMenu(Scene):
         self._next_move_available.clear()
 
         if self._next_move == "CONTINUE":
-            await self.fade_to_scene(Field)
+            await self.fade_to_scene(2)
         elif self._next_move == "RESET":
-            await self.fade_to_scene(Intro)
+            await self.fade_to_scene(1)
         elif self._next_move == "QUIT":
             await self.fade_to_scene(None)

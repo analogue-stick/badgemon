@@ -46,7 +46,7 @@ class Battle(Scene):
     def _set_text_tilt(self, x):
         self._text_tilt = x/16.0
     
-    def __init__(self, opponent: Player, *args, **kwargs):
+    def __init__(self, *args, opponent: Player, **kwargs):
         super().__init__(*args, **kwargs)
         self.context.player.get_move = self._get_move
         self.context.player.get_new_badgemon = self._get_new_badgemon
@@ -228,8 +228,16 @@ class Battle(Scene):
         self._next_move_available.clear()
         return self._next_move
     
-    async def background_task(self):
+    def scene_start(self):
         eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
+        return super().scene_start()
+    
+    def scene_end(self):
+        eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.sm)
+        return super().scene_end()
+    
+    async def background_task(self):
+        print("test")
         while True:
             if self._battle_context.turn:
                 curr_player, curr_target = self._battle_context.player1, self._battle_context.player2
@@ -237,6 +245,8 @@ class Battle(Scene):
             else:
                 curr_player, curr_target = self._battle_context.player2, self._battle_context.player1
                 player_mon, target_mon = self._battle_context.mon2, self._battle_context.mon1
+
+            print("target faint?")
             
             if target_mon.fainted:
                 await self.speech.write(f"{target_mon.nickname} fainted!")
@@ -245,7 +255,7 @@ class Battle(Scene):
                     all_fainted = all_fainted and mon.fainted
                 if all_fainted:
                     await self.speech.write(f"{curr_player.name} wins!")
-                    await self.fade_to_scene(None)
+                    await self.fade_to_scene(2)
                     return
                 else:
                     new_badgemon = await curr_target.get_new_badgemon()
@@ -255,6 +265,8 @@ class Battle(Scene):
                         self._battle_context.mon1 = new_badgemon
                     target_mon = new_badgemon
 
+            print("player faint?")
+
             if player_mon.fainted:
                 await self.speech.write(f"{player_mon.nickname} fainted!")
                 all_fainted = True
@@ -262,7 +274,7 @@ class Battle(Scene):
                     all_fainted = all_fainted and mon.fainted
                 if all_fainted:
                     await self.speech.write(f"{curr_target.name} wins!")
-                    await self.fade_to_scene(None)
+                    await self.fade_to_scene(2)
                     return
                 else:
                     new_badgemon = await curr_player.get_new_badgemon()
@@ -293,7 +305,7 @@ class Battle(Scene):
 
             elif action is None:
                 await self.speech.write(f"{curr_target.name} wins by default!")
-                await self.fade_to_scene(None)
+                await self.fade_to_scene(2)
                 return
 
             self._battle_context.turn = not self._battle_context.turn

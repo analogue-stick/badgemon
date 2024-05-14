@@ -14,3 +14,4 @@ mon5 = Mon(mon_template1, 100).set_nickname("biggest dude")
 class GameContext:
     def __init__(self):
         self.player = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
+        self.random_encounters = True

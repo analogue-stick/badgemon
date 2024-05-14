@@ -106,15 +106,17 @@ class Player:
             self.last_heal = time.ticks_add(time.ticks_ms(), -_TIME_BETWEEN_HEALS)
         return diff
 
-    def use_full_heal(self) -> bool:
+    async def use_full_heal(self, news = None) -> bool:
         diff = self.full_heal_available()
         if diff >= _TIME_BETWEEN_HEALS:
             for guy in self.badgemon:
                 guy.full_heal()
             self.last_heal = time.ticks_ms()
-            print("Healed!")
+            if news is not None:
+                await news.write("Healed!")
         else:
-            print(f"Heal is not allowed for another {(_TIME_BETWEEN_HEALS-diff)/1000} seconds")
+            if news is not None:
+                await news.write(f"Heal is not allowed for another {int((_TIME_BETWEEN_HEALS-diff)/1000)} seconds")
 
 class Cpu(Player):
 
