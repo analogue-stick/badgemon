@@ -1,6 +1,6 @@
 import math
 import random
-from struct import pack, unpack
+from struct import pack, unpack_from
 
 try:
     from typing import List, Tuple, Union
@@ -154,6 +154,13 @@ class Mon:
         for move, pp in zip(self.moves, self.pp):
             data += pack('BB', move.id, pp)
 
+        data += pack('B', self.accuracy)
+        data += pack('B', self.evasion)
+
+        data += pack('B', self.status)
+
+        data += pack('I', self.xp)
+
         return data
 
     @staticmethod
@@ -166,7 +173,7 @@ class Mon:
         """
         offset = 0
 
-        name_len, = data[offset]
+        name_len = data[offset]
         offset += 1
         raw_nickname = data[offset:offset + name_len]
         nickname = raw_nickname.decode('utf-8')
@@ -181,7 +188,7 @@ class Mon:
         ivs = list(data[offset:offset + 6])
         offset += 6
 
-        num_moves, = data[offset]
+        num_moves = data[offset]
         offset += 1
 
         set_moves = []
@@ -199,6 +206,18 @@ class Mon:
         mon.fainted = fainted
         for i, v in enumerate(pps):
             mon.pp[i] = v
+
+        mon.accuracy = data[offset]
+        offset += 1
+
+        mon.evasion = data[offset]
+        offset += 1
+
+        mon.status = data[offset]
+        offset += 1
+
+        mon.xp = unpack_from('I', data, offset)[0]
+        offset += 4
 
         return mon
 

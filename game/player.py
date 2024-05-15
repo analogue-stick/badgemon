@@ -1,4 +1,4 @@
-from struct import pack
+from struct import pack, unpack_from
 import random
 import time
 
@@ -18,7 +18,7 @@ except ImportError:
 _TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: List[Tuple['Item', int]]):
+    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: List[Tuple['Item', int]], last_heal = None, money = 100):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
@@ -32,11 +32,14 @@ class Player:
         self.badgemon = badgemon[0:6]
         self.badgemon_case = badgemon_case
         self.inventory = inventory
-        self.last_heal = time.ticks_ms()
+        if last_heal is None:
+            self.last_heal = time.ticks_ms()
+        else:
+            self.last_heal = last_heal
 
         self.badgedex = badgedex.Badgedex()
 
-        self.random_encounters = True
+        self.money = money
 
     def serialise(self):
         data = bytearray()
@@ -49,10 +52,26 @@ class Player:
             mon_data = mon.serialise()
             data += pack('B', len(mon_data))
             data += mon_data
+        
+        data += pack('B', len(self.badgemon_case))
+        for mon in self.badgemon_case:
+            mon_data = mon.serialise()
+            data += pack('B', len(mon_data))
+            data += mon_data
 
         data += pack('B', len(self.inventory))
         for item, count in self.inventory:
             data += pack('BB', item.id, count)
+
+        data += pack('I', len(self.last_heal))
+
+        bdex  = self.badgedex.serialise()
+        data += pack('B', len(bdex))
+        data += bdex
+
+        data += pack('I', len(self.money))
+
+        return data
 
     @staticmethod
     def deserialise(data: bytearray) -> 'Player':
@@ -73,6 +92,16 @@ class Player:
             badgemon.append(mon)
             offset += mon_len
 
+        mons_len = data[offset]
+        offset += 1
+        badgemon_case = []
+        for _ in range(mons_len):
+            mon_len = data[offset]
+            offset += 1
+            mon = Mon.deserialise(data[offset:offset + mon_len])
+            badgemon_case.append(mon)
+            offset += mon_len
+
         inventory = []
         inv_len = data[offset]
         offset += 1
@@ -82,7 +111,17 @@ class Player:
             inventory.append((item, count))
             offset += 1
 
-        return Player(name, badgemon, inventory)
+        last_heal = unpack_from("I", data, offset)[0]
+        offset += 4
+
+        bdex_len = data[offset]
+        offset += 1
+        badgedex = badgedex.Badgedex.deserialise(data[offset:offset + bdex_len])
+        offset += bdex_len
+
+        money = unpack_from("I", data, offset)[0]
+
+        return Player(name, badgemon, badgemon_case, inventory, last_heal, money)
 
     async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
         """

@@ -16,7 +16,7 @@ from system.scheduler.events import RequestStopAppEvent
 from ..util.animation import AnimationScheduler
 from app import App
 from ctx import Context, _img_cache, _wasm
-from ..config import ASSET_PATH
+from ..config import ASSET_PATH, SAVE_PATH
 
 SCENE_LIST = [MainMenu, None, Field, Battle]
 
@@ -34,9 +34,13 @@ class SceneManager(App):
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
         self.overlays = [self._speech, self._choice, self._fader]
         self._animation_scheduler = AnimationScheduler()
-        self._context = GameContext()
         self._scene = None
-        self.switch_scene(0)
+        self._attempt_load()
+        if self._context == None:
+            self._context = GameContext()
+            self.switch_scene(1)
+        else:
+            self.switch_scene(0)
 
     def _cache_sprites(self):
         paths = [f"{ASSET_PATH}mons/mon-{x}.png" for x in range(5)]
@@ -45,11 +49,21 @@ class SceneManager(App):
                 buf = open(path, "rb").read()
                 _img_cache[path] = _wasm.stbi_load_from_memory(buf)
 
-    def _emergency_save(self):
+    def _attempt_save(self):
         '''
-        Save data to disk as quickly as fucking possible
+        Save data to disk
         '''
-        pass
+        data = self._context.serialise()
+        with open(SAVE_PATH+"sav.dat", "wb") as f:
+            f.write(data)
+
+    def _attempt_load(self):
+        '''
+        Load data from disk
+        '''
+        with open(SAVE_PATH+"sav.dat", "rb") as f:
+            data = f.read(None)
+            self._context = GameContext.deserialise(data)
 
     def update(self, delta: float):
         try:

@@ -74,7 +74,8 @@ class Field(Scene):
         await self.fade_to_scene(3, opponent=Cpu('Tr41n0rB0T', [mon1, mon5], [], []))
 
     async def _save(self):
-        pass
+        self.sm._attempt_save()
+        await self.speech.write("Game Saved!")
 
     async def _toggle_randomenc(self):
         self.context.random_encounters ^= True
@@ -123,6 +124,9 @@ class Field(Scene):
             describe_item = ("Descriptions", [(i[0].name,
                             self._get_answer(self._describe_item(i[0]))
                             ) for i in self.context.player.inventory])
+            
+        shop = ("Shop", (f"GP: {self.context.player.money}"))
+
         self.choice.set_choices(
             ("Field", [
                 ("Badgemon", ("Badgemon",[
