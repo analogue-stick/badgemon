@@ -105,15 +105,17 @@ class Field(Scene):
                                self._get_answer(self._swap_mon(i, j)), 
                             ) for j, m2 in enumerate(self.context.player.badgemon)])
                         ) for i, m1 in enumerate(self.context.player.badgemon)])
+            
+        usable_items = [i for i in self.context.player.inventory if i[0].usable_in_field and i[1] > 0]
 
-        if len(self.context.player.inventory) == 0:
-            use_item = self._get_answer(self.speech.write("You have no items!"))
+        if len(usable_items) == 0:
+            use_item = self._get_answer(self.speech.write("You have no (usable) items!"))
         else:
             use_item = ("Pick an item", [(f"{i[1]}x {i[0].name}",
                         ("Pick a mon", [(m.nickname,
                                 self._get_answer(self._use_item(i, m))
                             ) for m in self.context.player.badgemon])
-                        ) for i in self.context.player.inventory])
+                        ) for i in usable_items])
 
         if len(self.context.player.inventory) == 0:
             describe_item = self._get_answer(self.speech.write("You have no items!"))

@@ -51,13 +51,17 @@ class Battle(Scene):
         self.context.player.get_move = self._get_move
         self.context.player.get_new_badgemon = self._get_new_badgemon
         self._battle_context = BContext(self.context.player, opponent, True, self.speech)
-        self._next_move: Mon | Item | Move | None = None
+        self._next_move: Mon | Item | Move | self.Desc | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()
         self._text_tilt = 0
         self.animation_scheduler.trigger(AnimSin(AnimLerp(editor=lambda x: self._set_text_tilt(x)), length=3000))
 
     def _gen_choice_dialog(self):
+        available_moves: set[Move] = set()
+        for m in self._battle_context.player1.badgemon:
+            if not m.fainted:
+                available_moves.update(m.moves)
         self.choice.set_choices(
             (
                 "BATTLE?!",
@@ -66,10 +70,14 @@ class Battle(Scene):
                         (m.name, self._do_move(m)) for m in self._battle_context.mon1.moves
                     ])),
                     ("Item", ("Item", [
-                        (f"{count}x {item.name}", self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
+                        (f"{count}x {item.name}", self._do_item(i,item, count)) for (i,(item,count)) in enumerate(self._battle_context.player1.inventory) if item.usable_in_battle and count > 0
                     ])),
                     ("Swap Mon", ("Swap Mon", [
-                        (m.nickname, self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+                        (m.nickname, self._do_mon(m)) for m in self._battle_context.player1.badgemon if not m.fainted
+                    ])),
+                    ("Describe...", ("Describe...", [
+                        ("Item", ("Describe Item", [(i.name, self._describe(i)) for i,c in self._battle_context.player1.inventory if i.usable_in_battle and c > 0])),
+                        ("Move", ("Describe Move", [(m.name, self._describe(m)) for m in available_moves]))
                     ])),
                     ("Run Away", ("Run Away??", [
                         ("Confirm", self._run_away())
@@ -81,7 +89,7 @@ class Battle(Scene):
     def _gen_new_badgemon_dialog(self):
         self.choice.set_choices(
             ("NEW BDGMON?!", [
-                (m.nickname, self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+                (m.nickname, self._do_mon(m)) for m in self._battle_context.player1.badgemon if not m.fainted
             ]),
             True
         )
@@ -194,7 +202,6 @@ class Battle(Scene):
             self._their_turn(ctx)
 
     def _do_move(self, move: Move):
-        print("DO MOVE")
         def f():
             self._next_move = move
             self._next_move_available.set()
@@ -208,11 +215,11 @@ class Battle(Scene):
     
     def _do_item(self, index: int, item: Item, count: int):
         def f():
-            count -= 1
-            if count == 0:
+            nc = count - 1
+            if nc == 0:
                 self._battle_context.player1.inventory.pop(index)
             else:
-                self._battle_context.player1.inventory[index] = (item, count)  # decrease stock
+                self._battle_context.player1.inventory[index] = (item, nc)  # decrease stock
             self._next_move = item
             self._next_move_available.set()
         return f
@@ -220,6 +227,19 @@ class Battle(Scene):
     def _do_mon(self, mon: Mon):
         def f():
             self._next_move = mon
+            self._next_move_available.set()
+        return f
+    
+    class Desc():
+        def __init__(self, t):
+            self.t = t
+
+        def __str__(self) -> str:
+            return self.t.desc
+    
+    def _describe(self, thing):
+        def f():
+            self._next_move = self.Desc(thing)
             self._next_move_available.set()
         return f
 
@@ -298,6 +318,8 @@ class Battle(Scene):
 
             print(f"move got: {action}")
 
+            same_turn = False
+
             if isinstance(action, Move):
                 print(f"USING MOVE {action}")
                 await self._battle_context.use_move(player_mon, target_mon, action)
@@ -311,9 +333,14 @@ class Battle(Scene):
             elif isinstance(action, Item):
                 action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
 
+            elif isinstance(action, self.Desc):
+                await self.speech.write(str(action))
+                same_turn = True
+
             elif action is None:
                 await self.speech.write(f"{curr_target.name} wins by default!")
                 await self.fade_to_scene(2)
                 return
 
-            self._battle_context.turn = not self._battle_context.turn
+            if not same_turn:
+                self._battle_context.turn = not self._battle_context.turn
