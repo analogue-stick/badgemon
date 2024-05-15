@@ -63,16 +63,16 @@ class Battle(Scene):
                 "BATTLE?!",
                 [
                     ("Attack", ("Attack", [
-                        (m.name, lambda: self._do_move(m)) for m in self._battle_context.mon1.moves
+                        (m.name, self._do_move(m)) for m in self._battle_context.mon1.moves
                     ])),
                     ("Item", ("Item", [
-                        (f"{count}x {item.name}",lambda: self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
+                        (f"{count}x {item.name}", self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
                     ])),
                     ("Swap Mon", ("Swap Mon", [
-                        (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+                        (m.nickname, self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
                     ])),
                     ("Run Away", ("Run Away??", [
-                        ("Confirm", lambda: self._run_away())
+                        ("Confirm", self._run_away())
                     ]))
                 ]
             )
@@ -81,7 +81,7 @@ class Battle(Scene):
     def _gen_new_badgemon_dialog(self):
         self.choice.set_choices(
             ("NEW BDGMON?!", [
-                (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
+                (m.nickname, self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
             ]),
             True
         )
@@ -195,25 +195,33 @@ class Battle(Scene):
 
     def _do_move(self, move: Move):
         print("DO MOVE")
-        self._next_move = move
-        self._next_move_available.set()
+        def f():
+            self._next_move = move
+            self._next_move_available.set()
+        return f
 
     def _run_away(self):
-        self._next_move = None
-        self._next_move_available.set()
+        def f():
+            self._next_move = None
+            self._next_move_available.set()
+        return f
     
     def _do_item(self, index: int, item: Item, count: int):
-        count -= 1
-        if count == 0:
-            self._battle_context.player1.inventory.pop(index)
-        else:
-            self._battle_context.player1.inventory[index] = (item, count)  # decrease stock
-        self._next_move = item
-        self._next_move_available.set()
+        def f():
+            count -= 1
+            if count == 0:
+                self._battle_context.player1.inventory.pop(index)
+            else:
+                self._battle_context.player1.inventory[index] = (item, count)  # decrease stock
+            self._next_move = item
+            self._next_move_available.set()
+        return f
         
     def _do_mon(self, mon: Mon):
-        self._next_move = mon
-        self._next_move_available.set()
+        def f():
+            self._next_move = mon
+            self._next_move_available.set()
+        return f
 
     async def _get_move(self, mon):
         self._gen_choice_dialog()
