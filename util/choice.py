@@ -140,6 +140,10 @@ class ChoiceDialog:
             for i, choice in enumerate(self._current_tree[1]):
                 ctx.font_size = self._sizes[i]
                 ypos = self._get_pos(i)-self._selected_visually
+                if ypos < -100:
+                    continue
+                if ypos > 120:
+                    break
                 self._draw_text(ctx, choice[0], ypos, self._selected == i)
             ctx.restore()
 

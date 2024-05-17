@@ -38,7 +38,7 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(1)
+            self.switch_scene(0)
         else:
             self.switch_scene(0)
 
@@ -61,9 +61,12 @@ class SceneManager(App):
         '''
         Load data from disk
         '''
-        with open(SAVE_PATH+"sav.dat", "rb") as f:
-            data = f.read(None)
-            self._context = GameContext.deserialise(data)
+        try:
+            with open(SAVE_PATH+"sav.dat", "rb") as f:
+                data = f.read(None)
+                self._context = GameContext.deserialise(data)
+        except IOError:
+            self._context = None
 
     def update(self, delta: float):
         try:

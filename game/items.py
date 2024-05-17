@@ -55,7 +55,7 @@ items_list = [
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.BURNED), lambda _, m: m.heal_status(constants.StatusEffect.BURNED)),
     Item("Heat Pack", "A portable heater to attach to frozen badgemon.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.FROZEN), lambda _, m: m.heal_status(constants.StatusEffect.FROZEN)),
-    Item("Klaxon", "\"Heals\" a sleeping badgemon.",
+    Item("Klaxon", "\'Heals\' a sleeping badgemon.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.SLEEPING), lambda _, m: m.heal_status(constants.StatusEffect.SLEEPING)),
     Item("Hot Chocolate", "One cup of this and paralysis is no more.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.PARALYZED), lambda _, m: m.heal_status(constants.StatusEffect.PARALYZED)),

@@ -70,13 +70,13 @@ class Battle(Scene):
                         (m.name, self._do_move(m)) for m in self._battle_context.mon1.moves
                     ])),
                     ("Item", ("Item", [
-                        (f"{count}x {item.name}", self._do_item(i,item, count)) for (i,(item,count)) in enumerate(self._battle_context.player1.inventory) if item.usable_in_battle and count > 0
+                        (f"{count}x {item.name}", self._do_item(item, count)) for (item,count) in self._battle_context.player1.inventory.items() if item.usable_in_battle and count > 0
                     ])),
                     ("Swap Mon", ("Swap Mon", [
                         (m.nickname, self._do_mon(m)) for m in self._battle_context.player1.badgemon if not m.fainted
                     ])),
                     ("Describe...", ("Describe...", [
-                        ("Item", ("Describe Item", [(i.name, self._describe(i)) for i,c in self._battle_context.player1.inventory if i.usable_in_battle and c > 0])),
+                        ("Item", ("Describe Item", [(i.name, self._describe(i)) for i,c in self._battle_context.player1.inventory.items() if i.usable_in_battle and c > 0])),
                         ("Move", ("Describe Move", [(m.name, self._describe(m)) for m in available_moves]))
                     ])),
                     ("Run Away", ("Run Away??", [
@@ -213,13 +213,13 @@ class Battle(Scene):
             self._next_move_available.set()
         return f
     
-    def _do_item(self, index: int, item: Item, count: int):
+    def _do_item(self, item: Item, count: int):
         def f():
             nc = count - 1
             if nc == 0:
-                self._battle_context.player1.inventory.pop(index)
+                self._battle_context.player1.inventory.pop(item)
             else:
-                self._battle_context.player1.inventory[index] = (item, nc)  # decrease stock
+                self._battle_context.player1.inventory[item] = nc  # decrease stock
             self._next_move = item
             self._next_move_available.set()
         return f

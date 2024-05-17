@@ -16,7 +16,7 @@ VERSION = 1
 
 class GameContext:
     def __init__(self):
-        self.player = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
+        self.player = Player("Scarlett", [mon2, mon3], [mon4], {potion: 2})
         self.random_encounters = True
 
     def serialise(self):
@@ -24,7 +24,7 @@ class GameContext:
         data += b'BGGR'
         data += pack('H', VERSION)
         player = self.player.serialise()
-        data += pack("H", player)
+        data += pack("H", len(player))
         data += player
         data += pack('?', self.random_encounters)
         return data
@@ -36,10 +36,11 @@ class GameContext:
         if unpack_from('H', data, 4)[0] != VERSION:
             print("WRONG VERSION")
             return None
-        offset = 4
+        offset = 6
         gc = GameContext()
         pl_len = unpack_from('H', data, offset)[0]
-        gc.player = Player.deserialise(data)
+        offset += 2
+        gc.player = Player.deserialise(data[offset:offset + pl_len])
         offset += pl_len
         gc.random_encounters = unpack_from('?', data, offset)[0]
-        return data
+        return gc

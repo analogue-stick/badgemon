@@ -1,6 +1,7 @@
 from struct import pack, unpack_from
 import random
 import time
+from typing import Dict
 
 from . import items, badgedex
 
@@ -8,17 +9,18 @@ try:
     from typing import List, Tuple, Union, TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from .mons import Mon
         from .items import Item
         from .moves import Move
 except ImportError:
     pass
 
+from .mons import Mon
+
 #_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
 _TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: List[Tuple['Item', int]], last_heal = None, money = 100):
+    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: Dict['Item', int], last_heal = None, money = 10000000000, bdex = None):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
@@ -37,7 +39,10 @@ class Player:
         else:
             self.last_heal = last_heal
 
-        self.badgedex = badgedex.Badgedex()
+        if bdex is None:
+            self.badgedex = badgedex.Badgedex()
+        else:
+            self.badgedex = bdex
 
         self.money = money
 
@@ -60,16 +65,16 @@ class Player:
             data += mon_data
 
         data += pack('B', len(self.inventory))
-        for item, count in self.inventory:
+        for item, count in self.inventory.items():
             data += pack('BB', item.id, count)
 
-        data += pack('I', len(self.last_heal))
+        data += pack('Q', self.last_heal)
 
         bdex  = self.badgedex.serialise()
         data += pack('B', len(bdex))
         data += bdex
 
-        data += pack('I', len(self.money))
+        data += pack('I', self.money)
 
         return data
 
@@ -102,26 +107,31 @@ class Player:
             badgemon_case.append(mon)
             offset += mon_len
 
-        inventory = []
+        inventory = {}
         inv_len = data[offset]
         offset += 1
         for _ in range(inv_len):
             item_id, count = data[offset:offset + 2]
             item = items.items_list[item_id]
-            inventory.append((item, count))
-            offset += 1
+            inventory[item] = count
+            offset += 2
 
-        last_heal = unpack_from("I", data, offset)[0]
-        offset += 4
+        print(f"OFFSET: {offset}")
+        last_heal = unpack_from("Q", data, offset)[0]
+        print(f"LAST_HEAL: {last_heal}")
+        offset += 8
 
         bdex_len = data[offset]
+        print(f"OFFSET: {offset}")
+        print(f"BDEX_LEN: {bdex_len}")
         offset += 1
-        badgedex = badgedex.Badgedex.deserialise(data[offset:offset + bdex_len])
+        bdex = badgedex.Badgedex.deserialise(data[offset:offset + bdex_len])
         offset += bdex_len
 
         money = unpack_from("I", data, offset)[0]
 
-        return Player(name, badgemon, badgemon_case, inventory, last_heal, money)
+        pl = Player(name, badgemon, badgemon_case, inventory, last_heal, money, bdex)
+        return pl
 
     async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
         """

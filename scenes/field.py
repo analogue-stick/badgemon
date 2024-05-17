@@ -38,15 +38,13 @@ class Field(Scene):
         self._exit = exit
         self._next_move_available.set()
 
-    async def _use_item(self, itemt: Tuple[Item, int], mon: Mon):
-        index = self.context.player.inventory.index(itemt)
-        item, count = itemt
+    async def _use_item(self, item: Item, count: int, mon: Mon):
         count -= 1
         if count == 0:
-            self.inventory.pop(index)
+            self.inventory.pop(item)
         else:
-            self.context.player.inventory[index] = (item, count)
-        await self.speech.write(f"Used {item.name}!")
+            self.context.player.inventory[item] = count
+        await self.speech.write(f"Using {item.name}!")
         item.function_in_field(self.context.player, mon)
 
     async def _deposit_mon(self, mon: Mon):
@@ -76,6 +74,14 @@ class Field(Scene):
     async def _save(self):
         self.sm._attempt_save()
         await self.speech.write("Game Saved!")
+
+    async def _purchase(self, item: Item, count: int):
+        current = self.context.player.inventory.get(item)
+        if current is None:
+            current = 0
+        self.context.player.inventory[item] = count+current
+        self.context.player.money -= item.value*count
+        await self.speech.write(f"Bought {count}x {item.name}! Have a nice day!")
 
     async def _toggle_randomenc(self):
         self.context.random_encounters ^= True
@@ -107,25 +113,43 @@ class Field(Scene):
                             ) for j, m2 in enumerate(self.context.player.badgemon)])
                         ) for i, m1 in enumerate(self.context.player.badgemon)])
             
-        usable_items = [i for i in self.context.player.inventory if i[0].usable_in_field and i[1] > 0]
+        usable_items = [(i, c) for (i, c) in self.context.player.inventory.items() if i.usable_in_field and c > 0]
 
         if len(usable_items) == 0:
             use_item = self._get_answer(self.speech.write("You have no (usable) items!"))
         else:
-            use_item = ("Pick an item", [(f"{i[1]}x {i[0].name}",
+            use_item = ("Pick an item", [(f"{c}x {i.name}",
                         ("Pick a mon", [(m.nickname,
-                                self._get_answer(self._use_item(i, m))
+                                self._get_answer(self._use_item(i, c, m))
                             ) for m in self.context.player.badgemon])
-                        ) for i in usable_items])
+                        ) for (i, c) in usable_items])
 
-        if len(self.context.player.inventory) == 0:
-            describe_item = self._get_answer(self.speech.write("You have no items!"))
-        else:
-            describe_item = ("Descriptions", [(i[0].name,
-                            self._get_answer(self._describe_item(i[0]))
-                            ) for i in self.context.player.inventory])
+
+        describe_item = ("Descriptions", [(i.name,
+                            self._get_answer(self._describe_item(i))
+                            ) for i in items_list])
+        
+
+        max_purchase = []
+        no_purchase = True
+        for item in items_list:
+            current = self.context.player.inventory.get(item)
+            if current is None:
+                current = 0
+            m = min(self.context.player.money//item.value, 255-current)
+            no_purchase &= m == 0
+            max_purchase.append((item, m))
             
-        shop = ("Shop", (f"GP: {self.context.player.money}"))
+        if no_purchase:
+            shop = self._get_answer(self.speech.write("You don't have enough money!"))
+        else:
+            shop = (f"GP: {self.context.player.money}", [(f"{item.name}",
+                    (f"Buy {item.name}", [(f"{i}x {item.name}",
+                            (f"Buy {i}x {item.name}", [("Confirm",
+                                self._get_answer(self._purchase(item,i))
+                            )])
+                        ) for i in range(1,count+1)])
+                    ) for (item, count) in max_purchase if count > 0])
 
         self.choice.set_choices(
             ("Field", [
@@ -137,7 +161,8 @@ class Field(Scene):
                 ])),
                 ("Item Bag", ("Item Bag", [
                     ("Use Item", use_item),
-                    ("Describe Item", describe_item)
+                    ("Describe Item", describe_item),
+                    ("Buy Item", shop)
                 ])),
                 ("Main Menu", ("Main Menu?",[
                     ("Confirm", self._get_answer(self.fade_to_scene(0), True))
