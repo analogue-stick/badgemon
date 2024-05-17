@@ -115,6 +115,10 @@ class SpeechDialog:
             clip = ctx.rectangle(-120, (-BOX_HEIGHT)*self._opened_amount, 240, (BOX_HEIGHT*2)*self._opened_amount).clip()
             for i, line in enumerate(self._lines):
                 ypos = (i-self._current_line_visually)*ctx.font_size
+                if ypos < -BOX_HEIGHT:
+                    continue
+                if ypos > BOX_HEIGHT:
+                    break
                 self._draw_text(clip, line, ypos)
             ctx.restore()
             
