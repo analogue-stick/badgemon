@@ -100,8 +100,8 @@ class Battle(Scene):
             self.choice.open()
 
     def _draw_mons(self, ctx: Context):
-        draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3), False, False, 3)
-        draw_mon(ctx, self._battle_context.mon1.template.sprite, 0, 0, True, False, 3)
+        draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3)+10, False, False, 3)
+        draw_mon(ctx, self._battle_context.mon1.template.sprite, 0, -10, True, False, 3)
 
     def _draw_health(self, ctx: Context):
         x = 10

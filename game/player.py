@@ -20,7 +20,7 @@ from .mons import Mon
 _TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: Dict['Item', int], last_heal = None, money = 10000000000, bdex = None):
+    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: Dict['Item', int], last_heal = None, money = 1000, bdex = None):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
