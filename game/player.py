@@ -1,6 +1,7 @@
-from struct import pack
+from struct import pack, unpack_from
 import random
 import time
+from typing import Dict
 
 from . import items, badgedex
 
@@ -8,17 +9,18 @@ try:
     from typing import List, Tuple, Union, TYPE_CHECKING
 
     if TYPE_CHECKING:
-        from .mons import Mon
         from .items import Item
         from .moves import Move
 except ImportError:
     pass
 
+from .mons import Mon
+
 #_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
 _TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
 
 class Player:
-    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: List[Tuple['Item', int]]):
+    def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: Dict['Item', int], last_heal = None, money = 10000000000, bdex = None):
         """
         The Player class will be inherited by classes implementing the user interface, it broadly holds player data and
         handles interaction with the main Battle class
@@ -32,11 +34,17 @@ class Player:
         self.badgemon = badgemon[0:6]
         self.badgemon_case = badgemon_case
         self.inventory = inventory
-        self.last_heal = time.ticks_ms()
+        if last_heal is None:
+            self.last_heal = time.ticks_ms()
+        else:
+            self.last_heal = last_heal
 
-        self.badgedex = badgedex.Badgedex()
+        if bdex is None:
+            self.badgedex = badgedex.Badgedex()
+        else:
+            self.badgedex = bdex
 
-        self.random_encounters = True
+        self.money = money
 
     def serialise(self):
         data = bytearray()
@@ -49,10 +57,26 @@ class Player:
             mon_data = mon.serialise()
             data += pack('B', len(mon_data))
             data += mon_data
+        
+        data += pack('B', len(self.badgemon_case))
+        for mon in self.badgemon_case:
+            mon_data = mon.serialise()
+            data += pack('B', len(mon_data))
+            data += mon_data
 
         data += pack('B', len(self.inventory))
-        for item, count in self.inventory:
+        for item, count in self.inventory.items():
             data += pack('BB', item.id, count)
+
+        data += pack('Q', self.last_heal)
+
+        bdex  = self.badgedex.serialise()
+        data += pack('B', len(bdex))
+        data += bdex
+
+        data += pack('I', self.money)
+
+        return data
 
     @staticmethod
     def deserialise(data: bytearray) -> 'Player':
@@ -73,16 +97,41 @@ class Player:
             badgemon.append(mon)
             offset += mon_len
 
-        inventory = []
+        mons_len = data[offset]
+        offset += 1
+        badgemon_case = []
+        for _ in range(mons_len):
+            mon_len = data[offset]
+            offset += 1
+            mon = Mon.deserialise(data[offset:offset + mon_len])
+            badgemon_case.append(mon)
+            offset += mon_len
+
+        inventory = {}
         inv_len = data[offset]
         offset += 1
         for _ in range(inv_len):
             item_id, count = data[offset:offset + 2]
             item = items.items_list[item_id]
-            inventory.append((item, count))
-            offset += 1
+            inventory[item] = count
+            offset += 2
 
-        return Player(name, badgemon, inventory)
+        print(f"OFFSET: {offset}")
+        last_heal = unpack_from("Q", data, offset)[0]
+        print(f"LAST_HEAL: {last_heal}")
+        offset += 8
+
+        bdex_len = data[offset]
+        print(f"OFFSET: {offset}")
+        print(f"BDEX_LEN: {bdex_len}")
+        offset += 1
+        bdex = badgedex.Badgedex.deserialise(data[offset:offset + bdex_len])
+        offset += bdex_len
+
+        money = unpack_from("I", data, offset)[0]
+
+        pl = Player(name, badgemon, badgemon_case, inventory, last_heal, money, bdex)
+        return pl
 
     async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
         """
@@ -106,15 +155,17 @@ class Player:
             self.last_heal = time.ticks_add(time.ticks_ms(), -_TIME_BETWEEN_HEALS)
         return diff
 
-    def use_full_heal(self) -> bool:
+    async def use_full_heal(self, news = None) -> bool:
         diff = self.full_heal_available()
         if diff >= _TIME_BETWEEN_HEALS:
             for guy in self.badgemon:
                 guy.full_heal()
             self.last_heal = time.ticks_ms()
-            print("Healed!")
+            if news is not None:
+                await news.write("Healed!")
         else:
-            print(f"Heal is not allowed for another {(_TIME_BETWEEN_HEALS-diff)/1000} seconds")
+            if news is not None:
+                await news.write(f"Heal is not allowed for another {int((_TIME_BETWEEN_HEALS-diff)/1000)} seconds")
 
 class Cpu(Player):
 

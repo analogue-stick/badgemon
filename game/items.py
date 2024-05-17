@@ -1,9 +1,11 @@
 try:
-    from typing import Callable, Union
+    from typing import Callable, Union, TYPE_CHECKING
+    if TYPE_CHECKING:
+        from . import player, battle_main, mons
 except ImportError:
     pass
 
-from . import constants, player, battle_main, mons
+from ..game import constants
 
 class FieldTargetingType:
     NOT_USABLE = 0
@@ -16,9 +18,9 @@ class Item:
 
     def __init__(self, name: str, desc: str, value: int, usable_in_battle: bool, usable_in_field: int,
                  function_in_battle: Union[
-                     Callable[[player.Player, battle_main.Battle, mons.Mon, mons.Mon], None], None
+                     Callable[['player.Player', 'battle_main.Battle', 'mons.Mon', 'mons.Mon'], None], None
                  ] = None,
-                 function_in_field: Union[Callable[[player.Player, Union[mons.Mon, None]], None], None] = None):
+                 function_in_field: Union[Callable[['player.Player', Union['mons.Mon', None]], None], None] = None):
         """
         :param name: Name of the item
         :param desc: Description of the item
@@ -42,7 +44,7 @@ class Item:
         self.function_in_battle = function_in_battle
         self.function_in_field = function_in_field
 
-def parabox(mon: mons.Mon):
+def parabox(mon: 'mons.Mon'):
     mon.heal_status(None)
     mon.take_heal(999999)
 
@@ -53,7 +55,7 @@ items_list = [
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.BURNED), lambda _, m: m.heal_status(constants.StatusEffect.BURNED)),
     Item("Heat Pack", "A portable heater to attach to frozen badgemon.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.FROZEN), lambda _, m: m.heal_status(constants.StatusEffect.FROZEN)),
-    Item("Klaxon", "\"Heals\" a sleeping badgemon.",
+    Item("Klaxon", "\'Heals\' a sleeping badgemon.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.SLEEPING), lambda _, m: m.heal_status(constants.StatusEffect.SLEEPING)),
     Item("Hot Chocolate", "One cup of this and paralysis is no more.",
          200, True,  FieldTargetingType.TARGETS_SPECIFIC_MON, lambda _, __, m, ___: m.heal_status(constants.StatusEffect.PARALYZED), lambda _, m: m.heal_status(constants.StatusEffect.PARALYZED)),

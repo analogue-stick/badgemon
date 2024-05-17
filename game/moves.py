@@ -167,11 +167,49 @@ class Move:
 
 
 moves_list = [
-    Move('Scratch', 'Scratches opponent', constants.MonType.NORMAL, 35, 40, 100) for i in range(10)
-    # Move(
-    #     "Kills you", "Kills you with hammers", constants.MonType.DRAGON, 20, 999, 100,
-    #     MoveEffect.recoil_damage(20).then(
-    #         MoveEffect.apply_status_effect(constants.StatusEffect.BURNED, 0.3)
-    #     )
-    # ) for i in range(10)
+    Move('Scratch', 'Scratches opponent', constants.MonType.NORMAL, 35, 40, 100),
+    Move('Tackle', "A crude body slam.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Bite', "The user bites the opponent.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Slap', "A quick slap to the opponent's face.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('PleadingFace', "The user looks pathetically at the opponent, reducing their ATK and SpATK.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Scowl', "The user fixes a withering scowl at the opponent, sharply reducing their DEF.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Think', "The user ponders deeply, gaining an increase to SpATK and SpDEF.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('PsychUp', "The user repeats some words of self-encouragement, gaining an increase to ATK and SpATK.", constants.MonType.FIGHTING, 35, 40, 100),
+    Move('free()', "Deallocates the space previously allocated to the opponent", constants.MonType.BUG, 35, 40, 100),
+    Move('StackSmash', "Writes a \'normal amount of data\' to the opponent's stack.", constants.MonType.BUG, 35, 40, 100),
+    Move('SQLInject', "Writes a \'normal\' string to the opponent's database';DROP TABLE HP", constants.MonType.BUG, 35, 40, 100),
+    Move('Wet Fish', "The opponent is hit across the face with a wet fish", constants.MonType.WATER, 35, 40, 100),
+    Move('ScathingInsult', "Make a witty remark about the opponent's mother.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Pandemic', "Cancels opponent due to pandemic restrictions", constants.MonType.GHOST, 35, 40, 100),
+    Move('TorrentialRain', "Maybe if the opponent had pitched at the top of the hill they would still be fine right now", constants.MonType.WATER, 35, 40, 100),
+    Move('ICBM', "This feels self explanatory.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Mallet', "Hits opponent with comically large mallet", constants.MonType.FIGHTING, 35, 40, 100),
+    Move('Rework', "Rework the opponent into a stylish broach", constants.MonType.STEEL, 35, 40, 100),
+    Move('Slander', "Run a smear campain against the opponent in the local newspaper.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Nose!', "Get your opponent's nose.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('DangerHug', "Gives opponent a (deadly) hug.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('PinchCheeks', "Pinch the opponent's cheeks and tell them how much they've grown.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('MailFraud', "All items applied to the opponent for 2 turns will be appllied to you instead.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Intoxicate', "Gets opponent drunk.", constants.MonType.POISON, 35, 40, 100),
+    Move('Irrationalise', "Use advanced mathematics to prove that the opponent is irrational, and therefore not representable as a fraction.", constants.MonType.PSYCHIC, 35, 40, 100),
+    Move('Rawr', "OwO? *nuzzles opponent*", constants.MonType.DRAGON, 35, 40, 100),
+    Move('Uppercut', "Pow! Blam! Wham! Slap! Ka-pow!", constants.MonType.FIGHTING, 35, 40, 100),
+    Move('Disassemble', "Disassembles the opponent to look for vulnerabilities.", constants.MonType.DRAGON, 35, 40, 100),
+    Move('Arson', "Did you know that the opponent is flammable?", constants.MonType.FIRE, 35, 40, 100),
+    Move('Tazer', "The power of the sun in the palm of your hand.", constants.MonType.ELECTRIC, 35, 40, 100),
+    Move('FlamingSword', "Its cool factor more than makes up for its impractibility.", constants.MonType.FIRE, 35, 40, 100),
+    Move('Duel', "Challenge opponent to pistol duel", constants.MonType.DARK, 35, 40, 100),
+    Move('FP16', "Cast the opponent to a smaller data type, making them less accurate.", constants.MonType.BUG, 35, 40, 100),
+    Move('ShakeHands', "Shake hands with the opponent and recover 50% HP each.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('OOOooOOoO!', "Spook opponent", constants.MonType.GHOST, 35, 40, 100),
+    Move('Overvolt', "Send more than the rated voltage to the opponent's VCC pin.", constants.MonType.ELECTRIC, 35, 40, 100),
+    Move('Drain', "Reduce the opponent's voltage potential.", constants.MonType.GROUND, 35, 40, 100),
+    Move('DodgyCurry', "Serve the opponent a dodgy curry.", constants.MonType.POISON, 35, 40, 100),
+    Move('Bury', "Covers opponent in a layer of dirt", constants.MonType.GROUND, 35, 40, 100),
+    Move('FancyLighting', "Blind opponent using dope ass lightshow", constants.MonType.GHOST, 35, 40, 100),
+    Move('WTF?', "Shows the opponent the \'WTF?\' talk.", constants.MonType.PSYCHIC, 35, 40, 100),
+    Move('FineMist', "Gives opponent a light misting.", constants.MonType.WATER, 35, 40, 100),
+    Move('UnexpectedBill', "Gives opponent a large shock.", constants.MonType.ELECTRIC, 35, 40, 100),
+    Move('Devour', "Attempt to eat opponent. You cannot eat Rinoa.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('DadJoke', "Tell a dad joke to the opponent, who cringes so hard they deal themselves damage.", constants.MonType.PSYCHIC, 35, 40, 100)
 ]

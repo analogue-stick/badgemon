@@ -10,7 +10,7 @@ from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
-from ..game.player import Player, Cpu
+from ..game.player import Cpu, Player
 from ctx import Context
 
 from ..game import constants
@@ -46,48 +46,51 @@ class Battle(Scene):
     def _set_text_tilt(self, x):
         self._text_tilt = x/16.0
     
-    def __init__(self, battle_context: BContext, debug: bool = False, *args, **kwargs):
+    def __init__(self, *args, opponent: Player, **kwargs):
         super().__init__(*args, **kwargs)
-        if debug:
-            player_a = Player("Scarlett", [mon2, mon3], [mon4], [(potion, 2)])
-            player_a.get_move = self._get_move
-            player_a.get_new_badgemon = self._get_new_badgemon
-            player_b = Cpu('Tr41n0rB0T', [mon1, mon5], [], [])
-            self._battle_context = BContext(player_a, player_b, True, self.speech)
-        else:
-            self._battle_context = battle_context
-        self._next_move: Mon | Item | Move | None = None
+        self.context.player.get_move = self._get_move
+        self.context.player.get_new_badgemon = self._get_new_badgemon
+        self._battle_context = BContext(self.context.player, opponent, True, self.speech)
+        self._next_move: Mon | Item | Move | self.Desc | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()
         self._text_tilt = 0
         self.animation_scheduler.trigger(AnimSin(AnimLerp(editor=lambda x: self._set_text_tilt(x)), length=3000))
-        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
 
     def _gen_choice_dialog(self):
+        available_moves: set[Move] = set()
+        for m in self._battle_context.player1.badgemon:
+            if not m.fainted:
+                available_moves.update(m.moves)
         self.choice.set_choices(
-                    [
-                ("Attack", [
-                    (m.name, lambda: self._do_move(m)) for m in self._battle_context.mon1.moves
-                ]),
-                ("Item", [
-                    (f"{count}x {item.name}",lambda: self._do_item(i,item, count)) for (i,(item,count)) in filter(lambda i: i[1][0].usable_in_battle and i[1][1] > 0, enumerate(self._battle_context.player1.inventory))
-                ]),
-                ("Swap Mon", [
-                    (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
-                ]),
-                ("Run Away", [
-                    ("Confirm", lambda: self._run_away())
-                ])
-            ],
-            "BATTLE?!"
+            (
+                "BATTLE?!",
+                [
+                    ("Attack", ("Attack", [
+                        (m.name, self._do_move(m)) for m in self._battle_context.mon1.moves
+                    ])),
+                    ("Item", ("Item", [
+                        (f"{count}x {item.name}", self._do_item(item, count)) for (item,count) in self._battle_context.player1.inventory.items() if item.usable_in_battle and count > 0
+                    ])),
+                    ("Swap Mon", ("Swap Mon", [
+                        (m.nickname, self._do_mon(m)) for m in self._battle_context.player1.badgemon if not m.fainted
+                    ])),
+                    ("Describe...", ("Describe...", [
+                        ("Item", ("Describe Item", [(i.name, self._describe(i)) for i,c in self._battle_context.player1.inventory.items() if i.usable_in_battle and c > 0])),
+                        ("Move", ("Describe Move", [(m.name, self._describe(m)) for m in available_moves]))
+                    ])),
+                    ("Run Away", ("Run Away??", [
+                        ("Confirm", self._run_away())
+                    ]))
+                ]
+            )
         )
 
     def _gen_new_badgemon_dialog(self):
         self.choice.set_choices(
-            [
-                (m.nickname,lambda: self._do_mon(m)) for m in filter(lambda b: not b.fainted, self._battle_context.player1.badgemon)
-            ],
-            "NEW BDGMON?!",
+            ("NEW BDGMON?!", [
+                (m.nickname, self._do_mon(m)) for m in self._battle_context.player1.badgemon if not m.fainted
+            ]),
             True
         )
 
@@ -95,9 +98,6 @@ class Battle(Scene):
         if self._battle_context.turn and not self.choice.is_open() and not self.speech.is_open():
             self._gen_choice_dialog()
             self.choice.open()
-
-    def _draw_background(self, ctx: Context):
-        ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
 
     def _draw_mons(self, ctx: Context):
         draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3), False, False, 3)
@@ -192,8 +192,7 @@ class Battle(Scene):
         ctx.arc(0,0,115,0,6.28,0).stroke()
 
     def draw(self, ctx: Context):
-        ctx.line = ctx_line
-        self._draw_background(ctx)
+        super().draw(ctx)
         self._draw_mons(ctx)
         self._draw_health(ctx)
         self._draw_names(ctx)
@@ -201,31 +200,48 @@ class Battle(Scene):
             self._your_turn(ctx)
         else:
             self._their_turn(ctx)
-        self.choice.draw(ctx)
-        self.speech.draw(ctx)
-        super().draw(ctx)
 
     def _do_move(self, move: Move):
-        print("DO MOVE")
-        self._next_move = move
-        self._next_move_available.set()
+        def f():
+            self._next_move = move
+            self._next_move_available.set()
+        return f
 
     def _run_away(self):
-        self._next_move = None
-        self._next_move_available.set()
+        def f():
+            self._next_move = None
+            self._next_move_available.set()
+        return f
     
-    def _do_item(self, index: int, item: Item, count: int):
-        count -= 1
-        if count == 0:
-            self._battle_context.player1.inventory.pop(index)
-        else:
-            self._battle_context.player1.inventory[index] = (item, count)  # decrease stock
-        self._next_move = item
-        self._next_move_available.set()
+    def _do_item(self, item: Item, count: int):
+        def f():
+            nc = count - 1
+            if nc == 0:
+                self._battle_context.player1.inventory.pop(item)
+            else:
+                self._battle_context.player1.inventory[item] = nc  # decrease stock
+            self._next_move = item
+            self._next_move_available.set()
+        return f
         
     def _do_mon(self, mon: Mon):
-        self._next_move = mon
-        self._next_move_available.set()
+        def f():
+            self._next_move = mon
+            self._next_move_available.set()
+        return f
+    
+    class Desc():
+        def __init__(self, t):
+            self.t = t
+
+        def __str__(self) -> str:
+            return self.t.desc
+    
+    def _describe(self, thing):
+        def f():
+            self._next_move = self.Desc(thing)
+            self._next_move_available.set()
+        return f
 
     async def _get_move(self, mon):
         self._gen_choice_dialog()
@@ -240,7 +256,16 @@ class Battle(Scene):
         self._next_move_available.clear()
         return self._next_move
     
+    def scene_start(self):
+        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
+        return super().scene_start()
+    
+    def scene_end(self):
+        eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.sm)
+        return super().scene_end()
+    
     async def background_task(self):
+        print("test")
         while True:
             if self._battle_context.turn:
                 curr_player, curr_target = self._battle_context.player1, self._battle_context.player2
@@ -248,6 +273,8 @@ class Battle(Scene):
             else:
                 curr_player, curr_target = self._battle_context.player2, self._battle_context.player1
                 player_mon, target_mon = self._battle_context.mon2, self._battle_context.mon1
+
+            print("target faint?")
             
             if target_mon.fainted:
                 await self.speech.write(f"{target_mon.nickname} fainted!")
@@ -256,7 +283,7 @@ class Battle(Scene):
                     all_fainted = all_fainted and mon.fainted
                 if all_fainted:
                     await self.speech.write(f"{curr_player.name} wins!")
-                    await self.fade_to_scene(None)
+                    await self.fade_to_scene(2)
                     return
                 else:
                     new_badgemon = await curr_target.get_new_badgemon()
@@ -266,6 +293,8 @@ class Battle(Scene):
                         self._battle_context.mon1 = new_badgemon
                     target_mon = new_badgemon
 
+            print("player faint?")
+
             if player_mon.fainted:
                 await self.speech.write(f"{player_mon.nickname} fainted!")
                 all_fainted = True
@@ -273,7 +302,7 @@ class Battle(Scene):
                     all_fainted = all_fainted and mon.fainted
                 if all_fainted:
                     await self.speech.write(f"{curr_target.name} wins!")
-                    await self.fade_to_scene(None)
+                    await self.fade_to_scene(2)
                     return
                 else:
                     new_badgemon = await curr_player.get_new_badgemon()
@@ -289,6 +318,8 @@ class Battle(Scene):
 
             print(f"move got: {action}")
 
+            same_turn = False
+
             if isinstance(action, Move):
                 print(f"USING MOVE {action}")
                 await self._battle_context.use_move(player_mon, target_mon, action)
@@ -302,9 +333,14 @@ class Battle(Scene):
             elif isinstance(action, Item):
                 action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
 
+            elif isinstance(action, self.Desc):
+                await self.speech.write(str(action))
+                same_turn = True
+
             elif action is None:
                 await self.speech.write(f"{curr_target.name} wins by default!")
-                await self.fade_to_scene(None)
+                await self.fade_to_scene(2)
                 return
 
-            self._battle_context.turn = not self._battle_context.turn
+            if not same_turn:
+                self._battle_context.turn = not self._battle_context.turn

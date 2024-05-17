@@ -13,26 +13,39 @@ except ImportError:
     pass
 
 class Scene:
-    def __init__(self, choice: ChoiceDialog, speech: SpeechDialog, animation_scheduler: AnimationScheduler, sm: 'SceneManager'):
-        self.choice = choice
-        self.speech = speech
-        self.animation_scheduler = animation_scheduler
-        self._fader = FadeToShade((1.0,1.0,1.0), length=200)
+    def __init__(self, sm: 'SceneManager'):
         self.sm = sm
+        self.choice = sm._choice
+        self.speech = sm._speech
+        self.animation_scheduler = sm._animation_scheduler
+        self.context = sm._context
+        self._fader = sm._fader
+        self._scene_ready = Event()
 
-    async def fade_to_scene(self, scene):
+    async def fade_to_scene(self, scene: int, *args, **kwargs):
+        self._scene_ready.clear()
         end_event = Event()
+        self._fader.detach()
+        self._fader.reset()
         self._fader._colour = (0,0,0)
         self._fader.and_then(AnimationEvent(end_event))
         self.animation_scheduler.trigger(self._fader)
         await end_event.wait()
-        self.sm.switch_scene(scene)
+        self.sm.switch_scene(scene, *args, **kwargs)
+
+    def _fadein(self):
+        self._scene_ready.clear()
+        self._fader.detach()
+        self._fader.reset(fadein=True)
+        self._fader._colour = (0,0,0)
+        self._fader.and_then(AnimationEvent(self._scene_ready))
+        self.animation_scheduler.trigger(self._fader)
 
     def update(self, delta: float):
         pass
 
     def draw(self, ctx: Context):
-        self._fader.draw(ctx)
+        self._draw_background(ctx)
 
     def scene_start(self):
         pass
@@ -40,5 +53,8 @@ class Scene:
     def scene_end(self):
         self.animation_scheduler.kill_animation()
 
+    def _draw_background(self, ctx: Context):
+        ctx.gray(0.9).rectangle(-120, -120, 240, 240).fill()
+
     async def background_task(self):
-        pass
+        await self._scene_ready.wait()
