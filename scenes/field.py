@@ -135,7 +135,7 @@ class Field(Scene):
             current = self.context.player.inventory.get(item)
             if current is None:
                 current = 0
-            m = min(self.context.player.money//item.value, 255-current)
+            m = min(self.context.player.money//item.value, 255-current, 10)
             no_purchase &= m == 0
             max_purchase.append((item, m))
             
@@ -143,7 +143,7 @@ class Field(Scene):
             shop = self._get_answer(self.speech.write("You don't have enough money!"))
         else:
             shop = (f"GP: {self.context.player.money}", [(f"{item.name}",
-                    (f"Buy {item.name}", [(f"{i}x {item.name}",
+                    (f"Cost: {item.value}", [(f"{i}x {item.name}",
                             (f"Buy {i}x {item.name}", [("Confirm",
                                 self._get_answer(self._purchase(item,i))
                             )])

@@ -3,12 +3,12 @@ import math
 
 from ctx import Context
 
-from ..util.animation import AnimLerp, AnimRandom, AnimSin
+from ..util.animation import AnimLerp, AnimSin
 
 from ..scenes.scene import Scene
 from ..game.mons import MonTemplate, mons_list
 from ..util.misc import *
-from ..game.constants import MonType, type_to_str
+from ..game.constants import type_to_str
 
 class Badgedex(Scene):
     def _set_wobble(self, x):
