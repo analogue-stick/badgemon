@@ -1,4 +1,5 @@
 from ctx import Context
+from ..config import ASSET_PATH
 
 def ctx_line(self: Context, x: float, y: float, x2: float, y2: float):
     return self.move_to(x,y).line_to(x2,y2)
@@ -10,3 +11,19 @@ def shrink_until_fit(ctx: Context, text: str, max_width: float, max_font: int = 
         width -= 1
         ctx.font_size = width
     return width
+
+def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx: bool, flipy: bool, scale: int):
+    ctx.image_smoothing = 0
+    if flipx:
+        xscale = -1
+    else:
+        xscale = 1
+    if flipy:
+        yscale = -1
+    else:
+        yscale = 1
+    ctx.scale(xscale,yscale)
+    ctx.translate(x, y)
+    ctx.image(ASSET_PATH+f"mons/mon-{monIndex}.png", 0, 0, 32*scale, 32*scale)
+    ctx.translate(-x,-y)
+    ctx.scale(xscale,yscale)

@@ -158,6 +158,7 @@ class Field(Scene):
                     ("Withdraw BMon", swap_mon_in),
                     ("Change Order", swap_mons),
                 ])),
+                ("Badgedex", self._get_answer(self.fade_to_scene(5), True)),
                 ("Item Bag", ("Item Bag", [
                     ("Use Item", use_item),
                     ("Describe Item", describe_item),

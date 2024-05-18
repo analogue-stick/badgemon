@@ -7,6 +7,7 @@ from ..scenes.main_menu import MainMenu
 from ..scenes.field import Field
 from ..scenes.battle import Battle
 from ..scenes.qr import Qr
+from ..scenes.badgedex import Badgedex
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade
 from ..util.choice import ChoiceDialog
@@ -18,7 +19,7 @@ from app import App
 from ctx import Context
 from ..config import SAVE_PATH
 
-SCENE_LIST = [MainMenu, None, Field, Battle, Qr]
+SCENE_LIST = [MainMenu, None, Field, Battle, Qr, Badgedex]
 
 class SceneManager(App):
     def __init__(self):

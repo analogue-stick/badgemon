@@ -3,8 +3,6 @@ from events.input import ButtonDownEvent
 from ..util.misc import *
 from ..util.animation import AnimLerp, AnimSin
 
-from ..config import *
-
 from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
@@ -24,22 +22,6 @@ mon2 = Mon(mon_template2, 17).set_nickname("mr. 17")
 mon3 = Mon(mon_template1, 17).set_nickname("David")
 mon4 = Mon(mon_template2, 33).set_nickname("large individual")
 mon5 = Mon(mon_template1, 100).set_nickname("biggest dude")
-
-def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx: bool, flipy: bool, scale: int):
-    ctx.image_smoothing = 0
-    if flipx:
-        xscale = -1
-    else:
-        xscale = 1
-    if flipy:
-        yscale = -1
-    else:
-        yscale = 1
-    ctx.scale(xscale,yscale)
-    ctx.translate(x, y)
-    ctx.image(ASSET_PATH+f"mons/mon-{monIndex}.png", 0, 0, 32*scale, 32*scale)
-    ctx.translate(-x,-y)
-    ctx.scale(xscale,yscale)
 
 class Battle(Scene):
     def _set_text_tilt(self, x):
@@ -325,7 +307,10 @@ class Battle(Scene):
                 action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
 
             elif isinstance(action, self.Desc):
-                await self.speech.write(str(action))
+                if isinstance(action.t, Move):
+                    await self.speech.write(f"|TYPE: {constants.type_to_str(action.t.move_type)}| {action}")
+                else:
+                    await self.speech.write(str(action))
                 same_turn = True
 
             elif action is None:
