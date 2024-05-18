@@ -167,6 +167,7 @@ class Field(Scene):
                 ("Main Menu", ("Main Menu?",[
                     ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
+                ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
                 ])),
