@@ -179,18 +179,10 @@ class Field(Scene):
     def draw(self, ctx: Context):
         super().draw(ctx)
 
-    def _handle_buttondown(self, event: ButtonDownEvent):
+    def handle_buttondown(self, event: ButtonDownEvent):
         if not self.choice.is_open() and not self.speech.is_open():
             self._gen_field_dialog()
             self.choice.open()
-
-    def scene_start(self):
-        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
-        return super().scene_start()
-
-    def scene_end(self):
-        eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.sm)
-        return super().scene_end()
 
     async def background_task(self):
         while not self._exit:

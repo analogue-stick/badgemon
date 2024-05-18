@@ -94,7 +94,7 @@ class Battle(Scene):
             True
         )
 
-    def _handle_buttondown(self, event: ButtonDownEvent):
+    def handle_buttondown(self, event: ButtonDownEvent):
         if self._battle_context.turn and not self.choice.is_open() and not self.speech.is_open():
             self._gen_choice_dialog()
             self.choice.open()
@@ -255,14 +255,6 @@ class Battle(Scene):
         await self._next_move_available.wait()
         self._next_move_available.clear()
         return self._next_move
-    
-    def scene_start(self):
-        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
-        return super().scene_start()
-    
-    def scene_end(self):
-        eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.sm)
-        return super().scene_end()
     
     async def background_task(self):
         print("test")

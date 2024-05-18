@@ -1,9 +1,8 @@
 from asyncio import Event
-from ..util.fades import FadeToShade
-from ..util.choice import ChoiceDialog
-from ..util.speech import SpeechDialog
-from ..util.animation import AnimationScheduler, AnimationEvent
+from ..util.animation import AnimationEvent
 from ctx import Context
+from events.input import ButtonDownEvent
+from system.eventbus import eventbus
 
 try:
     from typing import TYPE_CHECKING
@@ -47,10 +46,14 @@ class Scene:
     def draw(self, ctx: Context):
         self._draw_background(ctx)
 
-    def scene_start(self):
+    def handle_buttondown(self, event: ButtonDownEvent):
         pass
 
+    def scene_start(self):
+        eventbus.on(ButtonDownEvent, self.handle_buttondown, self.sm)
+
     def scene_end(self):
+        eventbus.remove(ButtonDownEvent, self.handle_buttondown, self.sm)
         self.animation_scheduler.kill_animation()
 
     def _draw_background(self, ctx: Context):
