@@ -1,5 +1,4 @@
 from ..scenes.scene import Scene
-from system.eventbus import eventbus
 from events.input import ButtonDownEvent
 from ..util.misc import *
 from ..util.animation import AnimLerp, AnimSin
@@ -10,7 +9,7 @@ from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
-from ..game.player import Cpu, Player
+from ..game.player import Player
 from ctx import Context
 
 from ..game import constants

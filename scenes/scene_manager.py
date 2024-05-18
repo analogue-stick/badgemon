@@ -1,22 +1,21 @@
 import asyncio
 import gc
 import sys
-from typing import Type
 
+from ..scenes.scene import Scene
+from ..scenes.main_menu import MainMenu
 from ..scenes.field import Field
+from ..scenes.battle import Battle
+from ..scenes.qr import Qr
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade
-from ..scenes.main_menu import MainMenu
-from ..scenes.scene import Scene
-from ..scenes.qr import Qr
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
-from .battle import Battle
 from system import eventbus
 from system.scheduler.events import RequestStopAppEvent
 from ..util.animation import AnimationScheduler
 from app import App
-from ctx import Context, _img_cache, _wasm
+from ctx import Context
 from ..config import SAVE_PATH
 
 SCENE_LIST = [MainMenu, None, Field, Battle, Qr]

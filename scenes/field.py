@@ -1,5 +1,5 @@
-from asyncio import Event, Task, create_task
-from typing import Coroutine, Tuple
+from asyncio import Event
+from typing import Coroutine
 
 from ..game.player import Cpu
 
@@ -7,7 +7,6 @@ from ..scenes.scene import Scene
 from ..game.items import Item, items_list
 from ..game.mons import Mon, mons_list
 from events.input import ButtonDownEvent
-from system.eventbus import eventbus
 from ctx import Context
 
 potion = items_list[0]
