@@ -16,7 +16,7 @@ class Badgedex(Scene):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.context.player.badgedex.find(0)
+        #self.context.player.badgedex.find(0)
         self._gen_main_menu_dialog()
         self._current_mon = None
         self._mon_known = False
