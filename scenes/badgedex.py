@@ -34,17 +34,14 @@ class Badgedex(Scene):
         self.choice.set_choices(
             (
                 "Badgedex",
-                    [(f"{m.id}: " + (m.name if f else "?????"), self._switch_to(m, f)) for m, f in zip(mons_list,self.context.player.badgedex.found)]
+                    [(f"{m.id}: " + (m.name), self._switch_to(m, f)) for m, f in zip(mons_list,self.context.player.badgedex.found)]
             )
         )
 
     def _show_detail(self):
         if self._current_mon is None:
             return
-        if self._mon_known:
-            self.speech.set_speech(self._current_mon.desc)
-        else:
-            self.speech.set_speech("You haven't found this mon yet!")
+        self.speech.set_speech(self._current_mon.desc)
         self.speech.open()
 
     def handle_buttondown(self, event):
@@ -60,14 +57,6 @@ class Badgedex(Scene):
                 else:
                     self.choice.open()
 
-    def _draw_type(self, ctx: Context):
-        if self._mon_known:
-            name = f"{type_to_str(self._current_mon.type1)}, {type_to_str(self._current_mon.type2)}"
-        else:
-            name = "?????, ?????"
-        shrink_until_fit(ctx, name, 120, 40)
-        ctx.text(name).fill()
-
     def _draw_arrow(self, ctx: Context):
         (ctx.move_to(-10, -100+self._arrow_wobble)
            .line_to(10, -100+self._arrow_wobble)
@@ -77,15 +66,28 @@ class Badgedex(Scene):
 
     def draw(self, ctx: Context):
         super().draw(ctx)
+        ctx.text_align = Context.CENTER
+        ctx.text_baseline = Context.MIDDLE
         if not self._current_mon is None:
-            draw_mon(ctx, self._current_mon.sprite if self._mon_known else "unknown", -64, -64, False, False, 4)
-            name = (self._current_mon.name if self._mon_known else "?????")
-            ctx.text_align = Context.CENTER
-            ctx.text_baseline = Context.MIDDLE
+            draw_mon(ctx, self._current_mon.sprite, -64, -64, False, False, 4)
+            
+            name = (self._current_mon.name)
             shrink_until_fit(ctx, name, 100, 60)
             ctx.gray(0).move_to(0,-80).text(name).fill()
-            self._draw_type(ctx.gray(0.2).move_to(0,80))
+            
+            types = f"{type_to_str(self._current_mon.type1)}, {type_to_str(self._current_mon.type2)}"
+            shrink_until_fit(ctx, types, 120, 40)
+            ctx.gray(0.2).move_to(0,75).text(types).fill()
+            
+            found = "Found" if self._mon_known else "Not Found"
+            ctx.font_size = 20
+            if self._mon_known:
+                ctx.rgb(0.1,0.6,0.1)
+            else:
+                ctx.rgb(0.6,0.1,0.1)
+            ctx.move_to(0,100).text(found).fill()
         ctx.font_size = 30
+        ctx.gray(0)
         ctx.rotate(math.pi/2).move_to(0,-80).text("DESC.").fill()
         self._draw_arrow(ctx)
         ctx.rotate(math.pi).move_to(0,-80).text("EXIT").fill()
@@ -94,6 +96,6 @@ class Badgedex(Scene):
 
     async def background_task(self):
         if self.choice._state == "CLOSED":
-            await self.choice.open_and_wait()
+            self.choice.open()
         await self._exit.wait()
         await self.fade_to_scene(2)
