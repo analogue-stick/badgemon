@@ -7,7 +7,7 @@ try:
 except ImportError:
     pass
 
-from . import moves, abilities, constants
+from . import moves, constants
 
 
 class MonTemplate:
@@ -17,7 +17,6 @@ class MonTemplate:
     id_inc = 0
 
     def __init__(self, name: str, desc: str, type1: constants.MonType, type2: constants.MonType,
-                 ability: int,
                  evolve_mon: Union['MonTemplate', None], evolve_level: Union[int, None],
                  base_hp: int, base_atk: int, base_def: int,
                  base_spatk: int, base_spdef: int, base_spd: int,
@@ -28,7 +27,6 @@ class MonTemplate:
         :param desc: Description (dex entry)
         :param type1: First type, e.g. Fire, Ground
         :param type2: Second type, e.g. Fire, Ground
-        :param ability: Ability. Use an object reference.
         :param evolve_mon: The mon this will evolve into. Will not evolve if this is None.
         :param evolve_level: The level at which this mon evolves. Will not evolve if this is None.
         :param base_hp: Base HP (in the pokemon terms)
@@ -48,7 +46,6 @@ class MonTemplate:
         self.desc = desc
         self.type1 = type1
         self.type2 = type2
-        self.ability = ability
         self.evolve_mon = evolve_mon
         self.evolve_level = evolve_level
         self.base_hp = base_hp
@@ -343,7 +340,7 @@ class Mon:
 mons_list = [
     MonTemplate(
         "Tetris", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
-        abilities.Ability.NO_ABILITY, None, None,
+        None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[0], 5),
             (moves.moves_list[1], 5),
@@ -357,7 +354,7 @@ mons_list = [
     ),
     MonTemplate(
         "EMF Duck", "quack", constants.MonType.FIGHTING, constants.MonType.FIRE,
-        abilities.Ability.NO_ABILITY, None, None,
+        None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[0], 5),
             (moves.moves_list[1], 5),
