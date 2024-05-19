@@ -1,4 +1,5 @@
 from asyncio import Event
+import asyncio
 from typing import Coroutine
 
 from ..game.player import Cpu
@@ -24,6 +25,7 @@ class Field(Scene):
         self._next_move_available = Event()
         self._next_move = None
         self._exit = False
+        self._random_enc_needed = Event()
         try:
             self._gen_field_dialog()
         except Exception as e:
@@ -184,7 +186,20 @@ class Field(Scene):
             self._gen_field_dialog()
             self.choice.open()
 
-    async def background_task(self):
+    async def _await_random_enc(self):
+        while True:
+            await self._random_enc_needed.wait()
+            if not self.context.random_encounters:
+                self._random_enc_needed.clear()
+            else:
+                break
+        while self.speech.is_open():
+            await self.speech._ready_event.wait()
+        self.choice.close()
+        await self.speech.write("Oh, what's this?")
+        await self._initiate_battle()
+
+    async def _handle_ui(self):
         while not self._exit:
             await self._next_move_available.wait()
             self._next_move_available.clear()
@@ -195,3 +210,14 @@ class Field(Scene):
                 print(e)
                 print(e.with_traceback(True))
                 print(e)
+
+    async def _drive_random_enc(self):
+        while True:
+            await asyncio.sleep(3)
+            self._random_enc_needed.set()
+
+    async def background_task(self):
+        tasks: list[asyncio.Task] = [asyncio.Task(self._await_random_enc()), asyncio.Task(self._handle_ui()), asyncio.Task(self._drive_random_enc())]
+        await asyncio.wait(tasks, return_when = asyncio.FIRST_COMPLETED)
+        for t in tasks:
+            t.cancel()

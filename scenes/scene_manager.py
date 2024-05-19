@@ -96,6 +96,8 @@ class SceneManager(App):
                 print("BACKGROUND FAIL")
                 print(e)
                 sys.exit()
+            self._choice.close()
+            self._speech.close()
             await asyncio.sleep(0.05)
 
     def switch_scene(self, scene: int, *args, **kwargs):
@@ -110,6 +112,8 @@ class SceneManager(App):
             del self._fader
             del self._speech
         else:
+            self._choice.close()
+            self._speech.close()
             print("LOAD SCENE")
             print((SCENE_LIST[scene]))
             self._scene: Scene = (SCENE_LIST[scene])(self, *args, **kwargs)
