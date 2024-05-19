@@ -1,12 +1,13 @@
 from asyncio import Event
 import asyncio
+import random
 from typing import Coroutine
 
 from ..game.player import Cpu
 
 from ..scenes.scene import Scene
 from ..game.items import Item, items_list
-from ..game.mons import Mon, mons_list
+from ..game.mons import Mon, mons_list, choose_weighted_mon
 from events.input import ButtonDownEvent
 from ctx import Context
 
@@ -70,7 +71,11 @@ class Field(Scene):
         await self.context.player.use_full_heal(self.speech)
 
     async def _initiate_battle(self):
-        await self.fade_to_scene(3, opponent=Cpu('Tr41n0rB0T', [mon1, mon5], [], []))
+        template = choose_weighted_mon()
+        max_level = max([m.level for m in self.context.player.badgemon])
+        level = random.randrange(max_level//8, int(max_level*1.2))
+
+        await self.fade_to_scene(3, opponent=Cpu(template.name, [Mon(template, level)], [], []))
 
     async def _save(self):
         self.sm._attempt_save()

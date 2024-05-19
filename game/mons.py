@@ -21,7 +21,8 @@ class MonTemplate:
                  base_hp: int, base_atk: int, base_def: int,
                  base_spatk: int, base_spdef: int, base_spd: int,
                  learnset: List[Tuple[moves.Move, int]],
-                 sprite: int):
+                 sprite: int,
+                 weight: int):
         """
         :param name: Name of the mon
         :param desc: Description (dex entry)
@@ -38,6 +39,9 @@ class MonTemplate:
         :param learnset: The moves this mon learns. At each specified level,
         the mon tries to learn the move. Must be sorted from low to high, e.g. [[Move1, 2], [Move2, 10], ...]
         :param sprite: The sprite index to use for this mon, E.G. mon-X.png
+        :param weight: How likely the mon will appear randomly. Higher numbers will make the mon appear more.
+        It is weighted against every other mon (so if one weight increases, the likelyhood of all other mons
+        appearing decreases), and should be an integer.
         """
         self.id = MonTemplate.id_inc
         MonTemplate.id_inc += 1
@@ -63,6 +67,7 @@ class MonTemplate:
 
         self.sprite = sprite
 
+        self.weight = weight
 
 class Mon:
     """
@@ -350,7 +355,8 @@ mons_list = [
             (moves.moves_list[5], 30),
             (moves.moves_list[6], 40)
         ],
-        0
+        0,
+        1
     ),
     MonTemplate(
         "EMF Duck", "quack", constants.MonType.FIGHTING, constants.MonType.FIRE,
@@ -364,6 +370,20 @@ mons_list = [
             (moves.moves_list[5], 30),
             (moves.moves_list[6], 40)
         ],
-        1
+        1,
+        2
     )
 ]
+
+_cum = 0
+_cum_weights = []
+for mon in mons_list:
+    _cum += mon.weight
+    _cum_weights.append(_cum)
+
+def choose_weighted_mon():
+    value = random.randrange(_cum)
+    i = 0
+    while _cum_weights[i] < value:
+        i+=1
+    return mons_list[i]

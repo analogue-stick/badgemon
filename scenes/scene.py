@@ -19,16 +19,21 @@ class Scene:
         self.animation_scheduler = sm._animation_scheduler
         self.context = sm._context
         self._fader = sm._fader
+        self._battle_fader = sm._battle_fader
         self._scene_ready = Event()
 
     async def fade_to_scene(self, scene: int, *args, **kwargs):
         self._scene_ready.clear()
         end_event = Event()
-        self._fader.detach()
-        self._fader.reset()
-        self._fader._colour = (0,0,0)
-        self._fader.and_then(AnimationEvent(end_event))
-        self.animation_scheduler.trigger(self._fader)
+        if scene == 3:
+            fader = self._battle_fader
+        else:
+            fader = self._fader
+        fader.detach()
+        fader.reset()
+        fader._colour = (0,0,0)
+        fader.and_then(AnimationEvent(end_event))
+        self.animation_scheduler.trigger(fader)
         await end_event.wait()
         self.sm.switch_scene(scene, *args, **kwargs)
 

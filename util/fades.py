@@ -1,3 +1,4 @@
+import math
 from typing import Tuple
 from ..util.animation import Animation, lerp
 from ctx import Context
@@ -34,3 +35,14 @@ class FadeToShade(Animation):
 
     def draw(self, ctx: Context):
         ctx.rgba(*self._colour, self._fade).rectangle(-120,-120,240,240).fill()
+
+class BattleFadeToShade(FadeToShade):
+    def draw(self, ctx: Context):
+        ctx.rgb(*self._colour)
+        for i in range(8):
+            ctx.move_to(0,0)
+            ctx.line_to(140*math.cos(math.pi/4*(i)),
+                     140*math.sin(math.pi/4*(i)))
+            ctx.line_to(140*math.cos(math.pi/4*(i+self._fade)),
+                     140*math.sin(math.pi/4*(i+self._fade)))
+            ctx.fill()

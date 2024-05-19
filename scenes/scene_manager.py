@@ -9,7 +9,7 @@ from ..scenes.battle import Battle
 from ..scenes.qr import Qr
 from ..scenes.badgedex import Badgedex
 from ..game.game_context import GameContext
-from ..util.fades import FadeToShade
+from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
 from system import eventbus
@@ -32,7 +32,8 @@ class SceneManager(App):
             app=self,
         )
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
-        self.overlays = [self._speech, self._choice, self._fader]
+        self._battle_fader = BattleFadeToShade((1.0,1.0,1.0), length=1000)
+        self.overlays = [self._speech, self._choice, self._fader, self._battle_fader]
         self._animation_scheduler = AnimationScheduler()
         self._scene = None
         self._attempt_load()
@@ -110,6 +111,7 @@ class SceneManager(App):
             del self._animation_scheduler
             del self._choice
             del self._fader
+            del self._battle_fader
             del self._speech
         else:
             self._choice.close()
@@ -120,6 +122,7 @@ class SceneManager(App):
             gc.collect()
             print(f"mem used: {gc.mem_alloc()}, mem free:{gc.mem_free()}")
             self._scene._fadein()
+            self._battle_fader.reset()
             print("scene start")
             self._scene.scene_start()
     
