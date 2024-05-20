@@ -1,0 +1,40 @@
+[app]
+# The name of your app as displayed in the menu
+name = "Badgemon Green"
+
+# The submenu where your app should appear.
+# One of: "Badge", "Music", "Media", "Apps", "Games"
+category = "Games"
+
+# OPTIONAL: Same as above, for compatibility with older firmware
+# versions that can't handle categories introduced afterwards.
+# One of: "Badge", "Music", "Apps"
+menu = "Apps"
+
+# OPTIONAL: If your app prefers wifi to be off or on when entering.
+# Useful if you want more resources (false) or need wifi (true).
+# Remove if you don't want to change wifi state!
+wifi_preference = false
+
+[entry]
+# The name of your entry point `Application` class
+class = "SceneManager"
+
+[metadata]
+# Your nickname.  Must be at most 32 characters!
+author = "Analogue Stick"
+
+# License of your app as an SPDX identifier: <https://spdx.org/licenses/>
+license = "LGPL-3.0-only"
+
+# URL to the repository of your app.
+url = "https://github.com/analogue-stick/badgemon"
+
+# Description of your app.  Maximum 140 characters!
+description = "A realworld creature collecting RPG for the Tildagon!"
+
+# Version number of your app.  If you push a commit where this number is
+# increased, we interpret this as a new version being released.
+#
+# Version number must be an integer!
+version = "0.0.1"
