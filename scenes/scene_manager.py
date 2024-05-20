@@ -19,7 +19,9 @@ from app import App
 from ctx import Context
 from ..config import SAVE_PATH
 
-SCENE_LIST = [MainMenu, None, Field, Battle, Qr, Badgedex]
+from ..util.text_box import TextExample
+
+SCENE_LIST = [MainMenu, None, Field, Battle, Qr, Badgedex, TextExample]
 
 class SceneManager(App):
     def __init__(self):
@@ -39,9 +41,9 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(0)
+            self.switch_scene(6)
         else:
-            self.switch_scene(0)
+            self.switch_scene(6)
 
     def _attempt_save(self):
         '''
