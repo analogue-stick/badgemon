@@ -21,6 +21,7 @@ class Scene:
         self._fader = sm._fader
         self._battle_fader = sm._battle_fader
         self._scene_ready = Event()
+        self.buttons = sm._button_states
 
     async def fade_to_scene(self, scene: int, *args, **kwargs):
         self._scene_ready.clear()

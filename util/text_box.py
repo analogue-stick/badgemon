@@ -4,8 +4,9 @@ import math
 
 from ..scenes.scene import Scene
 from system.eventbus import eventbus
-from events.input import ButtonDownEvent, Button
+from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
+import time
 
 from ctx import Context
 from ..util.misc import *
@@ -29,6 +30,9 @@ class TextDialog:
         self.opened_event = asyncio.Event()
         self.closed_event = asyncio.Event()
         self.closed_event.set()
+
+        self._time_since_down = 0
+        self._time_since_up = 0
 
     def is_open(self):
         return self._open
@@ -89,6 +93,14 @@ class TextDialog:
                 weight = math.pow(0.8, (delta/10))
                 self._opened_amount = self._opened_amount * weight
             else:
+                if self._app._button_states.get(BUTTON_TYPES["DOWN"]):
+                    if time.ticks_diff(time.ticks_ms(), self._time_since_down) > 300:
+                        self._selected = (self._selected + 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
+                        self._time_since_down = time.ticks_add(self._time_since_down, 80)
+                if self._app._button_states.get(BUTTON_TYPES["UP"]):
+                    if time.ticks_diff(time.ticks_ms(), self._time_since_up) > 300:
+                        self._selected = (self._selected - 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
+                        self._time_since_up = time.ticks_add(self._time_since_up, 80)
                 ypos = self._selected * 30
                 if self._selected_visually != ypos:
                     weight = math.pow(0.8, (delta/10))
@@ -143,30 +155,28 @@ class TextDialog:
 
     def _handle_buttondown(self, event: ButtonDownEvent):
         if self.is_open():
-            parent: Button = event.button
-            while parent.parent is not None and parent.group != "System":
-                parent = parent.parent
-            if parent.group == "System":
-                if parent.name == "UP":
-                    self._selected = (self._selected - 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
-                if parent.name == "DOWN":
-                    self._selected = (self._selected + 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
-                if parent.name == "CONFIRM" or parent.name == "RIGHT":
-                    if len(self.result) == 12:
+            if BUTTON_TYPES["UP"] in event.button:
+                self._selected = (self._selected - 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
+                self._time_since_up = time.ticks_ms()
+            if BUTTON_TYPES["DOWN"] in event.button:
+                self._selected = (self._selected + 1 + len(VALID_CHAR)+SPECIAL_CHAR) % (len(VALID_CHAR)+SPECIAL_CHAR)
+                self._time_since_down = time.ticks_ms()
+            if BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
+                if len(self.result) == 12:
+                    self._cleanup()
+                else:
+                    if self._selected == 0:
                         self._cleanup()
+                    elif self._selected == 1:
+                        self.result += " "
                     else:
-                        if self._selected == 0:
-                            self._cleanup()
-                        elif self._selected == 1:
-                            self.result += " "
-                        else:
-                            self.result += VALID_CHAR[self._selected-2]
-                if parent.name == "CANCEL" or parent.name == "LEFT":
-                    if len(self.result) > 0:
-                        self.result = self.result[0:-1]
-                    elif not self._no_exit:
-                        self._cleanup()
-                    return
+                        self.result += VALID_CHAR[self._selected-2]
+            if BUTTON_TYPES["CANCEL"] in event.button or BUTTON_TYPES["LEFT"] in event.button:
+                if len(self.result) > 0:
+                    self.result = self.result[0:-1]
+                elif not self._no_exit:
+                    self._cleanup()
+                return
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)

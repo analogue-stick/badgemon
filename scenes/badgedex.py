@@ -9,6 +9,7 @@ from ..scenes.scene import Scene
 from ..game.mons import MonTemplate, mons_list
 from ..util.misc import *
 from ..game.constants import type_to_str
+from events.input import BUTTON_TYPES
 
 class Badgedex(Scene):
     def _set_wobble(self, x):
@@ -46,16 +47,12 @@ class Badgedex(Scene):
 
     def handle_buttondown(self, event):
         if not (self.choice.is_open() or self.speech.is_open()):
-            parent = event.button
-            while parent.parent is not None and parent.group != "System":
-                parent = parent.parent
-            if parent.group == "System":
-                if parent.name == "CANCEL" or parent.name == "LEFT":
-                    self._exit.set()
-                elif parent.name == "CONFIRM" or parent.name == "RIGHT":
-                    self._show_detail()
-                else:
-                    self.choice.open()
+            if BUTTON_TYPES["CANCEL"] in event.button or BUTTON_TYPES["LEFT"] in event.button:
+                self._exit.set()
+            elif BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
+                self._show_detail()
+            else:
+                self.choice.open()
 
     def _draw_arrow(self, ctx: Context):
         (ctx.move_to(-10, -100+self._arrow_wobble)

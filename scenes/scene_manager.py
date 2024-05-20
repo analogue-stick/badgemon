@@ -13,6 +13,7 @@ from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
 from system import eventbus
+from events.input import Buttons
 from system.scheduler.events import RequestStopAppEvent
 from ..util.animation import AnimationScheduler
 from app import App
@@ -34,9 +35,10 @@ class SceneManager(App):
             app=self,
         )
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
-        self._battle_fader = BattleFadeToShade((1.0,1.0,1.0), length=1000)
+        self._battle_fader = BattleFadeToShade((0.0,0.0,0.0), length=1000)
         self.overlays = [self._speech, self._choice, self._fader, self._battle_fader]
         self._animation_scheduler = AnimationScheduler()
+        self._button_states = Buttons(self)
         self._scene = None
         self._attempt_load()
         if self._context == None:

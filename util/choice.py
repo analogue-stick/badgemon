@@ -6,7 +6,7 @@ import math
 from typing import List, Tuple, Union
 from types import FunctionType
 from system.eventbus import eventbus
-from events.input import ButtonDownEvent, Button
+from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
 
 from ctx import Context
@@ -149,31 +149,27 @@ class ChoiceDialog:
 
     def _handle_buttondown(self, event: ButtonDownEvent):
         if self.is_open():
-            parent: Button = event.button
-            while parent.parent is not None and parent.group != "System":
-                parent = parent.parent
-            if parent.group == "System":
-                if parent.name == "UP":
-                    self._selected = (self._selected - 1 + len(self._current_tree[1])) % len(self._current_tree[1])
-                if parent.name == "DOWN":
-                    self._selected = (self._selected + 1 + len(self._current_tree[1])) % len(self._current_tree[1])
-                if parent.name == "CONFIRM" or parent.name == "RIGHT":
-                    c = self._current_tree[1][self._selected][1]
-                    if isinstance(c, FunctionType):
-                        c()
-                        self._cleanup()
-                        return
-                    self._previous_trees.append(self._current_tree)
-                    self._current_tree = c
-                    self._selected = 0
-                if parent.name == "CANCEL" or parent.name == "LEFT":
-                    if self._previous_trees:
-                        self._current_tree = self._previous_trees.pop()
-                        self._selected = 0
-                        return
-                    if not self._no_exit:
-                        self._cleanup()
+            if BUTTON_TYPES["UP"] in event.button:
+                self._selected = (self._selected - 1 + len(self._current_tree[1])) % len(self._current_tree[1])
+            if BUTTON_TYPES["DOWN"] in event.button:
+                self._selected = (self._selected + 1 + len(self._current_tree[1])) % len(self._current_tree[1])
+            if BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
+                c = self._current_tree[1][self._selected][1]
+                if isinstance(c, FunctionType):
+                    c()
+                    self._cleanup()
                     return
+                self._previous_trees.append(self._current_tree)
+                self._current_tree = c
+                self._selected = 0
+            if BUTTON_TYPES["CANCEL"] in event.button or BUTTON_TYPES["LEFT"] in event.button:
+                if self._previous_trees:
+                    self._current_tree = self._previous_trees.pop()
+                    self._selected = 0
+                    return
+                if not self._no_exit:
+                    self._cleanup()
+                return
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
