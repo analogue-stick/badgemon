@@ -1,5 +1,5 @@
 from .mons import mons_list
-from struct import pack, iter_unpack
+from struct import pack, unpack_from, calcsize
 
 class Badgedex:
     def __init__(self):
@@ -14,6 +14,6 @@ class Badgedex:
     @staticmethod
     def deserialise(data):
         b = Badgedex()
-        b.found = [m[0] for m in iter_unpack('?', data)]
+        b.found = [unpack_from('?', data, m * calcsize("?")) for m in range(0, len(mons_list))]
         return b
     
