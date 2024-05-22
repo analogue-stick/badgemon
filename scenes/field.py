@@ -218,7 +218,7 @@ class Field(Scene):
 
     async def _drive_random_enc(self):
         while True:
-            await asyncio.sleep(3)
+            await asyncio.sleep(30)
             self._random_enc_needed.set()
 
     async def background_task(self):

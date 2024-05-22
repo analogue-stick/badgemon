@@ -43,9 +43,9 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(6)
+            self.switch_scene(0)
         else:
-            self.switch_scene(6)
+            self.switch_scene(0)
 
     def _attempt_save(self):
         '''
