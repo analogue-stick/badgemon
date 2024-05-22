@@ -184,6 +184,13 @@ class TextDialog:
         self.closed_event.clear()
         self.opened_event.clear()
 
+    def get_answer(self, default = ""):
+        ans = self.result.strip()
+        if ans == "":
+            return default
+        else:
+            return ans
+
 class TextExample(Scene):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

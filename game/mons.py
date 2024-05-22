@@ -21,7 +21,8 @@ class MonTemplate:
                  base_spatk: int, base_spdef: int, base_spd: int,
                  learnset: List[Tuple[moves.Move, int]],
                  sprite: int,
-                 weight: int):
+                 weight: int,
+                 catch_rate: int = 1):
         """
         :param name: Name of the mon
         :param desc: Description (dex entry)
@@ -67,6 +68,7 @@ class MonTemplate:
         self.sprite = sprite
 
         self.weight = weight
+        self.catch_rate = catch_rate
 
 class Mon:
     """

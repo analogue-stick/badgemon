@@ -92,3 +92,13 @@ STAT_SPD = 5
 type_table = [
     [0 for _ in range(17)] for _ in range(17)
     ]
+
+# How likely to affect catch rate
+catch_table = [
+    1,   # NO_EFFECT = 0
+    1.5, # POISONED = 1
+    1.5, # BURNED = 2
+    1.5, # PARALYZED = 3
+    2,   # FROZEN = 4
+    2    # SLEEPING = 5
+]

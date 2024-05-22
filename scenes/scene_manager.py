@@ -20,7 +20,7 @@ from app import App
 from ctx import Context
 from ..config import SAVE_PATH
 
-from ..util.text_box import TextExample
+from ..util.text_box import TextExample, TextDialog
 
 SCENE_LIST = [MainMenu, None, Field, Battle, Qr, Badgedex, TextExample]
 
@@ -36,7 +36,8 @@ class SceneManager(App):
         )
         self._fader = FadeToShade((1.0,1.0,1.0), length=200)
         self._battle_fader = BattleFadeToShade((0.0,0.0,0.0), length=1000)
-        self.overlays = [self._speech, self._choice, self._fader, self._battle_fader]
+        self._text = TextDialog(self, "Jim")
+        self.overlays = [self._speech, self._choice, self._text, self._fader, self._battle_fader]
         self._animation_scheduler = AnimationScheduler()
         self._button_states = Buttons(self)
         self._scene = None
@@ -71,6 +72,7 @@ class SceneManager(App):
             self._animation_scheduler.update(delta)
             self._speech.update(delta)
             self._choice.update(delta)
+            self._text.update(delta)
             if self._scene is not None:
                 self._scene.update(delta)
         except Exception as e:
@@ -103,6 +105,7 @@ class SceneManager(App):
                 sys.exit()
             self._choice.close()
             self._speech.close()
+            self._text.close()
             await asyncio.sleep(0.05)
 
     def switch_scene(self, scene: int, *args, **kwargs):
@@ -117,9 +120,11 @@ class SceneManager(App):
             del self._fader
             del self._battle_fader
             del self._speech
+            del self._text
         else:
             self._choice.close()
             self._speech.close()
+            self._text.close()
             print("LOAD SCENE")
             print((SCENE_LIST[scene]))
             self._scene: Scene = (SCENE_LIST[scene])(self, *args, **kwargs)

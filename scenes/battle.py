@@ -7,7 +7,7 @@ from ..game.mons import Mon, mons_list
 from ..game.items import Item, items_list
 from ..game.moves import Move
 from ..game.battle_main import Battle as BContext
-from ..game.player import Player
+from ..game.player import Cpu, Player
 from ctx import Context
 
 from ..game import constants
@@ -31,6 +31,7 @@ class Battle(Scene):
         super().__init__(*args, **kwargs)
         self.context.player.get_move = self._get_move
         self.context.player.get_new_badgemon = self._get_new_badgemon
+        self.context.player.gain_badgemon = self._gain_badgemon
         self._battle_context = BContext(self.context.player, opponent, True, self.speech)
         self._next_move: Mon | Item | Move | self.Desc | None = None
         self._next_move_available = Event()
@@ -76,7 +77,7 @@ class Battle(Scene):
         )
 
     def handle_buttondown(self, event: ButtonDownEvent):
-        if self._battle_context.turn and not self.choice.is_open() and not self.speech.is_open():
+        if self._battle_context.turn and not self.choice.is_open() and not self.speech.is_open() and not self.text.is_open():
             self._gen_choice_dialog()
             self.choice.open()
 
@@ -225,7 +226,7 @@ class Battle(Scene):
             self._next_move_available.set()
         return f
 
-    async def _get_move(self, mon):
+    async def _get_move(self, mon: Mon):
         self._gen_choice_dialog()
         print("AWAITING MOVE")
         await self._next_move_available.wait()
@@ -237,6 +238,16 @@ class Battle(Scene):
         await self._next_move_available.wait()
         self._next_move_available.clear()
         return self._next_move
+    
+    async def _gain_badgemon(self, mon: Mon, case, badgedex):
+        await self.speech.write("What will you name them? Enter nothing for a default.")
+        self.text.set_name("Nickname?")
+        await self.text.open_and_wait()
+        await self.text.closed_event.wait()
+        mon.nickname = self.text.get_answer(mon.nickname)
+        case.append(mon)
+        badgedex.find(mon.template.id)
+        await self.speech.write(f"{mon.nickname} has been added to your badgemon case!")
     
     async def background_task(self):
         print("test")
@@ -309,7 +320,19 @@ class Battle(Scene):
                     if self._battle_context.turn:
                         await self.speech.write(f"{player_mon.nickname} appreciated the craftsmanship of the doll.")
                     same_turn = True
-                action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
+                await self.speech.write(f"Used {action.name}!") 
+                if action.name.endswith("HexBox"):
+                    if not isinstance(self._battle_context.player2, Cpu):
+                        await self.speech.write("Oh no! You can't catch THAT Badgemon!")
+                    else:
+                        catch = await self._battle_context.catch(curr_player, player_mon, target_mon, action)
+                        if catch:
+                            print("CATCH")
+                            await curr_player.gain_badgemon(target_mon, curr_player.badgemon_case, curr_player.badgedex)
+                            await self.fade_to_scene(2)
+                            return
+                else:
+                    action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
 
             elif isinstance(action, self.Desc):
                 if self._battle_context.turn:

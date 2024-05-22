@@ -85,4 +85,12 @@ items_list = [
          200, False,  FieldTargetingType.NO_TARGETS, None, lambda _, __: print("You don't have a licence!")),
     Item("Badgemon Doll", "Was intended to look cute... probably.",
          200, True,  FieldTargetingType.NOT_USABLE, lambda _, __, m, ___: print(f"{m.nickname} appreciated the craftsmanship of the doll."), None),
+    Item("HexBox", "A device able to catch badgemon after they are weakened.",
+         200, True,  FieldTargetingType.NOT_USABLE, lambda p, b, ___, t: 1, None),
+    Item("Super HexBox", "A modification of the original HexBox design, with enhanced catching ability.",
+         200, True,  FieldTargetingType.NOT_USABLE, lambda p, b, ___, t: 1.5, None),
+    Item("Ultra HexBox", "A high-tech box full of features to make catching badgemon easier.",
+         200, True,  FieldTargetingType.NOT_USABLE, lambda p, b, ___, t: 2, None),
+    Item("Master HexBox", "The ultimate box. Will catch a badgemon without fail.",
+         200, True,  FieldTargetingType.NOT_USABLE, lambda p, b, ___, t: 255, None),
 ]

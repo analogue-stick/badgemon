@@ -145,6 +145,12 @@ class Player:
         This is overridden by any parent class handling user interactions.
         """
         return None
+    
+    async def gain_badgemon(self, mon: 'Mon', case: List['Mon'], badgedex: badgedex.Badgedex):
+        """
+        This is overridden by any parent class handling user interactions.
+        """
+        pass
 
     @staticmethod
     def get_meters_walked():

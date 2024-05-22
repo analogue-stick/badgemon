@@ -18,6 +18,7 @@ class Scene:
         self.sm = sm
         self.choice = sm._choice
         self.speech = sm._speech
+        self.text = sm._text
         self.animation_scheduler = sm._animation_scheduler
         self.context = sm._context
         self._fader = sm._fader

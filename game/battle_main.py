@@ -6,7 +6,7 @@ from sys import implementation as _sys_implementation
 if _sys_implementation.name != "micropython":
     from typing import Union
 
-from . import constants, mons, moves, calculation, player
+from . import constants, mons, moves, calculation, player, items
 
 
 class Battle:
@@ -139,3 +139,23 @@ class Battle:
             custom_log = "{target} regained {heal_taken} HP!\n"
         await self.push_news_entry(custom_log.format(target=target, user=user, heal_taken=heal_taken, original_heal=amount))
         return heal_taken
+
+    async def catch(self, user: player.Player, this_mon: mons.Mon, target: mons.Mon, ball: items.Item):
+        ball_rate = ball.function_in_battle(user, self, this_mon, target)
+        rate = calculation.get_catch_rate(target, ball_rate)
+        if rate == 1.0:
+            await self.push_news_entry(f"{target.nickname} just fell straight in!")
+            return True
+        else:
+            ooos = ["ooo...", "Oooooo... ", "OOOOOOOOO...", "Yes! You caught them!"]
+            escape = "NO! They escaped!"
+            caught = True
+            for oo in ooos:
+                if calculation.get_shake(rate):
+                    await self.push_news_entry(oo)
+                else:
+                    await self.push_news_entry(escape)
+                    caught = False
+                    break
+            return caught
+                    

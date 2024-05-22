@@ -1,6 +1,9 @@
+import math
 import random
 
 from sys import implementation as _sys_implementation
+
+from ..game.mons import Mon
 if _sys_implementation.name != "micropython":
     from typing import Tuple
 
@@ -69,3 +72,20 @@ def get_hit(move_accuracy: int, user_accuracy: int, target_evasion: int) -> bool
     move_accuracy //= 100
 
     return random.randrange(0, 100) <= move_accuracy
+
+def get_catch_rate(mon: Mon, ball: float):
+    if ball == 255:
+        return 1.0
+    three = (3 * mon.stats[constants.STAT_HP])
+    base = (three - (2 * mon.hp)) / three
+    base *= mon.template.catch_rate
+    base *= ball
+    base *= constants.catch_table[mon.status]
+    print(f"BASE: {base}")
+    return min(max(base,0.0),1.0)
+
+def get_shake(catch_rate: float):
+    check1 = random.randrange(0, 65536)
+    check2 = 1048560/math.pow(65280/catch_rate, 0.25)
+    print(f"1: {check1}, 2: {check2}")
+    return check1 < check2
