@@ -1,16 +1,17 @@
 from struct import pack, unpack_from
 import random
 import time
-from typing import Dict
 
 from . import items, badgedex
 
 try:
-    from typing import List, Union, TYPE_CHECKING
+    from sys import implementation as _sys_implementation
+    if _sys_implementation.name != "micropython":
+        from typing import List, Union, TYPE_CHECKING, Dict
 
-    if TYPE_CHECKING:
-        from .items import Item
-        from .moves import Move
+        if TYPE_CHECKING:
+            from .items import Item
+            from .moves import Move
 except ImportError:
     pass
 

@@ -3,12 +3,13 @@ import random
 from . import constants
 
 try:
-    from typing import Callable, List, Union, TYPE_CHECKING
-    if TYPE_CHECKING:
-        print('\n\n\nYes we are checking types right now\n\n\n')
-        from .battle_main import Battle
-        from .mons import Mon
-        MoveSpecial = Callable[['Battle', 'Mon', 'Mon', int], bool]
+    from sys import implementation as _sys_implementation
+    if _sys_implementation.name != "micropython":
+        from typing import Callable, List, Union, TYPE_CHECKING
+        if TYPE_CHECKING:
+            from .battle_main import Battle
+            from .mons import Mon
+            MoveSpecial = Callable[['Battle', 'Mon', 'Mon', int], bool]
 except ImportError:
     pass
 

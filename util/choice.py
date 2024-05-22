@@ -3,7 +3,9 @@ import display
 import gc
 import math
 
-from typing import Callable, List, Tuple, Union
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
+    from typing import Callable, List, Tuple, Union
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
@@ -154,7 +156,7 @@ class ChoiceDialog:
                 self._selected = (self._selected + 1 + len(self._current_tree[1])) % len(self._current_tree[1])
             if BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
                 c = self._current_tree[1][self._selected][1]
-                if isinstance(c, Callable):
+                if callable(c):
                     c()
                     self._cleanup()
                     return

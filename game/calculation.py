@@ -1,9 +1,8 @@
 import random
 
-try:
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
     from typing import Tuple
-except ImportError:
-    pass
 
 from . import constants
 

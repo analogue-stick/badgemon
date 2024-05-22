@@ -5,9 +5,11 @@ from events.input import ButtonDownEvent
 from system.eventbus import eventbus
 
 try:
-    from typing import TYPE_CHECKING
-    if TYPE_CHECKING:
-        from .scene_manager import SceneManager
+    from sys import implementation as _sys_implementation
+    if _sys_implementation.name != "micropython":
+        from typing import TYPE_CHECKING
+        if TYPE_CHECKING:
+            from .scene_manager import SceneManager
 except ImportError:
     pass
 

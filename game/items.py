@@ -1,7 +1,9 @@
 try:
-    from typing import Callable, Union, TYPE_CHECKING
-    if TYPE_CHECKING:
-        from . import player, battle_main, mons
+    from sys import implementation as _sys_implementation
+    if _sys_implementation.name != "micropython":
+        from typing import Callable, Union, TYPE_CHECKING
+        if TYPE_CHECKING:
+            from . import player, battle_main, mons
 except ImportError:
     pass
 

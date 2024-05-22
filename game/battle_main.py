@@ -2,10 +2,9 @@ import sys
 
 from ..util.speech import SpeechDialog
 
-try:
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
     from typing import Union
-except ImportError:
-    pass
 
 from . import constants, mons, moves, calculation, player
 

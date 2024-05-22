@@ -2,10 +2,9 @@ import math
 import random
 from struct import pack, unpack_from
 
-try:
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
     from typing import List, Tuple, Union
-except ImportError:
-    pass
 
 from . import moves, constants
 

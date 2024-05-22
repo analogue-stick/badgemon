@@ -1,5 +1,7 @@
 import math
-from typing import Tuple
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
+    from typing import Tuple
 from ..util.animation import Animation, lerp
 from ctx import Context
 

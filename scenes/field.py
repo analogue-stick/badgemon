@@ -1,7 +1,9 @@
 from asyncio import Event
 import asyncio
 import random
-from typing import Coroutine
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
+    from typing import Coroutine
 
 from ..game.player import Cpu
 

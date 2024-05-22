@@ -1,6 +1,8 @@
 from asyncio import Event
 import math
-from typing import List, Tuple
+from sys import implementation as _sys_implementation
+if _sys_implementation.name != "micropython":
+    from typing import List, Tuple
 
 class Animation:
     def __init__(self, length: int=1000, infinite=False) -> None:
