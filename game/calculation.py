@@ -81,11 +81,13 @@ def get_catch_rate(mon: Mon, ball: float):
     base *= mon.template.catch_rate
     base *= ball
     base *= constants.catch_table[mon.status]
+    base = min(max(base,0.0),1.0)
     print(f"BASE: {base}")
-    return min(max(base,0.0),1.0)
+    check2 = 1048560/math.pow(65280/base, 0.25)
+    print(f"RATE: {check2}")
+    return (base, check2)
 
 def get_shake(catch_rate: float):
     check1 = random.randrange(0, 65536)
-    check2 = 1048560/math.pow(65280/catch_rate, 0.25)
-    print(f"1: {check1}, 2: {check2}")
-    return check1 < check2
+    print(f"1: {check1}, 2: {catch_rate}")
+    return check1 < catch_rate

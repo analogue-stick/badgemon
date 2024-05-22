@@ -142,8 +142,8 @@ class Battle:
 
     async def catch(self, user: player.Player, this_mon: mons.Mon, target: mons.Mon, ball: items.Item):
         ball_rate = ball.function_in_battle(user, self, this_mon, target)
-        rate = calculation.get_catch_rate(target, ball_rate)
-        if rate == 1.0:
+        (base, rate) = calculation.get_catch_rate(target, ball_rate)
+        if base == 1.0:
             await self.push_news_entry(f"{target.nickname} just fell straight in!")
             return True
         else:
