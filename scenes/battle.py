@@ -196,11 +196,12 @@ class Battle(Scene):
     
     def _do_item(self, item: Item, count: int):
         def f():
-            nc = count - 1
-            if nc == 0:
-                self._battle_context.player1.inventory.pop(item)
-            else:
-                self._battle_context.player1.inventory[item] = nc  # decrease stock
+            if item.name != "Badgemon Doll":
+                nc = count - 1
+                if nc == 0:
+                    self._battle_context.player1.inventory.pop(item)
+                else:
+                    self._battle_context.player1.inventory[item] = nc  # decrease stock
             self._next_move = item
             self._next_move_available.set()
         return f
@@ -304,13 +305,18 @@ class Battle(Scene):
                     self._battle_context.mon2 = action
 
             elif isinstance(action, Item):
+                if action.name == "Badgemon Doll":
+                    if self._battle_context.turn:
+                        await self.speech.write(f"{player_mon.nickname} appreciated the craftsmanship of the doll.")
+                    same_turn = True
                 action.function_in_battle(curr_player, self._battle_context, player_mon, target_mon)
 
             elif isinstance(action, self.Desc):
-                if isinstance(action.t, Move):
-                    await self.speech.write(f"|TYPE: {constants.type_to_str(action.t.move_type)}| {action}")
-                else:
-                    await self.speech.write(str(action))
+                if self._battle_context.turn:
+                    if isinstance(action.t, Move):
+                        await self.speech.write(f"|TYPE: {constants.type_to_str(action.t.move_type)}| {action}")
+                    else:
+                        await self.speech.write(str(action))
                 same_turn = True
 
             elif action is None:

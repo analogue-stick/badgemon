@@ -43,12 +43,16 @@ class Field(Scene):
         self._next_move_available.set()
 
     async def _use_item(self, item: Item, count: int, mon: Mon):
-        count -= 1
-        if count == 0:
-            self.inventory.pop(item)
-        else:
-            self.context.player.inventory[item] = count
+        if item.name != "Fishing Rod":
+            count -= 1
+            if count == 0:
+                self.context.player.inventory.pop(item)
+            else:
+                self.context.player.inventory[item] = count
         await self.speech.write(f"Using {item.name}!")
+        if item.name == "Fishing Rod":
+            await self.speech.write(f"But wait - You don't have an Eastnor Fishing licence! Try again later.")
+            
         item.function_in_field(self.context.player, mon)
 
     async def _deposit_mon(self, mon: Mon):
