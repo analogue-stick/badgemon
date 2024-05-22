@@ -3,8 +3,7 @@ import display
 import gc
 import math
 
-from typing import List, Tuple, Union
-from types import FunctionType
+from typing import Callable, List, Tuple, Union
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
@@ -12,7 +11,7 @@ from app import App
 from ctx import Context
 from ..util.misc import *
 
-ChoiceTree = Tuple[str, List[Tuple[str, Union['ChoiceTree', FunctionType]]]]
+ChoiceTree = Tuple[str, List[Tuple[str, Union['ChoiceTree', Callable]]]]
 
 class ChoiceDialog:
     def _calc_sizes(self, ctx):
@@ -155,7 +154,7 @@ class ChoiceDialog:
                 self._selected = (self._selected + 1 + len(self._current_tree[1])) % len(self._current_tree[1])
             if BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
                 c = self._current_tree[1][self._selected][1]
-                if isinstance(c, FunctionType):
+                if isinstance(c, Callable):
                     c()
                     self._cleanup()
                     return
