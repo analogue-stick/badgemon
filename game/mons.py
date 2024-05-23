@@ -363,7 +363,7 @@ mons_list = [
         "EMF Duck", "quack", constants.MonType.FIGHTING, constants.MonType.FIRE,
         None, None,
         85, 135, 130, 60, 70, 25, [
-            (moves.moves_list[18], 5),
+            (moves.moves_list[43], 5),
             (moves.moves_list[0], 5),
             (moves.moves_list[28], 8),
             (moves.moves_list[23], 13),

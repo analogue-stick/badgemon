@@ -1,5 +1,6 @@
 import math
 import random
+
 from . import constants
 
 try:
@@ -97,7 +98,19 @@ class ScratchAnim(MoveAnim):
             ctx.move_to(animation.lerp(start_point_x, end_point_x, start), animation.lerp(start_point_y, end_point_y, start))\
                 .line_to(animation.lerp(start_point_x, end_point_x, end), animation.lerp(start_point_y, end_point_y, end))\
                 .rgb(0.8,0.2,0.2).stroke()
-        
+            
+class DevourAnim(MoveAnim):
+    def __init__(self, *args, length=4000, **kwargs) -> None:
+        self.image = ASSET_PATH+"moves/devour-"+str(random.randrange(3))+".png"
+        super().__init__(*args, length, **kwargs)
+
+    def draw(self, ctx: Context) -> None:
+        ctx.image(self.image, -120, -120, 240, 240)
+        text_pos = animation.lerp(0, -600, self._time)
+        ctx.text_align = Context.LEFT
+        ctx.text_baseline = Context.MIDDLE
+        ctx.font_size = 60
+        ctx.rgb(1,1,1).move_to(text_pos,0).text("Censored... Please stand by...")
 
 class MoveOverrideSpecial:
     """
@@ -321,6 +334,6 @@ moves_list = [
     Move('WTF?', "Shows the opponent the \'WTF?\' talk.", constants.MonType.PSYCHIC, 35, 40, 100),
     Move('FineMist', "Gives opponent a light misting.", constants.MonType.WATER, 35, 40, 100),
     Move('UnexpectedBill', "Gives opponent a large shock.", constants.MonType.ELECTRIC, 35, 40, 100),
-    Move('Devour', "Attempt to eat opponent. You cannot eat Rinoa.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Devour', "Attempt to eat opponent. You cannot eat Rinoa.", constants.MonType.NORMAL, 35, 40, 100, MoveEffect.animation(DevourAnim)),
     Move('DadJoke', "Tell a dad joke to the opponent, who cringes so hard they deal themselves damage.", constants.MonType.PSYCHIC, 35, 40, 100)
 ]
