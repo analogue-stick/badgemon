@@ -5,13 +5,83 @@ from . import constants
 try:
     from sys import implementation as _sys_implementation
     if _sys_implementation.name != "micropython":
-        from typing import Callable, List, Union, TYPE_CHECKING
+        from typing import Callable, List, Union, TYPE_CHECKING, Tuple
         if TYPE_CHECKING:
             from .battle_main import Battle
             from .mons import Mon
             MoveSpecial = Callable[['Battle', 'Mon', 'Mon', int], bool]
 except ImportError:
     pass
+
+from ..util.animation import Animation, AnimationEvent
+from ..util import animation
+from ..util.misc import *
+from asyncio import Event
+from ctx import Context
+from app import App
+
+class MoveAnim(Animation):
+    def __init__(self, *args, app: App, draw_user = True, draw_target = True, user_pos: Tuple[float, float] = (0,0), target_pos: Tuple[float, float] = (0,0), user: 'Mon' = None, target: 'Mon' = None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._draw_user = draw_user
+        self._draw_target = draw_target
+        self._user_pos = user_pos
+        self._target_pos = target_pos
+        self._user = user
+        self._target = target
+        self._time = 0
+        self._app = app
+        insults = ["SUCKS", "IS BAD", "STINKS"]
+        self.insult = random.choice(insults)
+
+    def on_anim_end(self) -> None:
+        self._app.overlays.remove(self)
+        self._app._scene._draw_target = True
+        self._app._scene._draw_user = True
+        return super().on_anim_end()
+    
+    def on_anim_start(self) -> None:
+        self._app.overlays.append(self)
+        self._app._scene._draw_target = self._draw_target
+        self._app._scene._draw_user = self._draw_user
+        return super().on_anim_start()
+
+    def _update(self, time: float) -> None:
+        self._time = time
+
+    def draw(self, ctx: Context) -> None:
+        pass
+
+class SlanderAnim(MoveAnim):
+    def __init__(self, *args, length=3000, **kwargs) -> None:
+        super().__init__(*args, length, **kwargs)
+
+    def draw(self, ctx: Context) -> None:
+        if self._time < 0.33:
+            rot = animation.lerp(0,math.tau*3.95,self._time*3.0)
+            scale = animation.lerp(time=self._time*3.0)
+        else:
+            scale = 1
+            rot = math.tau*3.95
+        if self._time > 0.75:
+            fade = animation.lerp(1,0,(self._time-0.75)*4)
+        else:
+            fade = 1
+        
+        ctx.rotate(rot)
+        ctx.scale(scale,scale)
+        ctx.rectangle(-50,-50,100,100).rgba(1,1,1,fade).fill()
+        ctx.rectangle(-50,-50,100,100).rgba(0,0,0,fade).stroke()
+        for i in range(5):
+            ctx.move_to(-40, 10*i).line_to(40,10*i).stroke()
+        ctx.text_align = Context.CENTER
+        ctx.text_baseline = Context.MIDDLE
+        name = self._target.nickname.upper()
+        shrink_until_fit(ctx, name, 90, 60)
+        ctx.move_to(0,-35).text(name)
+        shrink_until_fit(ctx, self.insult, 90, 60)
+        ctx.move_to(0,-15).text(self.insult)
+        
 
 class MoveOverrideSpecial:
     """
@@ -63,6 +133,28 @@ class MoveEffect:
             await battle.deal_damage(
                 user, target, math.floor(damage * pct), None, "{target} took {damage_taken} recoil damage!"
             )
+            return True
+
+        return MoveEffect(function)
+
+    @staticmethod
+    def animation(Anim: MoveAnim) -> "MoveEffect":
+        """
+        Plays an animation in full before continuing.
+        :param anim: The Animation
+        :return: A MoveEffect object containing this effect only.
+        """
+        async def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
+            if user == battle.mon1:
+                user_pos, target_pos = (0, -10), (0, -(32*3)+10)
+            else:
+                target_pos, user_pos = (0, -10), (0, -(32*3)+10)
+
+            anim = Anim(app=battle._app, user_pos=user_pos, target_pos=target_pos, user = user, target = target)
+            event = Event()
+            anim.and_then(AnimationEvent(event))
+            battle._app._animation_scheduler.trigger(anim)
+            await event.wait()
             return True
 
         return MoveEffect(function)
@@ -139,7 +231,8 @@ class Move:
     def __init__(
         self, name: str, desc: str, move_type: constants.MonType, max_pp: int, power: int, accuracy: int,
         effect_on_hit: MoveEffect = None, effect_on_miss: MoveEffect = None,
-            special_override: MoveOverrideSpecial = MoveOverrideSpecial.NO_OVERRIDE
+            special_override: MoveOverrideSpecial = MoveOverrideSpecial.NO_OVERRIDE,
+            animation = None
     ):
         """
         Any kind of move.
@@ -165,6 +258,7 @@ class Move:
         self.effect_on_hit = effect_on_hit
         self.effect_on_miss = effect_on_miss
         self.special_override = special_override
+        self.animation = animation
 
 
 moves_list = [
@@ -186,7 +280,7 @@ moves_list = [
     Move('ICBM', "This feels self explanatory.", constants.MonType.NORMAL, 35, 40, 100),
     Move('Mallet', "Hits opponent with comically large mallet", constants.MonType.FIGHTING, 35, 40, 100),
     Move('Rework', "Rework the opponent into a stylish broach", constants.MonType.STEEL, 35, 40, 100),
-    Move('Slander', "Run a smear campain against the opponent in the local newspaper.", constants.MonType.NORMAL, 35, 40, 100),
+    Move('Slander', "Run a smear campain against the opponent in the local newspaper.", constants.MonType.NORMAL, 35, 40, 100, MoveEffect.animation(SlanderAnim)),
     Move('Nose!', "Get your opponent's nose.", constants.MonType.NORMAL, 35, 40, 100),
     Move('DangerHug', "Gives opponent a (deadly) hug.", constants.MonType.NORMAL, 35, 40, 100),
     Move('PinchCheeks', "Pinch the opponent's cheeks and tell them how much they've grown.", constants.MonType.NORMAL, 35, 40, 100),

@@ -24,9 +24,11 @@ class Animation:
         pass
 
     def on_anim_start(self) -> None:
+        self._update(0)
         self._started = True
 
     def on_anim_end(self) -> None:
+        self._update(1)
         self._ended = True
 
     def reset(self) -> None:

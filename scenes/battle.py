@@ -32,11 +32,13 @@ class Battle(Scene):
         self.context.player.get_move = self._get_move
         self.context.player.get_new_badgemon = self._get_new_badgemon
         self.context.player.gain_badgemon = self._gain_badgemon
-        self._battle_context = BContext(self.context.player, opponent, True, self.speech)
+        self._battle_context = BContext(self.context.player, opponent, True, self.sm, self.speech)
         self._next_move: Mon | Item | Move | self.Desc | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()
         self._text_tilt = 0
+        self._draw_user = True
+        self._draw_target = True
         self.animation_scheduler.trigger(AnimSin(AnimLerp(editor=lambda x: self._set_text_tilt(x)), length=3000))
 
     def _gen_choice_dialog(self):
@@ -82,8 +84,10 @@ class Battle(Scene):
             self.choice.open()
 
     def _draw_mons(self, ctx: Context):
-        draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3)+10, False, False, 3)
-        draw_mon(ctx, self._battle_context.mon1.template.sprite, 0, -10, True, False, 3)
+        if self._draw_target:
+            draw_mon(ctx, self._battle_context.mon2.template.sprite, 0, -(32*3)+10, False, False, 3)
+        if self._draw_user:
+            draw_mon(ctx, self._battle_context.mon1.template.sprite, 0, -10, True, False, 3)
 
     def _draw_health(self, ctx: Context):
         x = 10

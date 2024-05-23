@@ -1,5 +1,7 @@
 import sys
 
+from app import App
+
 from ..util.speech import SpeechDialog
 
 from sys import implementation as _sys_implementation
@@ -10,7 +12,7 @@ from . import constants, mons, moves, calculation, player, items
 
 
 class Battle:
-    def __init__(self, player1: player.Player, player2: player.Player, start: bool, news_target: SpeechDialog):
+    def __init__(self, player1: player.Player, player2: player.Player, start: bool, app: App, news_target: SpeechDialog):
         """
         A battle takes place between two players, until all BadgeMon on one side have fainted.
 
@@ -36,6 +38,7 @@ class Battle:
         player2.battle_context = self
 
         self.turn = start
+        self._app = app
 
     async def push_news_entry(self, *entry):
         await self.news_target.write(" ".join(str(e) for e in entry))
@@ -73,14 +76,15 @@ class Battle:
             elif effective == calculation.EFF_INEFFECTIVE:
                 await self.push_news_entry("It didn't really do much...\n")
             
+            if move.effect_on_hit:
+                await move.effect_on_hit.execute(self, user, target, damage)
+
             await self.deal_damage(user, target, damage, move.move_type)
 
-            if move.effect_on_hit:
-                move.effect_on_hit.execute(self, user, target, damage)
         else:
             await self.push_news_entry("A Miss!\n")
             if move.effect_on_miss:
-                move.effect_on_miss.execute(self, user, target, damage)
+                await move.effect_on_miss.execute(self, user, target, damage)
 
     async def inflict_status(self, user: Union[mons.Mon, None], target: mons.Mon, status: constants.StatusEffect,
                        custom_log: str = "") -> bool:
