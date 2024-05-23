@@ -364,7 +364,7 @@ mons_list = [
         None, None,
         85, 135, 130, 60, 70, 25, [
             (moves.moves_list[18], 5),
-            (moves.moves_list[18], 5),
+            (moves.moves_list[0], 5),
             (moves.moves_list[28], 8),
             (moves.moves_list[23], 13),
             (moves.moves_list[24], 21),

@@ -81,6 +81,22 @@ class SlanderAnim(MoveAnim):
         ctx.move_to(0,-35).text(name)
         shrink_until_fit(ctx, self.insult, 90, 60)
         ctx.move_to(0,-15).text(self.insult)
+
+class ScratchAnim(MoveAnim):
+    def __init__(self, *args, length=500, **kwargs) -> None:
+        super().__init__(*args, length, **kwargs)
+    
+    def draw(self, ctx: Context) -> None:
+        end = animation.slower(x=self._time)
+        start = animation.faster(x=self._time)
+        for i in range(3):
+            start_point_x = self._target_pos[0] + 15-i*30
+            end_point_x = self._target_pos[0] + 45-i*30
+            start_point_y = self._target_pos[1] + 45-i*15
+            end_point_y = self._target_pos[1] + -45-i*15
+            ctx.move_to(animation.lerp(start_point_x, end_point_x, start), animation.lerp(start_point_y, end_point_y, start))\
+                .line_to(animation.lerp(start_point_x, end_point_x, end), animation.lerp(start_point_y, end_point_y, end))\
+                .rgb(0.8,0.2,0.2).stroke()
         
 
 class MoveOverrideSpecial:
@@ -146,9 +162,9 @@ class MoveEffect:
         """
         async def function(battle: 'Battle', user: 'Mon', target: 'Mon', damage: int):
             if user == battle.mon1:
-                user_pos, target_pos = (0, -10), (0, -(32*3)+10)
+                user_pos, target_pos = (-16*3, (16*3)-10), (16*3, -(16*3)+10)
             else:
-                target_pos, user_pos = (0, -10), (0, -(32*3)+10)
+                target_pos, user_pos = (-16*3, (16*3)-10), (16*3, -(16*3)+10)
 
             anim = Anim(app=battle._app, user_pos=user_pos, target_pos=target_pos, user = user, target = target)
             event = Event()
@@ -262,7 +278,7 @@ class Move:
 
 
 moves_list = [
-    Move('Scratch', 'Scratches opponent', constants.MonType.NORMAL, 35, 40, 100),
+    Move('Scratch', 'Scratches opponent', constants.MonType.NORMAL, 35, 40, 100, MoveEffect.animation(ScratchAnim)),
     Move('Tackle', "A crude body slam.", constants.MonType.NORMAL, 35, 40, 100),
     Move('Bite', "The user bites the opponent.", constants.MonType.NORMAL, 35, 40, 100),
     Move('Slap', "A quick slap to the opponent's face.", constants.MonType.NORMAL, 35, 40, 100),
