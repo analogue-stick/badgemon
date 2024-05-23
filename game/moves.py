@@ -31,8 +31,6 @@ class MoveAnim(Animation):
         self._target = target
         self._time = 0
         self._app = app
-        insults = ["SUCKS", "IS BAD", "STINKS"]
-        self.insult = random.choice(insults)
 
     def on_anim_end(self) -> None:
         self._app.overlays.remove(self)
@@ -54,6 +52,8 @@ class MoveAnim(Animation):
 
 class SlanderAnim(MoveAnim):
     def __init__(self, *args, length=3000, **kwargs) -> None:
+        insults = ["SUCKS", "IS BAD", "STINKS"]
+        self.insult = random.choice(insults)
         super().__init__(*args, length, **kwargs)
 
     def draw(self, ctx: Context) -> None:
