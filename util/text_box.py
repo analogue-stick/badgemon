@@ -190,6 +190,14 @@ class TextDialog:
             return default
         else:
             return ans
+        
+    async def wait_for_answer(self, name, default = ""):
+        self.set_name(name)
+        self.result = default
+        self.open()
+        await asyncio.sleep(0.1)
+        await self.closed_event.wait()
+        return self.get_answer(default)
 
 class TextExample(Scene):
     def __init__(self, *args, **kwargs):

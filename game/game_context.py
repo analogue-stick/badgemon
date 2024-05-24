@@ -3,7 +3,7 @@ from ..game.mons import Mon, mons_list
 from ..game.items import items_list
 from ..game.player import Player
 
-potion = items_list[0]
+potion = items_list[5]
 mon_template1 = mons_list[0]
 mon_template2 = mons_list[1]
 mon1 = Mon(mon_template1, 5).set_nickname("small guy")
@@ -16,7 +16,7 @@ VERSION = 1
 
 class GameContext:
     def __init__(self):
-        self.player = Player("Scarlett", [mon2, mon3], [mon4], {potion: 2})
+        self.player = Player("Scarlett", [], [], {potion: 2})
         self.random_encounters = True
 
     def serialise(self):

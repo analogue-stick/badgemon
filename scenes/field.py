@@ -29,6 +29,8 @@ class Field(Scene):
         self._next_move = None
         self._exit = False
         self._random_enc_needed = Event()
+        if len(self.context.player.badgemon) == 0:
+            self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("small guy"))
         try:
             self._gen_field_dialog()
         except Exception as e:

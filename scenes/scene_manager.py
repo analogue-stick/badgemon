@@ -8,11 +8,12 @@ from ..scenes.field import Field
 from ..scenes.battle import Battle
 from ..scenes.qr import Qr
 from ..scenes.badgedex import Badgedex
+from ..scenes.onboarding import Onboarding
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
-from system import eventbus
+from system.eventbus import eventbus
 from events.input import Buttons
 from system.scheduler.events import RequestStopAppEvent
 from ..util.animation import AnimationScheduler
@@ -22,7 +23,7 @@ from ..config import SAVE_PATH
 
 from ..util.text_box import TextExample, TextDialog
 
-SCENE_LIST = [MainMenu, None, Field, Battle, Qr, Badgedex, TextExample]
+SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample]
 
 class SceneManager(App):
     def __init__(self):
@@ -44,7 +45,7 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(0)
+            self.switch_scene(1)
         else:
             self.switch_scene(0)
 
@@ -113,7 +114,7 @@ class SceneManager(App):
             self._scene.scene_end()
         if scene is None:
             self._animation_scheduler.kill_animation()
-            self._emergency_save()
+            self._attempt_save()
             eventbus.emit(RequestStopAppEvent(self))
             del self._animation_scheduler
             del self._choice

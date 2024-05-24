@@ -1,5 +1,7 @@
 from asyncio import Event
 
+from ..game.game_context import GameContext
+
 from ..scenes.scene import Scene
 
 class MainMenu(Scene):
@@ -38,13 +40,14 @@ class MainMenu(Scene):
 
     async def background_task(self):
         if self.choice._state == "CLOSED":
-            await self.choice.open_and_wait()
+            self.choice.open()
         await self._next_move_available.wait()
         self._next_move_available.clear()
 
         if self._next_move == "CONTINUE":
             await self.fade_to_scene(2)
         elif self._next_move == "RESET":
+            self.context = GameContext()
             await self.fade_to_scene(1)
         elif self._next_move == "QUIT":
             await self.fade_to_scene(None)
