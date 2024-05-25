@@ -101,10 +101,11 @@ class ScratchAnim(MoveAnim):
             
 class DevourAnim(MoveAnim):
     def __init__(self, *args, length=4000, **kwargs) -> None:
-        self.image = ASSET_PATH+"moves/devour-"+str(random.randrange(3))+".png"
+        self.image = ASSET_PATH+"moves/devour-"+str(random.randrange(3))+".jpg"
         super().__init__(*args, length, **kwargs)
 
     def draw(self, ctx: Context) -> None:
+        ctx.image_smoothing = 0
         ctx.image(self.image, -120, -120, 240, 240)
         text_pos = animation.lerp(0, -600, self._time)
         ctx.text_align = Context.LEFT

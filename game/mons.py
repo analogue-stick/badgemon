@@ -305,11 +305,9 @@ class Mon:
         Take damage. This takes into account resistances, weaknesses and abilities.
         """
 
-        # TODO do damage multiplication by mon types, then modification by any abilities or stage effects, etc.
         return self.modify_hp(-amount)
 
     def apply_status(self, status: constants.StatusEffect):
-        # TODO abilities would prevent status application here
         if self.status == constants.StatusEffect.NO_EFFECT:
             self.status = status
             return True
