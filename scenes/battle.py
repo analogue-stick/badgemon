@@ -32,7 +32,7 @@ class Battle(Scene):
         self.context.player.get_move = self._get_move
         self.context.player.get_new_badgemon = self._get_new_badgemon
         self.context.player.gain_badgemon = self._gain_badgemon
-        self._battle_context = BContext(self.context.player, opponent, True, self.sm, self.speech)
+        self._battle_context = BContext(self.context.player, opponent, self.sm, self.speech)
         self._next_move: Mon | Item | Move | self.Desc | None = None
         self._next_move_available = Event()
         self._gen_choice_dialog()

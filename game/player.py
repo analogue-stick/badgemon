@@ -180,7 +180,7 @@ class Cpu(Player):
         if not any(mon.pp):
             return None
         else:
-            index, m = random.choice((index, m) for index, (m, pp) in enumerate(zip(mon.moves,mon.pp)) if pp > 0)
+            index, m = random.choice(list((index, m) for index, (m, pp) in enumerate(zip(mon.moves,mon.pp)) if pp > 0))
             mon.pp[index] -=1
             return m
     
