@@ -22,7 +22,7 @@ class MonTemplate:
                  learnset: List[Tuple[moves.Move, int]],
                  sprite: int,
                  weight: int,
-                 catch_rate: int = 1):
+                 catch_rate: int = 1, base_exp = 150):
         """
         :param name: Name of the mon
         :param desc: Description (dex entry)
@@ -42,6 +42,8 @@ class MonTemplate:
         :param weight: How likely the mon will appear randomly. Higher numbers will make the mon appear more.
         It is weighted against every other mon (so if one weight increases, the likelyhood of all other mons
         appearing decreases), and should be an integer.
+        :param catch_rate: How easy this mon is to catch. 1 is normal, higher numbers make it easier
+        :param base_exp: The average amount of exp gained when this mon gains exp
         """
         self.id = MonTemplate.id_inc
         MonTemplate.id_inc += 1
@@ -69,6 +71,7 @@ class MonTemplate:
 
         self.weight = weight
         self.catch_rate = catch_rate
+        self.base_exp = base_exp
 
 class Mon:
     """
@@ -113,8 +116,7 @@ class Mon:
 
         self.status = constants.StatusEffect.NO_EFFECT
 
-        self.xp = 0
-        # TODO gaining XP and levelling up
+        self.xp = level*level*level
 
         self.pp = [0, 0, 0, 0]
 
@@ -341,6 +343,13 @@ class Mon:
             self.pp[i] += by
             self.pp[i] = max(0, min(self.moves[i].max_pp, self.pp[i]))
 
+    def gain_exp(self, amount: int):
+        self.xp += amount
+
+    def level_up_needed(self):
+        l = (self.level+1)
+        return l*l*l <= self.xp
+
 mons_list = [
     MonTemplate(
         "Tetris", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
@@ -373,6 +382,9 @@ mons_list = [
         2
     )
 ]
+
+mons_list[1].evolve_level = 6
+mons_list[1].evolve_mon = mons_list[0]
 
 _cum = 0
 _cum_weights = []

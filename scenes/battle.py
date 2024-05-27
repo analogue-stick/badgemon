@@ -51,7 +51,7 @@ class Battle(Scene):
                 "BATTLE?!",
                 [
                     ("Attack", ("Attack", [
-                        (m.name, self._do_move(m)) for m in self._battle_context.mon1.moves
+                        (f"{pp}x {m.name}", self._do_move(m, index)) for index, (m, pp) in enumerate(zip(self._battle_context.mon1.moves,self._battle_context.mon1.pp)) if pp > 0
                     ])),
                     ("Item", ("Item", [
                         (f"{count}x {item.name}", self._do_item(item, count)) for (item,count) in self._battle_context.player1.inventory.items() if item.usable_in_battle and count > 0
@@ -187,9 +187,10 @@ class Battle(Scene):
         else:
             self._their_turn(ctx)
 
-    def _do_move(self, move: Move):
+    def _do_move(self, move: Move, index: int):
         def f():
             self._next_move = move
+            self._battle_context.mon1.pp[index] -= 1
             self._next_move_available.set()
         return f
 
@@ -249,6 +250,10 @@ class Battle(Scene):
         case.append(mon)
         badgedex.find(mon.template.id)
         await self.speech.write(f"{mon.nickname} has been added to your badgemon case!")
+
+    async def _gain_money(self, player: Player, amount: int):
+        player.money += amount
+        await self.speech.write(f"Got {amount} monies!")
     
     async def background_task(self):
         print("test")
@@ -264,6 +269,9 @@ class Battle(Scene):
             
             if target_mon.fainted:
                 await self.speech.write(f"{target_mon.nickname} fainted!")
+                if self._battle_context.turn:
+                    await self._battle_context.gain_exp(player_mon, target_mon)
+                    await self._gain_money(curr_player, target_mon.level*10)
                 all_fainted = True
                 for mon in curr_target.badgemon:
                     all_fainted = all_fainted and mon.fainted
@@ -283,6 +291,9 @@ class Battle(Scene):
 
             if player_mon.fainted:
                 await self.speech.write(f"{player_mon.nickname} fainted!")
+                if not self._battle_context.turn:
+                    await self._battle_context.gain_exp(target_mon, player_mon)
+                    await self._gain_money(curr_target, player_mon.level*10)
                 all_fainted = True
                 for mon in curr_player.badgemon:
                     all_fainted = all_fainted and mon.fainted

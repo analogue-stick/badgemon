@@ -91,3 +91,6 @@ def get_shake(catch_rate: float):
     check1 = random.randrange(0, 65536)
     print(f"1: {check1}, 2: {catch_rate}")
     return check1 < catch_rate
+
+def get_experience(mon: Mon, target: Mon):
+    return int(((mon.template.base_exp * target.level)/5)*math.pow((2*target.level+10)/(target.level+mon.level+10), 2.5)+1)

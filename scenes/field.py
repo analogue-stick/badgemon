@@ -36,6 +36,11 @@ class Field(Scene):
         except Exception as e:
             print(e)
 
+    def redirect(self):
+        for m in self.context.player.badgemon:
+            if m.level_up_needed():
+                return 7
+
     def _get_answer(self, ans: Coroutine, exit = False):
         return lambda: self._get_answer_internal(ans,exit)
 
@@ -81,7 +86,7 @@ class Field(Scene):
     async def _initiate_battle(self):
         template = choose_weighted_mon()
         max_level = max([m.level for m in self.context.player.badgemon])
-        level = random.randrange(max_level//8, int(max_level*1.2))
+        level = random.randrange(max(max_level//8,5), int(max_level*1.2))
 
         await self.fade_to_scene(3, opponent=Cpu(template.name, [Mon(template, level)], [], []))
 
@@ -216,14 +221,7 @@ class Field(Scene):
         while not self._exit:
             await self._next_move_available.wait()
             self._next_move_available.clear()
-            try:
-                await self._next_move
-            except Exception as e:
-                print("NEXT MOVE FAIL")
-                print(e)
-                print(e.with_traceback(True))
-                print(e)
-
+            await self._next_move
     async def _drive_random_enc(self):
         while True:
             await asyncio.sleep(30)

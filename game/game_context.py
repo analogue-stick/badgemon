@@ -12,7 +12,7 @@ mon3 = Mon(mon_template1, 17).set_nickname("David")
 mon4 = Mon(mon_template2, 33).set_nickname("large individual")
 mon5 = Mon(mon_template1, 100).set_nickname("biggest dude")
 
-VERSION = 1
+VERSION = 2
 
 class GameContext:
     def __init__(self):

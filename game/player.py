@@ -177,7 +177,12 @@ class Player:
 class Cpu(Player):
 
     async def get_move(self, mon: 'Mon') -> Union['Mon', 'Item', 'Move', None]:
-        return random.choice(mon.moves)
+        if not any(mon.pp):
+            return None
+        else:
+            index, m = random.choice((index, m) for index, (m, pp) in enumerate(zip(mon.moves,mon.pp)) if pp > 0)
+            mon.pp[index] -=1
+            return m
     
     async def get_new_badgemon(self) -> 'Mon':
         for mon in self.badgemon:

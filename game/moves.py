@@ -16,7 +16,7 @@ except ImportError:
 
 from ..util.animation import Animation, AnimationEvent
 from ..util import animation
-from ..util.misc import *
+from ..util.misc import shrink_until_fit, ASSET_PATH
 from asyncio import Event
 from ctx import Context
 from app import App
@@ -314,7 +314,7 @@ moves_list = [
     Move('Nose!', "Get your opponent's nose.", constants.MonType.NORMAL, 35, 40, 100),
     Move('DangerHug', "Gives opponent a (deadly) hug.", constants.MonType.NORMAL, 35, 40, 100),
     Move('PinchCheeks', "Pinch the opponent's cheeks and tell them how much they've grown.", constants.MonType.NORMAL, 35, 40, 100),
-    Move('MailFraud', "All items applied to the opponent for 2 turns will be appllied to you instead.", constants.MonType.NORMAL, 35, 40, 100),
+    None, # Move('MailFraud', "All items applied to the opponent for 2 turns will be appllied to you instead.", constants.MonType.NORMAL, 35, 40, 100),
     Move('Intoxicate', "Gets opponent drunk.", constants.MonType.POISON, 35, 40, 100),
     Move('Irrationalise', "Use advanced mathematics to prove that the opponent is irrational, and therefore not representable as a fraction.", constants.MonType.PSYCHIC, 35, 40, 100),
     Move('Rawr', "OwO? *nuzzles opponent*", constants.MonType.DRAGON, 35, 40, 100),
@@ -325,7 +325,7 @@ moves_list = [
     Move('FlamingSword', "Its cool factor more than makes up for its impractibility.", constants.MonType.FIRE, 35, 40, 100),
     Move('Duel', "Challenge opponent to pistol duel", constants.MonType.DARK, 35, 40, 100),
     Move('FP16', "Cast the opponent to a smaller data type, making them less accurate.", constants.MonType.BUG, 35, 40, 100),
-    Move('ShakeHands', "Shake hands with the opponent and recover 50% HP each.", constants.MonType.NORMAL, 35, 40, 100),
+    None, # Move('ShakeHands', "Shake hands with the opponent and recover 50% HP each.", constants.MonType.NORMAL, 35, 40, 100),
     Move('OOOooOOoO!', "Spook opponent", constants.MonType.GHOST, 35, 40, 100),
     Move('Overvolt', "Send more than the rated voltage to the opponent's VCC pin.", constants.MonType.ELECTRIC, 35, 40, 100),
     Move('Drain', "Reduce the opponent's voltage potential.", constants.MonType.GROUND, 35, 40, 100),

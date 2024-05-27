@@ -18,7 +18,7 @@ class Animation:
         self._needed_to_end_bak: int = 0
         self._started: bool = False
         self._ended: bool = False
-        self._infinite: bool = False
+        self._infinite: bool = infinite
 
     def _update(self, time: float) -> None:
         pass
@@ -55,7 +55,7 @@ class Animation:
         '''
         next._prev.extend(self._prev)
         for p in self._prev:
-            p.next.append(next)
+            p._next.append(next)
         if sync:
             next._next.extend(self._next)
             for n in self._next:
