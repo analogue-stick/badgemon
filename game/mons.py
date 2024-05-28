@@ -141,7 +141,7 @@ class Mon:
 
         # 🌏 🧑‍🚀 "Wait it's all unsigned bytes?"
         # 🧑‍🚀 🔫 🧑‍🚀 "Always has been"
-        # (oh except for the name and fainted)
+        # (oh except for the name, fainted, and xp)
 
         data = bytearray()
 
@@ -299,15 +299,19 @@ class Mon:
         """
         Heal HP. This does not trigger resistances, weaknesses or abilities.
         """
-
-        return self.modify_hp(amount)
+        if not self.fainted:
+            return self.modify_hp(amount)
+        else:
+            return 0
 
     def take_damage(self, amount: int, dmg_type: constants.MonType) -> int:
         """
         Take damage. This takes into account resistances, weaknesses and abilities.
         """
-
-        return self.modify_hp(-amount)
+        if not self.fainted:
+            return self.modify_hp(-amount)
+        else:
+            return 0
 
     def apply_status(self, status: constants.StatusEffect):
         if self.status == constants.StatusEffect.NO_EFFECT:

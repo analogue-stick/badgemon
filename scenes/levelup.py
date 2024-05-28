@@ -110,5 +110,7 @@ class LevelUp(Scene):
                 await asyncio.sleep(2)
                 await self.speech.write(f"{self.mon.nickname} evolved into {self.mon.template.name}!")
                 self.context.player.badgedex.find(self.mon.template.id)
+                self.mon.calculate_stats()
+                await self.speech.write(f"{self.mon.nickname}'s stats updated!")
 
         await self.fade_to_scene(7)

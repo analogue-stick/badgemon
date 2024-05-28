@@ -17,27 +17,12 @@ class Badgedex(Scene):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        #self.context.player.badgedex.find(0)
-        self._gen_main_menu_dialog()
-        self._current_mon = None
-        self._mon_known = False
+        self._index = 0
+        self._current_mon = mons_list[self._index]
+        self._mon_known = self.context.player.badgedex.found[self._index]
         self._exit = Event()
         self._arrow_wobble = 0
         self.animation_scheduler.trigger(AnimSin(AnimLerp(lambda x: self._set_wobble(x), end=4)))
-
-    def _switch_to(self, mon: MonTemplate, mon_known = False):
-        def f():
-            self._current_mon = mon
-            self._mon_known = mon_known
-        return f
-
-    def _gen_main_menu_dialog(self):
-        self.choice.set_choices(
-            (
-                "Badgedex",
-                    [(f"{m.id}: " + (m.name), self._switch_to(m, f)) for m, f in zip(mons_list,self.context.player.badgedex.found)]
-            )
-        )
 
     def _show_detail(self):
         if self._current_mon is None:
@@ -51,8 +36,14 @@ class Badgedex(Scene):
                 self._exit.set()
             elif BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button:
                 self._show_detail()
-            else:
-                self.choice.open()
+            elif BUTTON_TYPES["UP"] in event.button:
+                self._index =  (self._index - 1 + len(mons_list)) % len(mons_list)
+                self._current_mon = mons_list[self._index]
+                self._mon_known = self.context.player.badgedex.found[self._index]
+            elif BUTTON_TYPES["DOWN"] in event.button:
+                self._index =  (self._index + 1 + len(mons_list)) % len(mons_list)
+                self._current_mon = mons_list[self._index]
+                self._mon_known = self.context.player.badgedex.found[self._index]
 
     def _draw_arrow(self, ctx: Context):
         (ctx.move_to(-10, -100+self._arrow_wobble)
@@ -71,6 +62,10 @@ class Badgedex(Scene):
             name = (self._current_mon.name)
             shrink_until_fit(ctx, name, 100, 60)
             ctx.gray(0).move_to(0,-80).text(name).fill()
+
+            index = f"{self._index}."
+            ctx.font_size = 20
+            ctx.gray(0).move_to(0,-105).text(index).fill()
             
             types = f"{type_to_str(self._current_mon.type1)}, {type_to_str(self._current_mon.type2)}"
             shrink_until_fit(ctx, types, 120, 40)
@@ -92,7 +87,5 @@ class Badgedex(Scene):
         ctx.rotate(math.pi/2)
 
     async def background_task(self):
-        if self.choice._state == "CLOSED":
-            self.choice.open()
         await self._exit.wait()
         await self.fade_to_scene(2)

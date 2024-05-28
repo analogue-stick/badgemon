@@ -10,6 +10,7 @@ from ..scenes.qr import Qr
 from ..scenes.badgedex import Badgedex
 from ..scenes.onboarding import Onboarding
 from ..scenes.levelup import LevelUp
+from ..scenes.stats import Stats
 from ..game.game_context import GameContext
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
@@ -24,7 +25,7 @@ from ..config import SAVE_PATH
 
 from ..util.text_box import TextExample, TextDialog
 
-SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample, LevelUp]
+SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample, LevelUp, Stats]
 
 def dump_exception(e: Exception):
     if sys.implementation == "micropython":

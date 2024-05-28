@@ -109,6 +109,9 @@ class Field(Scene):
         else:
             await self.speech.write("Random encounters are disabled.")
 
+    async def _inspect(self, mon: Mon):
+        await self.fade_to_scene(8, mon=mon)
+
     def _gen_field_dialog(self):
         if len(self.context.player.badgemon) == 1:
             swap_mon_out = self._get_answer(self.speech.write("You must have at least one badgemon at all times!"))
@@ -131,6 +134,8 @@ class Field(Scene):
                                self._get_answer(self._swap_mon(i, j)), 
                             ) for j, m2 in enumerate(self.context.player.badgemon)])
                         ) for i, m1 in enumerate(self.context.player.badgemon)])
+            
+        inspect = ("Inspect BMon", [(f"{m.nickname}", self._get_answer(self._inspect(m), True)) for m in self.context.player.badgemon])
             
         usable_items = [(i, c) for (i, c) in self.context.player.inventory.items() if i.usable_in_field and c > 0]
 
@@ -173,15 +178,16 @@ class Field(Scene):
         self.choice.set_choices(
             ("Field", [
                 ("Badgemon", ("Badgemon",[
-                    ("Heal Badgemon", self._get_answer(self._use_full_heal())),
-                    ("Deposit BMon", swap_mon_out),
-                    ("Withdraw BMon", swap_mon_in),
-                    ("Change Order", swap_mons),
+                    ("Heal", self._get_answer(self._use_full_heal())),
+                    ("Deposit", swap_mon_out),
+                    ("Withdraw", swap_mon_in),
+                    ("Order", swap_mons),
+                    ("Inspect", inspect)
                 ])),
                 ("Badgedex", self._get_answer(self.fade_to_scene(5), True)),
                 ("Item Bag", ("Item Bag", [
                     ("Use Item", use_item),
-                    ("Describe Item", describe_item),
+                    ("Describe", describe_item),
                     ("Buy Item", shop)
                 ])),
                 ("Main Menu", ("Main Menu?",[
