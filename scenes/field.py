@@ -36,6 +36,7 @@ class Field(Scene):
         self._exit = False
         self._random_enc_needed = Event()
         self._tasks_finished = Event()
+        self.adv = None
         if len(self.context.player.badgemon) == 0:
             self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("small guy"))
         try:
@@ -349,11 +350,12 @@ class Field(Scene):
 
     async def _drive_advertise(self):
         while True:
-            adv = asyncio.create_task(self.sm._bt.advertise())
+            self.adv = asyncio.create_task(self.sm._bt.advertise())
             await self._advertise_reset.wait()
             self._advertise_reset.clear()
-            adv.cancel()
-            #await asyncio.sleep(2)
+            self.adv.cancel()
+            self.adv = None
+            await asyncio.sleep(2)
         self._tasks_finished.set()  
 
     async def background_task(self):
@@ -365,3 +367,5 @@ class Field(Scene):
         await self._tasks_finished.wait()
         for t in tasks:
             t.cancel()
+        if self.adv:
+            self.adv.cancel()
