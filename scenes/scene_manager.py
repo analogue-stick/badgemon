@@ -15,6 +15,7 @@ from ..game.game_context import GameContext, VERSION
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
+from ..util.misc import dump_exception
 from ..game.migrate import conversion
 from ..protocol.bluetooth import BluetoothDevice
 from system.eventbus import eventbus

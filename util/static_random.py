@@ -31,17 +31,11 @@ def random():
 def getrandbits(n):
     return int(random()*(2**n))
 
-def randrange(end):
-    return random()*end
-
 def randrange(start, end):
-    return (random()*(end-start))+start
-
-def randint(end):
-    return int(randrange(end))
+    return int((random()*(end-start))+start)
 
 def randint(start, end):
-    return int(randrange(start, end))
+    return randrange(start, end)
 
 def choice(choices):
     return choices[int(random()*len(choices))]
