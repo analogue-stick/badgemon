@@ -152,6 +152,12 @@ class Player:
         """
         pass
 
+    async def inform(self, move: Union['Mon', 'Item', 'Move', None]):
+        """
+        This is overridden by any parent class handling user interactions.
+        """
+        pass
+
     @staticmethod
     def get_meters_walked():
         return time.ticks_ms()/1000
@@ -188,3 +194,6 @@ class Cpu(Player):
         for mon in self.badgemon:
             if not mon.fainted:
                 return mon
+            
+class BTPlayer(Player):
+    pass

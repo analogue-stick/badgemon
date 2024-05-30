@@ -38,7 +38,7 @@ def attack_packet(move_opcode: int, move_operand: int):
     header = pack('>BH', API.SEND_ATTACK, len(packet))
     return header + packet
 
-def decode_packet(packet: bytes, player: Player, mon: Mon):
+def decode_packet(packet: bytes, player: Player = None, mon: Mon = None):
     type = packet[0]
     length = unpack_from(">H", packet, 1)[0]
     offset = 3
