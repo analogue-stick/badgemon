@@ -101,7 +101,8 @@ class SceneManager(App):
                     data = f.read(None)
                     self._context = GameContext.deserialise(data)
                     return
-        except IOError:
+        except Exception as e:
+            print(e)
             self._context = None
 
     def update(self, delta: float):
@@ -173,4 +174,4 @@ class SceneManager(App):
             self._battle_fader.reset()
             print("scene start")
             self._scene.scene_start()
-    
+

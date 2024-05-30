@@ -14,6 +14,7 @@ from app import App
 from ctx import Context
 from ..util.misc import *
 
+
 class ChoiceDialog:
     def _calc_sizes(self, ctx):
         self._sizes = [shrink_until_fit(ctx, choice[0], 150, 30) for choice in self._current_tree[1]]
