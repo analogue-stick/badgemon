@@ -269,7 +269,7 @@ class Field(Scene):
                     ("Foreground", change_fg_col),
                     #("pattern", change_pattern),
                 ])),
-                ("Host Fight",self._get_answer(self._host_fight())),
+                ("Host Fight",self._get_answer(self._host_fight_dummy())),
                 ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
