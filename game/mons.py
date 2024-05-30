@@ -397,7 +397,7 @@ for mon in mons_list:
     _cum_weights.append(_cum)
 
 def choose_weighted_mon():
-    value = random.randrange(_cum)
+    value = random.randrange(0, _cum)
     i = 0
     while _cum_weights[i] < value:
         i+=1

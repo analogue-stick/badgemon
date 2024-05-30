@@ -101,7 +101,7 @@ class ScratchAnim(MoveAnim):
             
 class DevourAnim(MoveAnim):
     def __init__(self, *args, length=4000, **kwargs) -> None:
-        self.image = ASSET_PATH+"moves/devour-"+str(random.randrange(3))+".jpg"
+        self.image = ASSET_PATH+"moves/devour-"+str(random.randrange(0,3))+".jpg"
         super().__init__(*args, length, **kwargs)
 
     def draw(self, ctx: Context) -> None:
