@@ -130,9 +130,9 @@ class Field(Scene):
             self.choice.open()
             await self.choice.closed_event.wait()
             if self._next_move_available.is_set():
-                self.sm.connection_task = asyncio.Task(self.sm._bt.connect_peripheral(self._next_move))
+                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._next_move))
                 await self.speech.write("Connecting...", stay_open=True)
-                await asyncio.wait([self.sm._bt.connection.wait(), self.sm.connection_task], asyncio.FIRST_COMPLETED)
+                await asyncio.wait_for(self.sm._bt.connection.wait(), 10)
                 self.speech.close()
                 if not self.sm._bt.connection.is_set():
                     await self.speech.write("Connection failed.")
@@ -253,7 +253,7 @@ class Field(Scene):
                     ("Foreground", change_fg_col),
                     #("pattern", change_pattern),
                 ])),
-                ("Host Fight",self._get_answer(self._host_fight_dummy())),
+                ("Host Fight",self._get_answer(self._host_fight())),
                 ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
@@ -349,11 +349,11 @@ class Field(Scene):
 
     async def _drive_advertise(self):
         while True:
-            #adv = asyncio.Task(self.sm._bt.advertise())
-            #await self._advertise_reset.wait()
-            #self._advertise_reset.clear()
-            #adv.cancel()
-            await asyncio.sleep(2)
+            adv = asyncio.create_task(self.sm._bt.advertise())
+            await self._advertise_reset.wait()
+            self._advertise_reset.clear()
+            adv.cancel()
+            #await asyncio.sleep(2)
         self._tasks_finished.set()  
 
     async def background_task(self):
