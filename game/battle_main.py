@@ -1,3 +1,4 @@
+from ..util import static_random as random
 import sys
 
 from app import App
@@ -12,7 +13,7 @@ from . import constants, mons, moves, calculation, player, items
 
 
 class Battle:
-    def __init__(self, player1: player.Player, player2: player.Player, start: bool, app: App, news_target: SpeechDialog):
+    def __init__(self, player1: player.Player, player2: player.Player, app: App, news_target: SpeechDialog):
         """
         A battle takes place between two players, until all BadgeMon on one side have fainted.
 
@@ -37,7 +38,10 @@ class Battle:
         player1.battle_context = self
         player2.battle_context = self
 
-        self.turn = start
+        if self.mon1.stats[constants.STAT_SPD] == self.mon2.stats[constants.STAT_SPD]:
+            self.turn = random.getrandbits(1) == 0
+        else:
+            self.turn = self.mon1.stats[constants.STAT_SPD] > self.mon2.stats[constants.STAT_SPD]
         self._app = app
 
     async def push_news_entry(self, *entry):
@@ -124,6 +128,21 @@ class Battle:
         await self.push_news_entry(custom_log.format(target=target.nickname, user=user.nickname, damage_taken=-damage_taken,
                                                dmg_type=constants.type_to_str(dmg_type), original_damage=amount))
         return damage_taken
+
+    async def gain_exp(self, user: mons.Mon, target: mons.Mon, custom_log: str = "") -> int:
+        """
+        Deal damage. Default log message is "{user} gained {exp} experience!"
+        :param user: The mon which caused the target to faint. This mon will gain exp.
+        :param target: The mon which fainted.
+        :param custom_log: A format string. Valid format values are {user}, {target}, {exp}
+        :return: The amount of exp gained.
+        """
+        exp = calculation.get_experience(user, target)
+        user.gain_exp(exp)
+        if custom_log == "":
+            custom_log = "{user} gained {exp} experience!\n"
+        await self.push_news_entry(custom_log.format(target=target.nickname, user=user.nickname, exp=exp))
+        return exp
 
     async def heal_target(self, user: Union[mons.Mon, None], target: mons.Mon, amount: int, custom_log: str = ""):
         """

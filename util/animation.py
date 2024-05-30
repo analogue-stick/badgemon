@@ -1,5 +1,6 @@
 from asyncio import Event
 import math
+from ..util.static_random import hash_without_sine
 from sys import implementation as _sys_implementation
 if _sys_implementation.name != "micropython":
     from typing import List, Tuple
@@ -18,7 +19,7 @@ class Animation:
         self._needed_to_end_bak: int = 0
         self._started: bool = False
         self._ended: bool = False
-        self._infinite: bool = False
+        self._infinite: bool = infinite
 
     def _update(self, time: float) -> None:
         pass
@@ -55,7 +56,7 @@ class Animation:
         '''
         next._prev.extend(self._prev)
         for p in self._prev:
-            p.next.append(next)
+            p._next.append(next)
         if sync:
             next._next.extend(self._next)
             for n in self._next:
@@ -209,14 +210,6 @@ def faster(start:float=0, end:float=1, x:float=0):
 def slower(start:float=0, end:float=1, x:float=0):
     x += 1
     return lerp(start, end, (x * x * 0.5 * (3.0 - x)) - 1)
-
-# Dave Hoskins
-def hash_without_sine(p:float):
-    p *= .1031
-    p = p - math.trunc(p)
-    p *= p + 33.33
-    p *= p + p
-    return p - math.trunc(p)
 
 def scaled_hash_without_sine(start,end,p):
     return lerp(start,end,hash_without_sine(lerp(start,end*100,p)))

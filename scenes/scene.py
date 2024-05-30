@@ -33,8 +33,10 @@ class Scene:
             fader = self._battle_fader
         else:
             fader = self._fader
-        fader.detach()
-        fader.reset()
+        self._fader.detach()
+        self._fader.reset()
+        self._battle_fader.detach()
+        self._battle_fader.reset()
         fader._colour = (0,0,0)
         fader.and_then(AnimationEvent(end_event))
         self.animation_scheduler.trigger(fader)
@@ -70,3 +72,6 @@ class Scene:
 
     async def background_task(self):
         await self._scene_ready.wait()
+    
+    def redirect(self):
+        return None

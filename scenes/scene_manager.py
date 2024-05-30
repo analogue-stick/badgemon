@@ -9,10 +9,14 @@ from ..scenes.battle import Battle
 from ..scenes.qr import Qr
 from ..scenes.badgedex import Badgedex
 from ..scenes.onboarding import Onboarding
-from ..game.game_context import GameContext
+from ..scenes.levelup import LevelUp
+from ..scenes.stats import Stats
+from ..game.game_context import GameContext, VERSION
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
+from ..game.migrate import conversion
+from ..protocol.bluetooth import BluetoothDevice
 from system.eventbus import eventbus
 from events.input import Buttons
 from system.scheduler.events import RequestStopAppEvent
@@ -23,7 +27,14 @@ from ..config import SAVE_PATH
 
 from ..util.text_box import TextExample, TextDialog
 
-SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample]
+SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample, LevelUp, Stats]
+
+def dump_exception(e: Exception):
+    if sys.implementation == "micropython":
+        sys.print_exception(e)
+    else:
+        import traceback
+        traceback.print_exception(e)
 
 class SceneManager(App):
     def __init__(self):
@@ -45,9 +56,11 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(1)
+            self.switch_scene(2)
         else:
             self.switch_scene(0)
+        self._bt = BluetoothDevice()
+        self.connection_task = None
 
     def _attempt_save(self):
         '''
@@ -62,9 +75,31 @@ class SceneManager(App):
         Load data from disk
         '''
         try:
-            with open(SAVE_PATH+"sav.dat", "rb") as f:
-                data = f.read(None)
-                self._context = GameContext.deserialise(data)
+            while True:
+                f = open(SAVE_PATH+"sav.dat", "rb")
+                if f.read(4) != b'BGGR':
+                    print("FILE UNRECOGNISED")
+                    self._context = None
+                    return
+                version = int.from_bytes(f.read(1), byteorder='little')
+                if version != VERSION:
+                    if version > VERSION:
+                        print("TOO NEW!")
+                        self._context = None
+                        return
+                    elif version in conversion:
+                        f.close()
+                        conversion[version]()
+                        continue
+                    print("UNKNOWN VERSION")
+                    self._context = None
+                    return
+                f.close()
+                with open(SAVE_PATH+"sav.dat", "rb") as f:
+                    f.seek(6)
+                    data = f.read(None)
+                    self._context = GameContext.deserialise(data)
+                    return
         except IOError:
             self._context = None
 
@@ -78,7 +113,7 @@ class SceneManager(App):
                 self._scene.update(delta)
         except Exception as e:
             print("UPDATE FAIL")
-            print(e)
+            dump_exception(e)
             sys.exit()
 
     def draw(self, ctx: Context):
@@ -88,7 +123,7 @@ class SceneManager(App):
             super().draw(ctx)
         except Exception as e:
             print("DRAW FAIL")
-            print(e)
+            dump_exception(e)
             sys.exit()
 
     async def background_task(self):
@@ -102,7 +137,7 @@ class SceneManager(App):
                 await self._scene.background_task()
             except Exception as e:
                 print("BACKGROUND FAIL")
-                print(e)
+                dump_exception(e)
                 sys.exit()
             self._choice.close()
             self._speech.close()
@@ -126,11 +161,13 @@ class SceneManager(App):
             self._choice.close()
             self._speech.close()
             self._text.close()
-            print("LOAD SCENE")
-            print((SCENE_LIST[scene]))
-            self._scene: Scene = (SCENE_LIST[scene])(self, *args, **kwargs)
-            gc.collect()
-            print(f"mem used: {gc.mem_alloc()}, mem free:{gc.mem_free()}")
+            while scene is not None:
+                print("LOAD SCENE")
+                print((SCENE_LIST[scene]))
+                self._scene: Scene = (SCENE_LIST[scene])(self, *args, **kwargs)
+                gc.collect()
+                print(f"mem used: {gc.mem_alloc()}, mem free:{gc.mem_free()}")
+                scene = self._scene.redirect()
             self._scene._fadein()
             self._battle_fader.reset()
             print("scene start")

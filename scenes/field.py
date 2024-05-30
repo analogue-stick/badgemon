@@ -1,17 +1,19 @@
 from asyncio import Event
 import asyncio
-import random
+from ..util import static_random as random
 from sys import implementation as _sys_implementation
 if _sys_implementation.name != "micropython":
     from typing import Coroutine
 
-from ..game.player import Cpu
+from ..game.player import Cpu, Player
 
 from ..scenes.scene import Scene
 from ..game.items import Item, items_list
 from ..game.mons import Mon, mons_list, choose_weighted_mon
+from ..protocol import packet
 from events.input import ButtonDownEvent
 from ctx import Context
+from ..game.customisation import COLOURS, PATTERNS
 
 potion = items_list[0]
 mon_template1 = mons_list[0]
@@ -27,6 +29,9 @@ class Field(Scene):
         super().__init__(*args, **kwargs)
         self._next_move_available = Event()
         self._next_move = None
+        self._fight_accept_available = Event()
+        self._fight_accept = None
+        self._advertise_reset = Event()
         self._exit = False
         self._random_enc_needed = Event()
         if len(self.context.player.badgemon) == 0:
@@ -35,6 +40,11 @@ class Field(Scene):
             self._gen_field_dialog()
         except Exception as e:
             print(e)
+
+    def redirect(self):
+        for m in self.context.player.badgemon:
+            if m.level_up_needed():
+                return 7
 
     def _get_answer(self, ans: Coroutine, exit = False):
         return lambda: self._get_answer_internal(ans,exit)
@@ -81,7 +91,7 @@ class Field(Scene):
     async def _initiate_battle(self):
         template = choose_weighted_mon()
         max_level = max([m.level for m in self.context.player.badgemon])
-        level = random.randrange(max_level//8, int(max_level*1.2))
+        level = random.randrange(max(max_level//8,5), int(max_level*1.2))
 
         await self.fade_to_scene(3, opponent=Cpu(template.name, [Mon(template, level)], [], []))
 
@@ -103,6 +113,47 @@ class Field(Scene):
             await self.speech.write("Random encounters are enabled.")
         else:
             await self.speech.write("Random encounters are disabled.")
+
+    async def _inspect(self, mon: Mon):
+        await self.fade_to_scene(8, mon=mon)
+
+    async def _host_fight(self):
+        await self.speech.write("Searching for trainers...", stay_open=True)
+        trainers = await self.sm._bt.find_trainers()
+        self.speech.close()
+        if len(trainers) == 0:
+            await self.speech.write("No trainers found.")
+        else:
+            self.choice.set_choices(("Trainers", [(f"{name}", self._get_answer(device)) for name, device in trainers]))
+            self.choice.open()
+            await self.choice.closed_event.wait()
+            if self._next_move_available.is_set():
+                self.sm.connection_task = asyncio.Task(self.sm._bt.connect_peripheral(self._next_move))
+                await self.speech.write("Connecting...", stay_open=True)
+                await asyncio.wait([self.sm._bt.connection.wait(), self.sm.connection_task], asyncio.FIRST_COMPLETED)
+                self.speech.close()
+                if not self.sm._bt.connection.is_set():
+                    await self.speech.write("Connection failed.")
+                else:
+                    await self.speech.write("Waiting for user...", stay_open=True)
+                    connect = await self.sm._bt._input.get()
+                    self.speech.close()
+                    if connect[0] == 'N':
+                        await self.speech.write("User denied request.")
+                    else:
+                        await self.sm._bt._output.put(packet.challenge_req_packet(
+                            self.context.player, 
+                            random.getrandbits(32)
+                            ))
+                        responsedata = await self.sm._bt._input.get()
+                        player = packet.decode_packet(responsedata)
+                        assert isinstance(player, Player)
+                        
+    async def _host_fight_dummy(self):
+        await self.speech.write("Hello! Molive here. It is extremely likely that I will recieve" +
+                                " the badges at the exact same time you will, and therefore will have absolutely no way" +
+                                " to test or develop bluetooth functionality beforehand. I will try and add this feature during" +
+                                " the event, but don't count on it. Sorry.")
 
     def _gen_field_dialog(self):
         if len(self.context.player.badgemon) == 1:
@@ -126,6 +177,8 @@ class Field(Scene):
                                self._get_answer(self._swap_mon(i, j)), 
                             ) for j, m2 in enumerate(self.context.player.badgemon)])
                         ) for i, m1 in enumerate(self.context.player.badgemon)])
+            
+        inspect = ("Inspect BMon", [(f"{m.nickname}", self._get_answer(self._inspect(m), True)) for m in self.context.player.badgemon])
             
         usable_items = [(i, c) for (i, c) in self.context.player.inventory.items() if i.usable_in_field and c > 0]
 
@@ -168,17 +221,19 @@ class Field(Scene):
         self.choice.set_choices(
             ("Field", [
                 ("Badgemon", ("Badgemon",[
-                    ("Heal Badgemon", self._get_answer(self._use_full_heal())),
-                    ("Deposit BMon", swap_mon_out),
-                    ("Withdraw BMon", swap_mon_in),
-                    ("Change Order", swap_mons),
+                    ("Heal", self._get_answer(self._use_full_heal())),
+                    ("Deposit", swap_mon_out),
+                    ("Withdraw", swap_mon_in),
+                    ("Order", swap_mons),
+                    ("Inspect", inspect)
                 ])),
                 ("Badgedex", self._get_answer(self.fade_to_scene(5), True)),
                 ("Item Bag", ("Item Bag", [
                     ("Use Item", use_item),
-                    ("Describe Item", describe_item),
+                    ("Describe", describe_item),
                     ("Buy Item", shop)
                 ])),
+                ("Host Fight",self._get_answer(self._host_fight_dummy())),
                 ("Main Menu", ("Main Menu?",[
                     ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
@@ -192,7 +247,7 @@ class Field(Scene):
         )
 
     def draw(self, ctx: Context):
-        super().draw(ctx)
+        ctx.rectangle(-120,-120,240,240).rgb(*COLOURS[self.context.custom.background_col]).fill()
 
     def handle_buttondown(self, event: ButtonDownEvent):
         if not self.choice.is_open() and not self.speech.is_open():
@@ -212,25 +267,57 @@ class Field(Scene):
         await self.speech.write("Oh, what's this?")
         await self._initiate_battle()
 
+    def _accept_fight(self, ans: bool):
+        def f():
+            self._fight_accept = ans
+            self._fight_accept_available.set()
+        return f
+
+    async def _await_trainer(self):
+        while True:
+            await self.sm._bt.connection.wait()
+            if not self.sm._bt.host:
+                while self.speech.is_open():
+                    await self.speech._ready_event.wait()
+                self.choice.close()
+                await self.speech.write(f"{self.sm._bt.conn_name} is looking for a fight! Do you accept?")
+                self.choice.set_choices((f"Fight {self.sm._bt.conn_name}", [
+                        ("yes", self._accept_fight(True)),
+                        ("no", self._accept_fight(False))
+                    ]), True)
+                self.choice.open()
+                await self._fight_accept_available.wait()
+                if self._fight_accept:
+                    self.sm._bt._output.put("YEAG")
+                    pass
+                else:
+                    self.sm._bt._output.put("NUH-UH")
+                    self._advertise_reset.set()
+
     async def _handle_ui(self):
         while not self._exit:
             await self._next_move_available.wait()
             self._next_move_available.clear()
-            try:
-                await self._next_move
-            except Exception as e:
-                print("NEXT MOVE FAIL")
-                print(e)
-                print(e.with_traceback(True))
-                print(e)
-
+            await self._next_move
     async def _drive_random_enc(self):
         while True:
             await asyncio.sleep(30)
             self._random_enc_needed.set()
 
+    async def _drive_advertise(self):
+        while True:
+            #adv = asyncio.Task(self.sm._bt.advertise())
+            #await self._advertise_reset.wait()
+            #self._advertise_reset.clear()
+            #adv.cancel()
+            await asyncio.sleep(2)
+
     async def background_task(self):
-        tasks: list[asyncio.Task] = [asyncio.Task(self._await_random_enc()), asyncio.Task(self._handle_ui()), asyncio.Task(self._drive_random_enc())]
+        tasks: list[asyncio.Task] = [
+            asyncio.Task(self._await_random_enc()),
+            asyncio.Task(self._handle_ui()),
+            asyncio.Task(self._drive_random_enc()),
+            asyncio.Task(self._drive_advertise())]
         await asyncio.wait(tasks, return_when = asyncio.FIRST_COMPLETED)
         for t in tasks:
             t.cancel()

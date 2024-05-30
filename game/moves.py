@@ -1,5 +1,5 @@
 import math
-import random
+from ..util import static_random as random
 
 from . import constants
 
@@ -16,7 +16,7 @@ except ImportError:
 
 from ..util.animation import Animation, AnimationEvent
 from ..util import animation
-from ..util.misc import *
+from ..util.misc import shrink_until_fit, ASSET_PATH
 from asyncio import Event
 from ctx import Context
 from app import App
@@ -303,7 +303,7 @@ moves_list = [
     Move('free()', "Deallocates the space previously allocated to the opponent", constants.MonType.BUG, 35, 40, 100),
     Move('StackSmash', "Writes a \'normal amount of data\' to the opponent's stack.", constants.MonType.BUG, 35, 40, 100),
     Move('SQLInject', "Writes a \'normal\' string to the opponent's database';DROP TABLE HP", constants.MonType.BUG, 35, 40, 100),
-    Move('Wet Fish', "The opponent is hit across the face with a wet fish", constants.MonType.WATER, 35, 40, 100),
+    Move('WetFish', "The opponent is hit across the face with a wet fish", constants.MonType.WATER, 35, 40, 100),
     Move('ScathingInsult', "Make a witty remark about the opponent's mother.", constants.MonType.NORMAL, 35, 40, 100),
     Move('Pandemic', "Cancels opponent due to pandemic restrictions", constants.MonType.GHOST, 35, 40, 100),
     Move('TorrentialRain', "Maybe if the opponent had pitched at the top of the hill they would still be fine right now", constants.MonType.WATER, 35, 40, 100),
