@@ -35,6 +35,7 @@ class Field(Scene):
         self._advertise_reset = Event()
         self._exit = False
         self._random_enc_needed = Event()
+        self._tasks_finished = Event()
         if len(self.context.player.badgemon) == 0:
             self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("small guy"))
         try:
@@ -304,6 +305,7 @@ class Field(Scene):
         self.choice.close()
         await self.speech.write("Oh, what's this?")
         await self._initiate_battle()
+        self._tasks_finished.set()  
 
     def _accept_fight(self, ans: bool):
         def f():
@@ -334,13 +336,17 @@ class Field(Scene):
 
     async def _handle_ui(self):
         while not self._exit:
+            print('Hello, World!')
             await self._next_move_available.wait()
             self._next_move_available.clear()
             await self._next_move
+        self._tasks_finished.set()  
+    
     async def _drive_random_enc(self):
         while True:
             await asyncio.sleep(30)
             self._random_enc_needed.set()
+        self._tasks_finished.set()  
 
     async def _drive_advertise(self):
         while True:
@@ -349,6 +355,7 @@ class Field(Scene):
             #self._advertise_reset.clear()
             #adv.cancel()
             await asyncio.sleep(2)
+        self._tasks_finished.set()  
 
     async def background_task(self):
         tasks: list[asyncio.Task] = [
@@ -356,6 +363,6 @@ class Field(Scene):
             asyncio.Task(self._handle_ui()),
             asyncio.Task(self._drive_random_enc()),
             asyncio.Task(self._drive_advertise())]
-        await asyncio.wait(tasks, return_when = asyncio.FIRST_COMPLETED)
+        await self._tasks_finished.wait() 
         for t in tasks:
             t.cancel()
