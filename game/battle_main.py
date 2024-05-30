@@ -1,4 +1,4 @@
-import random
+from ..util import static_random as random
 import sys
 
 from app import App

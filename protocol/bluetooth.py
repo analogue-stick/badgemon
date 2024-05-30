@@ -1,10 +1,17 @@
-import bluetooth
-import aioble
+#import aioble
 import asyncio
-from protocol.queue import Queue
 
-_BADGEMON_SERVICE = bluetooth.UUID('42616467-654d-6f6e-3545-7661723a3333')
-_BADGEMON_COMM_CHAR = bluetooth.UUID(0x0001)
+from ..protocol.queue import Queue
+
+import sys
+if sys.implementation == "micropython":
+    import bluetooth
+    _BADGEMON_SERVICE = bluetooth.UUID('42616467-654d-6f6e-3545-7661723a3333')
+    _BADGEMON_COMM_CHAR = bluetooth.UUID(0x0001)
+else:
+    import uuid
+    _BADGEMON_SERVICE = uuid.UUID('42616467-654d-6f6e-3545-7661723a3333')
+    _BADGEMON_COMM_CHAR = uuid.UUID(int=0x0001)
 
 _PERIPHERAL_STATE = 0
 _CENTRAL_STATE = 1
@@ -16,8 +23,11 @@ class BluetoothDevice:
     def __init__(self):
         self._input = Queue()
         self._output = Queue()
+        self.connection = asyncio.Event()
+        self.host = False
+        self.conn_name = ""
 
-    async def _send_task(self, conn: aioble.device.DeviceConnection, char: aioble.Characteristic, state: int) -> None:
+    async def _send_task(self, conn, char, state: int) -> None:
         """
 
         @param conn: The current connection
@@ -87,10 +97,15 @@ class BluetoothDevice:
                     appearance=0x0A82,
             ) as connection:
                 print("Connection from", connection.device)
-                recv_task = asyncio.create_task(self._recv_task(char, _PERIPHERAL_STATE))
-                send_task = asyncio.create_task(self._send_task(connection, char, _PERIPHERAL_STATE))
-                disconnect_task = asyncio.create_task(connection.disconnected())
-                await asyncio.gather(send_task, recv_task, disconnect_task)
+                self.conn_name = connection.name
+                if not self.connection.is_set():
+                    self.host = False
+                    self.connection.set()
+                    recv_task = asyncio.create_task(self._recv_task(char, _PERIPHERAL_STATE))
+                    send_task = asyncio.create_task(self._send_task(connection, char, _PERIPHERAL_STATE))
+                    disconnect_task = asyncio.create_task(connection.disconnected())
+                    await asyncio.gather(send_task, recv_task, disconnect_task)
+                    self.connection.clear()
 
     async def connect_peripheral(self, device):
         try:
@@ -100,16 +115,21 @@ class BluetoothDevice:
             return
 
         async with connection:
-            try:
-                service = await connection.service(_BADGEMON_SERVICE)
-                char = await service.characteristic(_BADGEMON_COMM_CHAR)
-            except asyncio.TimeoutError:
-                return
-
-            recv_task = asyncio.create_task(self._recv_task(char, _CENTRAL_STATE))
-            send_task = asyncio.create_task(self._send_task(connection, char, _CENTRAL_STATE))
-            disconnect_task = asyncio.create_task(connection.disconnected())
-            await asyncio.gather(send_task, recv_task, disconnect_task)
+            if not self.connection.is_set():
+                self.host = True
+                self.connection.set()
+                try:
+                    service = await connection.service(_BADGEMON_SERVICE)
+                    char = await service.characteristic(_BADGEMON_COMM_CHAR)
+                except asyncio.TimeoutError:
+                    self.connection.clear()
+                    return
+                self.conn_name = connection.name
+                recv_task = asyncio.create_task(self._recv_task(char, _CENTRAL_STATE))
+                send_task = asyncio.create_task(self._send_task(connection, char, _CENTRAL_STATE))
+                disconnect_task = asyncio.create_task(connection.disconnected())
+                await asyncio.gather(send_task, recv_task, disconnect_task)
+                self.connection.clear()
 
     async def main(self):
         pass

@@ -1,5 +1,5 @@
 import math
-import random
+from ..util import static_random as random
 
 from . import constants
 

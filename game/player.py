@@ -1,5 +1,5 @@
 from struct import pack, unpack_from
-import random
+from ..util import static_random as random
 import time
 
 from . import items, badgedex

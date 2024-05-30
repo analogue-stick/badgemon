@@ -1,6 +1,6 @@
 from asyncio import Event
 import asyncio
-import random
+from ..util import static_random as random
 
 from ctx import Context
 

@@ -1,5 +1,5 @@
 import math
-import random
+from ..util import static_random as random
 from struct import pack, unpack_from
 
 from sys import implementation as _sys_implementation

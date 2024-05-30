@@ -23,6 +23,7 @@ class SpeechDialog:
         self._opened_amount = 0.0
         self._ready_event = asyncio.Event()
         self._ready_event.set()
+        self._stay_open = False
 
     def is_open(self) -> bool:
         return self._open
@@ -36,11 +37,13 @@ class SpeechDialog:
         if self.is_open():
             self._cleanup()
 
-    async def write(self, s):
+    async def write(self, s, stay_open = False):
         await self._ready_event.wait()
         self.set_speech(s)
+        self._stay_open = stay_open
         self.open()
-        await self._ready_event.wait()
+        if not self._stay_open:
+            await self._ready_event.wait()
 
     def set_speech(self, speech: str):
         self._speech = speech
@@ -49,9 +52,7 @@ class SpeechDialog:
         self._current_line_visually = 1.0
 
     def _goto_start(self):
-        if len(self._lines) == 0:
-            self._cleanup()
-        elif len(self._lines) == 1:
+        if len(self._lines) < 2:
             self._current_line = 0.0
             self._current_line_visually = 0.0
         elif len(self._lines) == 2:
@@ -110,6 +111,8 @@ class SpeechDialog:
                         line = word
                 if line != "":
                     self._lines.append(line)
+                if len(self._lines) == 0:
+                    self._cleanup()
                 self._goto_start()
             self._draw_focus_plane(ctx, self._opened_amount)
             clip = ctx.rectangle(-120, (-BOX_HEIGHT)*self._opened_amount, 240, (BOX_HEIGHT*2)*self._opened_amount).clip()
@@ -123,7 +126,7 @@ class SpeechDialog:
             ctx.restore()
             
     def _handle_buttondown(self, event: ButtonDownEvent):
-        if self.is_open():
+        if self.is_open() and not self._stay_open:
             if len(self._lines) < 4:
                 self._cleanup()
                 return

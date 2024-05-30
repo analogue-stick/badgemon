@@ -1,5 +1,6 @@
 import asyncio
 import gc
+from struct import unpack_from
 import sys
 
 from ..scenes.scene import Scene
@@ -11,10 +12,12 @@ from ..scenes.badgedex import Badgedex
 from ..scenes.onboarding import Onboarding
 from ..scenes.levelup import LevelUp
 from ..scenes.stats import Stats
-from ..game.game_context import GameContext
+from ..game.game_context import GameContext, VERSION
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
+from ..game.migrate import conversion
+from ..protocol.bluetooth import BluetoothDevice
 from system.eventbus import eventbus
 from events.input import Buttons
 from system.scheduler.events import RequestStopAppEvent
@@ -54,9 +57,11 @@ class SceneManager(App):
         self._attempt_load()
         if self._context == None:
             self._context = GameContext()
-            self.switch_scene(1)
+            self.switch_scene(2)
         else:
             self.switch_scene(0)
+        self._bt = BluetoothDevice()
+        self.connection_task = None
 
     def _attempt_save(self):
         '''
@@ -71,9 +76,31 @@ class SceneManager(App):
         Load data from disk
         '''
         try:
-            with open(SAVE_PATH+"sav.dat", "rb") as f:
-                data = f.read(None)
-                self._context = GameContext.deserialise(data)
+            while True:
+                f = open(SAVE_PATH+"sav.dat", "rb")
+                if f.read(4) != b'BGGR':
+                    print("FILE UNRECOGNISED")
+                    self._context = None
+                    return
+                version = int.from_bytes(f.read(1), byteorder='little')
+                if version != VERSION:
+                    if version > VERSION:
+                        print("TOO NEW!")
+                        self._context = None
+                        return
+                    elif version in conversion:
+                        f.close()
+                        conversion[version]()
+                        continue
+                    print("UNKNOWN VERSION")
+                    self._context = None
+                    return
+                f.close()
+                with open(SAVE_PATH+"sav.dat", "rb") as f:
+                    f.seek(6)
+                    data = f.read(None)
+                    self._context = GameContext.deserialise(data)
+                    return
         except IOError:
             self._context = None
 
