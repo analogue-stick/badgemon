@@ -101,7 +101,7 @@ class BluetoothDevice:
                     appearance=0x0A82,
             ) as connection:
                 print("Connection from", connection.device)
-                self.conn_name = connection.name
+                self.conn_name = connection.device.addr
                 if not self.connection.is_set():
                     self.host = False
                     self.connection.set()
