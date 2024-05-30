@@ -126,6 +126,7 @@ class Field(Scene):
         def f():
             self._device = dev
             self._device_available.set()
+            print('SAVJDGWHDJIWHVDGHBJIKO')
         return f
 
     async def _host_fight(self):
@@ -137,12 +138,16 @@ class Field(Scene):
         else:
             self.choice.set_choices(("Trainers", [(f"{name}", self._set_device(device)) for name, device in trainers]))
             self.choice.open()
+            await self.choice.opened_event.wait()
             await self.choice.closed_event.wait()
             if self._device_available.is_set():
                 self._device_available.clear()
-                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._next_move))
+                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._device))
                 await self.speech.write("Connecting...", stay_open=True)
-                await asyncio.wait_for(self.sm._bt.connection.wait(), 10)
+                try:
+                    await asyncio.wait_for(self.sm._bt.connection.wait(), 10)
+                except asyncio.TimeoutError:
+                    pass
                 self.speech.close()
                 if not self.sm._bt.connection.is_set():
                     await self.speech.write("Connection failed.")
@@ -160,6 +165,8 @@ class Field(Scene):
                         responsedata = await self.sm._bt._input.get()
                         player = packet.decode_packet(responsedata)
                         assert isinstance(player, Player)
+            else:
+                print('NUH UH')
                         
     async def _host_fight_dummy(self):
         await self.speech.write("Hello! Molive here. It is extremely likely that I will recieve" +
@@ -363,7 +370,7 @@ class Field(Scene):
             await self._advertise_reset.wait()
             self._advertise_reset.clear()
             self.adv.cancel()
-            self.adv = None
+            # self.adv = None
             await asyncio.sleep(2)
         self._tasks_finished.set()  
 
