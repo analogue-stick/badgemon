@@ -336,7 +336,6 @@ class Field(Scene):
 
     async def _handle_ui(self):
         while not self._exit:
-            print('Hello, World!')
             await self._next_move_available.wait()
             self._next_move_available.clear()
             await self._next_move
@@ -359,10 +358,10 @@ class Field(Scene):
 
     async def background_task(self):
         tasks: list[asyncio.Task] = [
-            asyncio.Task(self._await_random_enc()),
-            asyncio.Task(self._handle_ui()),
-            asyncio.Task(self._drive_random_enc()),
-            asyncio.Task(self._drive_advertise())]
-        await self._tasks_finished.wait() 
+            asyncio.create_task(self._await_random_enc()),
+            asyncio.create_task(self._handle_ui()),
+            asyncio.create_task(self._drive_random_enc()),
+            asyncio.create_task(self._drive_advertise())]
+        await self._tasks_finished.wait()
         for t in tasks:
             t.cancel()
