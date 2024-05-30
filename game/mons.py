@@ -141,7 +141,7 @@ class Mon:
 
         # 🌏 🧑‍🚀 "Wait it's all unsigned bytes?"
         # 🧑‍🚀 🔫 🧑‍🚀 "Always has been"
-        # (oh except for the name, fainted, and xp)
+        # (oh except for the name, and xp)
 
         data = bytearray()
 
@@ -149,7 +149,7 @@ class Mon:
         data += pack('B', name_len)
         data += self.nickname.encode('utf-8')
 
-        data += pack('BBB?', self.template.id, self.level, self.hp, self.fainted)
+        data += pack('BBBB', self.template.id, self.level, self.hp, self.fainted)
 
         data += pack('BBBBBB', *self.evs)
         data += pack('BBBBBB', *self.ivs)

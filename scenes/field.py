@@ -135,12 +135,12 @@ class Field(Scene):
         if len(trainers) == 0:
             await self.speech.write("No trainers found.")
         else:
-            self.choice.set_choices(("Trainers", [(f"{name}", self._set_device(device)) for name, device in trainers]))
+            self.choice.set_choices(("Trainers", [("Cancel", self._set_device(None))] + [(f"{name}", self._set_device(device)) for name, device in trainers]), True)
             self.choice.open()
-            await self.choice.closed_event.wait()
-            if self._device_available.is_set():
-                self._device_available.clear()
-                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._next_move))
+            await self._device_available.wait()
+            self._device_available.clear()
+            if self._device is not None:
+                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._device))
                 await self.speech.write("Connecting...", stay_open=True)
                 await asyncio.wait_for(self.sm._bt.connection.wait(), 10)
                 self.speech.close()

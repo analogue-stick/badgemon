@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import os
 import sys
 
 from ..scenes.scene import Scene
@@ -15,7 +16,7 @@ from ..game.game_context import GameContext, VERSION
 from ..util.fades import FadeToShade, BattleFadeToShade
 from ..util.choice import ChoiceDialog
 from ..util.speech import SpeechDialog
-from ..util.misc import dump_exception
+from ..util.misc import dump_exception, path_isdir
 from ..game.migrate import conversion
 from ..protocol.bluetooth import BluetoothDevice
 from system.eventbus import eventbus
@@ -68,6 +69,8 @@ class SceneManager(App):
         Save data to disk
         '''
         data = self._context.serialise()
+        if not path_isdir(SAVE_PATH):
+            os.mkdir(SAVE_PATH)
         with open(SAVE_PATH+"sav.dat", "wb") as f:
             f.write(data)
 

@@ -29,7 +29,7 @@ class GameContext:
         player = self.player.serialise()
         data += pack("H", len(player))
         data += player
-        data += pack('?', self.random_encounters)
+        data += pack('B', self.random_encounters)
         custom = self.custom.serialise()
         data += pack("B", len(custom))
         data += custom
@@ -42,7 +42,7 @@ class GameContext:
         offset += 2
         gc.player = Player.deserialise(data[offset:offset + pl_len])
         offset += pl_len
-        gc.random_encounters = unpack_from('?', data, offset)[0]
+        gc.random_encounters = unpack_from('B', data, offset)[0]
         offset += 1
         cm_len = unpack_from('B', data, offset)[0]
         offset += 1
