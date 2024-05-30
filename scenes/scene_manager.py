@@ -31,7 +31,7 @@ from ..util.text_box import TextExample, TextDialog
 SCENE_LIST = [MainMenu, Onboarding, Field, Battle, Qr, Badgedex, TextExample, LevelUp, Stats]
 
 def dump_exception(e: Exception):
-    if sys.implementation == "micropython":
+    if sys.implementation.name == "micropython":
         sys.print_exception(e)
     else:
         import traceback

@@ -10,6 +10,7 @@ from ..game.player import Cpu, Player
 from ..scenes.scene import Scene
 from ..game.items import Item, items_list
 from ..game.mons import Mon, mons_list, choose_weighted_mon
+from ..util.misc import shrink_until_fit, draw_mon
 from ..protocol import packet
 from events.input import ButtonDownEvent
 from ctx import Context
@@ -154,6 +155,15 @@ class Field(Scene):
                                 " the badges at the exact same time you will, and therefore will have absolutely no way" +
                                 " to test or develop bluetooth functionality beforehand. I will try and add this feature during" +
                                 " the event, but don't count on it. Sorry.")
+    
+    async def _set_bg_col(self, col):
+        self.context.custom.background_col = col
+
+    async def _set_fg_col(self, col):
+        self.context.custom.foreground_col = col
+    
+    async def _set_pattern(self, pat):
+        self.context.custom.pattern = pat
 
     def _gen_field_dialog(self):
         if len(self.context.player.badgemon) == 1:
@@ -217,6 +227,10 @@ class Field(Scene):
                             )])
                         ) for i in range(1,count+1)])
                     ) for (item, count) in max_purchase if count > 0])
+            
+        change_bg_col = ("Background Colour", [(col, self._get_answer(self._set_bg_col(col))) for col in COLOURS.keys()])
+        change_fg_col = ("Foreground Colour", [(col, self._get_answer(self._set_fg_col(col))) for col in COLOURS.keys()])
+        change_pattern = ("Pattern", [(pat, self._get_answer(self._set_pattern(pat))) for pat in PATTERNS])
 
         self.choice.set_choices(
             ("Field", [
@@ -233,13 +247,18 @@ class Field(Scene):
                     ("Describe", describe_item),
                     ("Buy Item", shop)
                 ])),
-                ("Host Fight",self._get_answer(self._host_fight_dummy())),
-                ("Main Menu", ("Main Menu?",[
-                    ("Confirm", self._get_answer(self.fade_to_scene(0), True))
+                ("Customisation", ("Customisation", [
+                    ("Background", change_bg_col),
+                    ("Foreground", change_fg_col),
+                    #("pattern", change_pattern),
                 ])),
+                ("Host Fight",self._get_answer(self._host_fight_dummy())),
                 ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
+                ])),
+                ("Main Menu", ("Main Menu?",[
+                    ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
                 ("Save", self._get_answer(self._save())),
                 ("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
@@ -248,6 +267,25 @@ class Field(Scene):
 
     def draw(self, ctx: Context):
         ctx.rectangle(-120,-120,240,240).rgb(*COLOURS[self.context.custom.background_col]).fill()
+        ctx.text_align = Context.LEFT
+        ctx.text_baseline = Context.MIDDLE
+        ctx.font_size = 25
+        ctx.rgb(*COLOURS[self.context.custom.foreground_col])
+        ctx.move_to(-105, -35).text("Hi, my name is").fill()
+        shrink_until_fit(ctx, self.context.player.name, 220, 60)
+        ctx.move_to(-110, 0).text(self.context.player.name).fill()
+        ctx.font_size = 20
+        ctx.move_to(-105, 35).text(f"Badgedex: {sum(self.context.player.badgedex.found)}/40").fill()
+        positions = [
+            (-34-16, -90 -16),
+            (   -16, -100-16),
+            ( 34-16, -90 -16),
+            (-34-16,  90 -16),
+            (  0-16,  100-16),
+            ( 34-16,  90 -16),]
+        for mon, pos in zip(self.context.player.badgemon, positions):
+            draw_mon(ctx, mon.template.sprite, pos[0], pos[1], False, False, 1)
+        
 
     def handle_buttondown(self, event: ButtonDownEvent):
         if not self.choice.is_open() and not self.speech.is_open():

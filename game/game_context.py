@@ -18,7 +18,7 @@ VERSION = 3
 
 class GameContext:
     def __init__(self):
-        self.player = Player("Scarlett", [], [], {potion: 2})
+        self.player = Player("SCARLETT", [], [], {potion: 2})
         self.random_encounters = True
         self.custom = Customisation()
 

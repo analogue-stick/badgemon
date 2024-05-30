@@ -14,6 +14,6 @@ class Badgedex:
     @staticmethod
     def deserialise(data):
         b = Badgedex()
-        b.found = [unpack_from('?', data, m * calcsize("?")) for m in range(0, len(mons_list))]
+        b.found = [unpack_from('?', data, m * calcsize("?"))[0] for m in range(0, len(mons_list))]
         return b
     
