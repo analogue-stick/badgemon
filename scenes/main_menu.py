@@ -1,4 +1,5 @@
 from asyncio import Event
+import asyncio
 
 from ..game.game_context import GameContext
 
@@ -39,7 +40,8 @@ class MainMenu(Scene):
         )
 
     async def background_task(self):
-        if self.choice._state == "CLOSED":
+        await asyncio.sleep(1)
+        if self.choice.closed_event.is_set():
             self.choice.open()
         await self._next_move_available.wait()
         self._next_move_available.clear()

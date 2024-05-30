@@ -30,7 +30,7 @@ def draw_mon(ctx: Context, monIndex: int, x: float, y: float, flipx: bool, flipy
     ctx.scale(xscale,yscale)
 
 def dump_exception(e: Exception):
-    if sys.implementation == "micropython":
+    if sys.implementation.name == "micropython":
         sys.print_exception(e)
     else:
         import traceback

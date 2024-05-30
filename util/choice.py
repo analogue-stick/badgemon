@@ -6,6 +6,7 @@ import math
 from sys import implementation as _sys_implementation
 if _sys_implementation.name != "micropython":
     from typing import Callable, List, Tuple, Union
+    ChoiceTree = Tuple[str, List[Tuple[str, Union['ChoiceTree', Callable]]]]
 from system.eventbus import eventbus
 from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
@@ -13,7 +14,6 @@ from app import App
 from ctx import Context
 from ..util.misc import *
 
-ChoiceTree = Tuple[str, List[Tuple[str, Union['ChoiceTree', Callable]]]]
 
 class ChoiceDialog:
     def _calc_sizes(self, ctx):

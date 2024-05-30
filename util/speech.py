@@ -58,6 +58,9 @@ class SpeechDialog:
         elif len(self._lines) == 2:
             self._current_line = 0.5
             self._current_line_visually = 0.5
+        else:
+            self._current_line = 1.0
+            self._current_line_visually = 1.0
 
     def update(self, delta: float):
         if self.is_open():

@@ -1,5 +1,4 @@
 import asyncio
-import string
 import math
 
 from ..scenes.scene import Scene
@@ -11,7 +10,7 @@ import time
 from ctx import Context
 from ..util.misc import *
 
-VALID_CHAR = string.ascii_uppercase
+VALID_CHAR = "ABDCEFGHIJKLMNOPQRSTUVWXYZ"
 SPECIAL_CHAR = 2
 
 class TextDialog:            
@@ -144,7 +143,7 @@ class TextDialog:
             if len(self.result) == 12:
                 self._draw_text(ctx, "Confirm", 40, True)
             else:
-                for i, choice in enumerate(["Confirm", "Space"] + list(string.ascii_uppercase)):
+                for i, choice in enumerate(["Confirm", "Space"] + list(VALID_CHAR)):
                     ypos = (i*30)-self._selected_visually+40
                     if ypos < -20:
                         continue

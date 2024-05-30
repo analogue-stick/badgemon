@@ -10,6 +10,7 @@ from ..game.player import Cpu, Player
 from ..scenes.scene import Scene
 from ..game.items import Item, items_list
 from ..game.mons import Mon, mons_list, choose_weighted_mon
+from ..util.misc import shrink_until_fit, draw_mon
 from ..protocol import packet
 from events.input import ButtonDownEvent
 from ctx import Context
@@ -31,9 +32,13 @@ class Field(Scene):
         self._next_move = None
         self._fight_accept_available = Event()
         self._fight_accept = None
+        self._device_available = Event()
+        self._device = None
         self._advertise_reset = Event()
         self._exit = False
         self._random_enc_needed = Event()
+        self._tasks_finished = Event()
+        self.adv = None
         if len(self.context.player.badgemon) == 0:
             self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("small guy"))
         try:
@@ -117,6 +122,12 @@ class Field(Scene):
     async def _inspect(self, mon: Mon):
         await self.fade_to_scene(8, mon=mon)
 
+    def _set_device(self, dev):
+        def f():
+            self._device = dev
+            self._device_available.set()
+        return f
+
     async def _host_fight(self):
         await self.speech.write("Searching for trainers...", stay_open=True)
         trainers = await self.sm._bt.find_trainers()
@@ -124,13 +135,18 @@ class Field(Scene):
         if len(trainers) == 0:
             await self.speech.write("No trainers found.")
         else:
-            self.choice.set_choices(("Trainers", [(f"{name}", self._get_answer(device)) for name, device in trainers]))
+            self.choice.set_choices(("Trainers", [(f"{name}", self._set_device(device)) for name, device in trainers]))
             self.choice.open()
+            await self.choice.opened_event.wait()
             await self.choice.closed_event.wait()
-            if self._next_move_available.is_set():
-                self.sm.connection_task = asyncio.Task(self.sm._bt.connect_peripheral(self._next_move))
+            if self._device_available.is_set():
+                self._device_available.clear()
+                self.sm.connection_task = asyncio.create_task(self.sm._bt.connect_peripheral(self._device))
                 await self.speech.write("Connecting...", stay_open=True)
-                await asyncio.wait([self.sm._bt.connection.wait(), self.sm.connection_task], asyncio.FIRST_COMPLETED)
+                try:
+                    await asyncio.wait_for(self.sm._bt.connection.wait(), 10)
+                except asyncio.TimeoutError:
+                    pass
                 self.speech.close()
                 if not self.sm._bt.connection.is_set():
                     await self.speech.write("Connection failed.")
@@ -148,12 +164,23 @@ class Field(Scene):
                         responsedata = await self.sm._bt._input.get()
                         player = packet.decode_packet(responsedata)
                         assert isinstance(player, Player)
+            else:
+                print('NUH UH')
                         
     async def _host_fight_dummy(self):
         await self.speech.write("Hello! Molive here. It is extremely likely that I will recieve" +
                                 " the badges at the exact same time you will, and therefore will have absolutely no way" +
                                 " to test or develop bluetooth functionality beforehand. I will try and add this feature during" +
                                 " the event, but don't count on it. Sorry.")
+    
+    async def _set_bg_col(self, col):
+        self.context.custom.background_col = col
+
+    async def _set_fg_col(self, col):
+        self.context.custom.foreground_col = col
+    
+    async def _set_pattern(self, pat):
+        self.context.custom.pattern = pat
 
     def _gen_field_dialog(self):
         if len(self.context.player.badgemon) == 1:
@@ -217,6 +244,10 @@ class Field(Scene):
                             )])
                         ) for i in range(1,count+1)])
                     ) for (item, count) in max_purchase if count > 0])
+            
+        change_bg_col = ("Background Colour", [(col, self._get_answer(self._set_bg_col(col))) for col in COLOURS.keys()])
+        change_fg_col = ("Foreground Colour", [(col, self._get_answer(self._set_fg_col(col))) for col in COLOURS.keys()])
+        change_pattern = ("Pattern", [(pat, self._get_answer(self._set_pattern(pat))) for pat in PATTERNS])
 
         self.choice.set_choices(
             ("Field", [
@@ -233,13 +264,18 @@ class Field(Scene):
                     ("Describe", describe_item),
                     ("Buy Item", shop)
                 ])),
-                ("Host Fight",self._get_answer(self._host_fight_dummy())),
-                ("Main Menu", ("Main Menu?",[
-                    ("Confirm", self._get_answer(self.fade_to_scene(0), True))
+                ("Customisation", ("Customisation", [
+                    ("Background", change_bg_col),
+                    ("Foreground", change_fg_col),
+                    #("pattern", change_pattern),
                 ])),
+                ("Host Fight",self._get_answer(self._host_fight())),
                 ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
+                ])),
+                ("Main Menu", ("Main Menu?",[
+                    ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
                 ("Save", self._get_answer(self._save())),
                 ("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
@@ -248,6 +284,25 @@ class Field(Scene):
 
     def draw(self, ctx: Context):
         ctx.rectangle(-120,-120,240,240).rgb(*COLOURS[self.context.custom.background_col]).fill()
+        ctx.text_align = Context.LEFT
+        ctx.text_baseline = Context.MIDDLE
+        ctx.font_size = 25
+        ctx.rgb(*COLOURS[self.context.custom.foreground_col])
+        ctx.move_to(-105, -35).text("Hi, my name is").fill()
+        shrink_until_fit(ctx, self.context.player.name, 220, 60)
+        ctx.move_to(-110, 0).text(self.context.player.name).fill()
+        ctx.font_size = 20
+        ctx.move_to(-105, 35).text(f"Badgedex: {sum(self.context.player.badgedex.found)}/40").fill()
+        positions = [
+            (-34-16, -90 -16),
+            (   -16, -100-16),
+            ( 34-16, -90 -16),
+            (-34-16,  90 -16),
+            (  0-16,  100-16),
+            ( 34-16,  90 -16),]
+        for mon, pos in zip(self.context.player.badgemon, positions):
+            draw_mon(ctx, mon.template.sprite, pos[0], pos[1], False, False, 1)
+        
 
     def handle_buttondown(self, event: ButtonDownEvent):
         if not self.choice.is_open() and not self.speech.is_open():
@@ -266,6 +321,7 @@ class Field(Scene):
         self.choice.close()
         await self.speech.write("Oh, what's this?")
         await self._initiate_battle()
+        self._tasks_finished.set()  
 
     def _accept_fight(self, ans: bool):
         def f():
@@ -293,31 +349,40 @@ class Field(Scene):
                 else:
                     self.sm._bt._output.put("NUH-UH")
                     self._advertise_reset.set()
+        self._tasks_finished.set()
 
     async def _handle_ui(self):
         while not self._exit:
             await self._next_move_available.wait()
             self._next_move_available.clear()
             await self._next_move
+        self._tasks_finished.set()  
+    
     async def _drive_random_enc(self):
         while True:
-            await asyncio.sleep(30)
+            await asyncio.sleep(300)
             self._random_enc_needed.set()
+        self._tasks_finished.set()  
 
     async def _drive_advertise(self):
         while True:
-            #adv = asyncio.Task(self.sm._bt.advertise())
-            #await self._advertise_reset.wait()
-            #self._advertise_reset.clear()
-            #adv.cancel()
+            self.adv = asyncio.create_task(self.sm._bt.advertise())
+            await self._advertise_reset.wait()
+            self._advertise_reset.clear()
+            self.adv.cancel()
+            # self.adv = None
             await asyncio.sleep(2)
+        self._tasks_finished.set()  
 
     async def background_task(self):
         tasks: list[asyncio.Task] = [
-            asyncio.Task(self._await_random_enc()),
-            asyncio.Task(self._handle_ui()),
-            asyncio.Task(self._drive_random_enc()),
-            asyncio.Task(self._drive_advertise())]
-        await asyncio.wait(tasks, return_when = asyncio.FIRST_COMPLETED)
+            asyncio.create_task(self._await_random_enc()),
+            asyncio.create_task(self._handle_ui()),
+            asyncio.create_task(self._drive_random_enc()),
+            asyncio.create_task(self._drive_advertise()),
+            asyncio.create_task(self._await_trainer())]
+        await self._tasks_finished.wait()
         for t in tasks:
             t.cancel()
+        if self.adv:
+            self.adv.cancel()
