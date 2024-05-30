@@ -1,6 +1,5 @@
 import asyncio
 import gc
-from struct import unpack_from
 import sys
 
 from ..scenes.scene import Scene
