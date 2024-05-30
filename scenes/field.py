@@ -126,7 +126,6 @@ class Field(Scene):
         def f():
             self._device = dev
             self._device_available.set()
-            print('SAVJDGWHDJIWHVDGHBJIKO')
         return f
 
     async def _host_fight(self):
@@ -350,6 +349,7 @@ class Field(Scene):
                 else:
                     self.sm._bt._output.put("NUH-UH")
                     self._advertise_reset.set()
+        self._tasks_finished.set()
 
     async def _handle_ui(self):
         while not self._exit:
@@ -379,7 +379,8 @@ class Field(Scene):
             asyncio.create_task(self._await_random_enc()),
             asyncio.create_task(self._handle_ui()),
             asyncio.create_task(self._drive_random_enc()),
-            asyncio.create_task(self._drive_advertise())]
+            asyncio.create_task(self._drive_advertise()),
+            asyncio.create_task(self._await_trainer())]
         await self._tasks_finished.wait()
         for t in tasks:
             t.cancel()
