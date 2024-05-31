@@ -33,15 +33,16 @@ class MainMenu(Scene):
                     ])),
                     ("Credits", ("Credits", [
                         ("Made by:", lambda: self._get_answer("REOPEN")),
-                        ("Molive", lambda: self._get_answer("REOPEN")),
+                        ("Molive", lambda: self._get_answer("https://mo.molive.live/")),
                         ("Nyaalex", lambda: self._get_answer("REOPEN")),
-                        ("plaaosert", lambda: self._get_answer("REOPEN")),
+                        ("plaaosert", lambda: self._get_answer("https://plaao.net/")),
                         ("Rynkitty", lambda: self._get_answer("REOPEN")),
                         ("Special Thanks:", lambda: self._get_answer("REOPEN")),
-                        ("Badge Team", lambda: self._get_answer("REOPEN")),
-                        ("Curtis P-F", lambda: self._get_answer("REOPEN")),
+                        ("Badge Team", lambda: self._get_answer("https://tildagon.badge. emfcamp.org")),
+                        ("Curtis P-F", lambda: self._get_answer("https://cpf.sh/")),
                         ("Skyler Msfld", lambda: self._get_answer("REOPEN")),
-                        ("You!", lambda: self._get_answer("REOPEN")),
+                        ("GCHQ.NET", lambda: self._get_answer("https://gchq.net /claim/badgemon")),
+                        ("You!", lambda: self._get_answer("<3")),
                     ])),
                     ("Quit App", ("Quit App", [
                         ("Confirm", lambda: self._get_answer("QUIT"))
@@ -61,11 +62,13 @@ class MainMenu(Scene):
 
             if self._next_move == "CONTINUE":
                 await self.fade_to_scene(2)
+                return
             elif self._next_move == "RESET":
                 self.context = GameContext()
                 await self.fade_to_scene(1)
+                return
             elif self._next_move == "QUIT":
                 await self.fade_to_scene(None)
-            
-            if self._next_move != "REOPEN":
                 return
+            elif self._next_move != "REOPEN":
+                await self.speech.write(self._next_move)
