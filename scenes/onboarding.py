@@ -19,7 +19,7 @@ class Onboarding(Scene):
         self._slide = None
         self._bmons = []
         chosen = set()
-        common_mons = [m for m in mons_list if m.catch_rate >= 80]
+        common_mons = [m for m in mons_list if m.weight >= 80]
         for _ in range(3):
             mon = random.choice(common_mons)
             while mon in chosen:
@@ -95,4 +95,5 @@ class Onboarding(Scene):
         await self._switch_to(ASSET_PATH+"onboard/you.png")
         await self.speech.write(f"{player_name}! Your very own BADGEMON legend is about to unfold! A whole field of dreams and adventures and tents and seminars with BADGEMON awaits! Let's go!")
         await self._switch_to(None)
-        await self.fade_to_scene(4)
+        # use 4 for qr
+        await self.fade_to_scene(2)
