@@ -40,11 +40,12 @@ class Field(Scene):
         self._tasks_finished = Event()
         self.adv = None
         if len(self.context.player.badgemon) == 0:
-            self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("small guy"))
+            self.context.player.badgemon.append(Mon(mon_template1, 5).set_nickname("LIL GUY"))
         try:
             self._gen_field_dialog()
         except Exception as e:
             print(e)
+        self.sm._attempt_save()
 
     def redirect(self):
         for m in self.context.player.badgemon:
