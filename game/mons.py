@@ -356,39 +356,633 @@ class Mon:
 
 mons_list = [
     MonTemplate(
-        "Tetris", "fuckin dude", constants.MonType.FIGHTING, constants.MonType.FIRE,
+        "EMF Duck", "Can quack louder than a jet engine",
+        constants.MonType.WATER, constants.MonType.NO_TYPE,
         None, None,
-        85, 135, 130, 60, 70, 25, [
+        50, 40, 40, 65, 60, 35, [
+            (moves.moves_list[1], 5),
+            (moves.moves_list[2], 5),
+            (moves.moves_list[11], 8),
+            (moves.moves_list[16], 13),
+            (moves.moves_list[14], 21),
+            (moves.moves_list[18], 30),
+            (moves.moves_list[41], 40)
+        ],
+        1,
+        100
+    ),
+    MonTemplate(
+        "EMF Goose", "It's a peaceful day in the Maths Village, and you are a horrible goose",
+        constants.MonType.WATER, constants.MonType.FIGHTING,
+        None, None,
+        80, 100, 65, 90, 65, 90, [
+            (moves.moves_list[1], 5),
+            (moves.moves_list[2], 5),
+            (moves.moves_list[11], 8),
+            (moves.moves_list[16], 13),
+            (moves.moves_list[14], 21),
+            (moves.moves_list[18], 30),
+            (moves.moves_list[41], 40)
+        ],
+        2,
+        4
+    ),
+    MonTemplate(
+        "Bit Warden", "Their powerful shield is self-hosted",
+        constants.MonType.PSYCHIC, constants.MonType.NO_TYPE,
+        None, None,
+        70, 70, 70, 40, 40, 25, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[24], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[20], 21),
+            (moves.moves_list[40], 30),
+            (moves.moves_list[44], 40)
+        ],
+        3,
+        100
+    ),
+    MonTemplate(
+        "Install Wizard", "He's actually paid for WinRAR",
+        constants.MonType.PSYCHIC, constants.MonType.NO_TYPE,
+        None, None,
+        75, 75, 75, 100, 100, 30, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[24], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[20], 21),
+            (moves.moves_list[40], 30),
+            (moves.moves_list[44], 40)
+        ],
+        4,
+        4
+    ),
+    MonTemplate(
+        "Blacksmith", "Has a lot of coke. don't ask",
+        constants.MonType.FIRE, constants.MonType.NO_TYPE,
+        None, None,
+        60, 90, 70, 20, 20, 60, [
+            (moves.moves_list[3], 5),
+            (moves.moves_list[12], 5),
+            (moves.moves_list[28], 8),
+            (moves.moves_list[30], 13),
+            (moves.moves_list[17], 21),
+            (moves.moves_list[26], 30),
+            (moves.moves_list[19], 40)
+        ],
+        5,
+        100
+    ),
+    MonTemplate(
+        "Blacksmite", "This is the last time you misuse an anvil in minecraft",
+        constants.MonType.FIRE, constants.MonType.STEEL,
+        None, None,
+        75, 100, 100, 70, 70, 60, [
+            (moves.moves_list[3], 5),
+            (moves.moves_list[12], 5),
+            (moves.moves_list[28], 8),
+            (moves.moves_list[30], 13),
+            (moves.moves_list[17], 21),
+            (moves.moves_list[26], 30),
+            (moves.moves_list[19], 40)
+        ],
+        6,
+        4
+    ),
+    MonTemplate(
+        "Radio Wave", "FM modulated!",
+        constants.MonType.WATER, constants.MonType.NO_TYPE,
+        None, None,
+        40, 60, 45, 60, 45, 120, [
+            (moves.moves_list[18], 5),
+            (moves.moves_list[3], 5),
+            (moves.moves_list[14], 8),
+            (moves.moves_list[41], 13),
+            (moves.moves_list[14], 21),
+            (moves.moves_list[15], 30),
+            (moves.moves_list[12], 40)
+        ],
+        7,
+        70
+    ),
+    MonTemplate(
+        "Radio Tsunami", "Someone left the microwave running again",
+        constants.MonType.WATER, constants.MonType.WATER,
+        None, None,
+        50, 75, 50, 75, 50, 150, [
+            (moves.moves_list[18], 5),
+            (moves.moves_list[3], 5),
+            (moves.moves_list[14], 8),
+            (moves.moves_list[41], 13),
+            (moves.moves_list[14], 21),
+            (moves.moves_list[15], 30),
+            (moves.moves_list[12], 40)
+        ],
+        8,
+        4
+    ),
+    MonTemplate(
+        "Pirate", "True pirates seed",
+        constants.MonType.DARK, constants.MonType.NO_TYPE,
+        None, None,
+        70, 80, 75, 25, 25, 50, [
+            (moves.moves_list[11], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[26], 8),
+            (moves.moves_list[2], 13),
+            (moves.moves_list[31], 21),
+            (moves.moves_list[15], 30),
+            (moves.moves_list[20], 40)
+        ],
+        "unknown",
+        80
+    ),
+    MonTemplate(
+        "Swashbuckler", "Has never paid for a copy of Photoshop",
+        constants.MonType.DARK, constants.MonType.NO_TYPE,
+        None, None,
+        75, 115, 90, 35, 35, 70, [
+            (moves.moves_list[11], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[26], 8),
+            (moves.moves_list[2], 13),
+            (moves.moves_list[31], 21),
+            (moves.moves_list[15], 30),
+            (moves.moves_list[20], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "Furry", "Will nya for headpats",
+        constants.MonType.DRAGON, constants.MonType.NO_TYPE,
+        None, None,
+        75, 35, 25, 80, 80, 20, [
+            (moves.moves_list[25], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[2], 21),
+            (moves.moves_list[3], 30),
+            (moves.moves_list[15], 40)
+        ],
+        "unknown",
+        80
+    ),
+    MonTemplate(
+        "Furry artist", "They're overworked, but damn are they not loaded",
+        constants.MonType.DRAGON, constants.MonType.NO_TYPE,
+        None, None,
+        90, 45, 50, 110, 100, 25, [
+            (moves.moves_list[25], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[2], 21),
+            (moves.moves_list[3], 30),
+            (moves.moves_list[15], 40)
+        ],
+        "unknown",
+        8
+    ),
+    MonTemplate(
+        "Maths PhD", "They've written a thesis on how many hyperplanes you can fit in a non-euclidean sphere or something",
+        constants.MonType.NORMAL, constants.MonType.NO_TYPE,
+        None, None,
+        40, 30, 30, 75, 80, 40, [
+            (moves.moves_list[2], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 8),
+            (moves.moves_list[0], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[34], 30),
+            (moves.moves_list[42], 40)
+        ],
+        "unknown",
+        90
+    ),
+    MonTemplate(
+        "Maths Burnout", "Whoops",
+        constants.MonType.GHOST, constants.MonType.NO_TYPE,
+        None, None,
+        60, 40, 40, 140, 100, 50, [
+            (moves.moves_list[2], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 8),
+            (moves.moves_list[0], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[34], 30),
+            (moves.moves_list[42], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "StaticShock", "Kinda spicy tbh",
+        constants.MonType.ELECTRIC, constants.MonType.NO_TYPE,
+        None, None,
+        15, 10, 10, 100, 30, 100, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[29], 8),
+            (moves.moves_list[35], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[21], 30),
+            (moves.moves_list[42], 40)
+        ],
+        "unknown",
+        80
+    ),
+    MonTemplate(
+        "Electrocution", "Too spicy tbh",
+        constants.MonType.ELECTRIC, constants.MonType.FIGHTING,
+        None, None,
+        25, 25, 25, 160, 50, 180, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 5),
+            (moves.moves_list[29], 8),
+            (moves.moves_list[35], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[21], 30),
+            (moves.moves_list[42], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "LAZERS", "LAZERSLAZERSLAZERS",
+        constants.MonType.GHOST, constants.MonType.ELECTRIC,
+        None, None,
+        20, 40, 30, 80, 50, 120, [
+            (moves.moves_list[39], 5),
+            (moves.moves_list[29], 5),
+            (moves.moves_list[18], 8),
+            (moves.moves_list[42], 13),
+            (moves.moves_list[13], 21),
+            (moves.moves_list[0], 30),
+            (moves.moves_list[34], 40)
+        ],
+        "unknown",
+        70
+    ),
+    MonTemplate(
+        "LAAAZEERRRSS", "LAAAAAAZZZZZEEE EEEEERRRRRSS",
+        constants.MonType.GHOST, constants.MonType.ELECTRIC,
+        None, None,
+        50, 60, 40, 100, 70, 140, [
+            (moves.moves_list[39], 5),
+            (moves.moves_list[29], 5),
+            (moves.moves_list[18], 8),
+            (moves.moves_list[42], 13),
+            (moves.moves_list[13], 21),
+            (moves.moves_list[0], 30),
+            (moves.moves_list[34], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "Pint", "Quite stout",
+        constants.MonType.POISON, constants.MonType.NO_TYPE,
+        None, None,
+        90, 70, 60, 25, 20, 40, [
+            (moves.moves_list[23], 5),
+            (moves.moves_list[11], 5),
+            (moves.moves_list[0], 8),
+            (moves.moves_list[1], 13),
+            (moves.moves_list[37], 21),
+            (moves.moves_list[19], 30),
+            (moves.moves_list[18], 40)
+        ],
+        "unknown",
+        100
+    ),
+    MonTemplate(
+        "Keg", "Finely aged",
+        constants.MonType.POISON, constants.MonType.NO_TYPE,
+        None, None,
+        125, 110, 100, 50, 40, 40, [
+            (moves.moves_list[23], 5),
+            (moves.moves_list[11], 5),
+            (moves.moves_list[0], 8),
+            (moves.moves_list[1], 13),
+            (moves.moves_list[37], 21),
+            (moves.moves_list[19], 30),
+            (moves.moves_list[18], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "AntiStatic", "Makes your body less spicy",
+        constants.MonType.GROUND, constants.MonType.NO_TYPE,
+        None, None,
+        100, 55, 90, 40, 100, 25, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[3], 5),
+            (moves.moves_list[12], 8),
+            (moves.moves_list[36], 13),
+            (moves.moves_list[19], 21),
+            (moves.moves_list[38], 30),
+            (moves.moves_list[2], 40)
+        ],
+        "unknown",
+        60
+    ),
+    MonTemplate(
+        "Multimeter", "Knows how many amps are being drawn",
+        constants.MonType.ELECTRIC, constants.MonType.NO_TYPE,
+        None, None,
+        60, 55, 65, 55, 60, 40, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[29], 5),
+            (moves.moves_list[35], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[2], 21),
+            (moves.moves_list[40], 30),
+            (moves.moves_list[44], 40)
+        ],
+        "unknown",
+        80
+    ),
+    MonTemplate(
+        "Omnimeter", "Knows the answers to the universe",
+        constants.MonType.ELECTRIC, constants.MonType.PSYCHIC,
+        None, None,
+        80, 80, 90, 90, 80, 75, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[29], 5),
+            (moves.moves_list[35], 8),
+            (moves.moves_list[18], 13),
+            (moves.moves_list[2], 21),
+            (moves.moves_list[40], 30),
+            (moves.moves_list[44], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "Firepit", "Keeps your hands warm - but watch out!",
+        constants.MonType.FIRE, constants.MonType.GROUND,
+        None, None,
+        30, 75, 25, 75, 30, 80, [
+            (moves.moves_list[38], 5),
+            (moves.moves_list[30], 5),
+            (moves.moves_list[18], 8),
+            (moves.moves_list[28], 13),
+            (moves.moves_list[30], 21),
+            (moves.moves_list[12], 30),
+            (moves.moves_list[0], 40)
+        ],
+        "unknown",
+        90
+    ),
+    MonTemplate(
+        "Firenado", "Fire makes everything better",
+        constants.MonType.FIRE, constants.MonType.FIRE,
+        None, None,
+        50, 100, 40, 110, 40, 130, [
+            (moves.moves_list[38], 5),
+            (moves.moves_list[30], 5),
+            (moves.moves_list[18], 8),
+            (moves.moves_list[28], 13),
+            (moves.moves_list[30], 21),
+            (moves.moves_list[12], 30),
+            (moves.moves_list[0], 40)
+        ],
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "Ghidra", "There's a lingering feeling that they're a cop but it's probably fine",
+        constants.MonType.DRAGON, constants.MonType.NO_TYPE,
+        None, None,
+        60, 100, 80, 50, 110, 10, [
+            (moves.moves_list[25], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[1], 8),
+            (moves.moves_list[2], 13),
+            (moves.moves_list[27], 21),
+            (moves.moves_list[15], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        50
+    ),
+    MonTemplate(
+        "EMF 2020", "Faint whispers of festivals past",
+        constants.MonType.GHOST, constants.MonType.NO_TYPE,
+        None, None,
+        50, 90, 90, 90, 90, 20, [
+            (moves.moves_list[0], 5),
+            (moves.moves_list[34], 5),
+            (moves.moves_list[39], 8),
+            (moves.moves_list[13], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[19], 30),
+            (moves.moves_list[3], 40)
+        ],
+        "unknown",
+        20
+    ),
+    MonTemplate(
+        "smolhaj", "Just a lil guy",
+        constants.MonType.WATER, constants.MonType.NO_TYPE,
+        None, None,
+        15, 15, 25, 20, 40, 20, [
+            (moves.moves_list[11], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[14], 8),
+            (moves.moves_list[41], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[20], 30),
+            (moves.moves_list[41], 40)
+        ],
+        9,
+        70
+    ),
+    MonTemplate(
+        "blahaj", "Does 2x damage to transphobes",
+        constants.MonType.WATER, constants.MonType.NO_TYPE,
+        None, None,
+        110, 160, 80, 140, 60, 90, [
+            (moves.moves_list[11], 5),
+            (moves.moves_list[0], 5),
+            (moves.moves_list[14], 8),
+            (moves.moves_list[41], 13),
+            (moves.moves_list[18], 21),
+            (moves.moves_list[20], 30),
+            (moves.moves_list[41], 40)
+        ],
+        10,
+        4
+    ),
+    MonTemplate(
+        "Tetris", "Is often seen hiding in the arcade",
+        constants.MonType.NORMAL, constants.MonType.NO_TYPE,
+        None, None,
+        200, 120, 100, 60, 120, 60, [
             (moves.moves_list[0], 5),
             (moves.moves_list[1], 5),
             (moves.moves_list[2], 8),
             (moves.moves_list[3], 13),
-            (moves.moves_list[4], 21),
-            (moves.moves_list[5], 30),
-            (moves.moves_list[6], 40)
+            (moves.moves_list[15], 21),
+            (moves.moves_list[21], 30),
+            (moves.moves_list[43], 40)
         ],
         0,
-        1
+        20
     ),
     MonTemplate(
-        "EMF Duck", "quack", constants.MonType.FIGHTING, constants.MonType.FIRE,
+        "Mew", "Was found hiding under a van in null sector",
+        constants.MonType.PSYCHIC, constants.MonType.NO_TYPE,
         None, None,
-        85, 135, 130, 60, 70, 25, [
-            (moves.moves_list[43], 5),
-            (moves.moves_list[0], 5),
-            (moves.moves_list[28], 8),
-            (moves.moves_list[23], 13),
+        100, 100, 100, 100, 100, 100, [
+            (moves.moves_list[40], 5),
+            (moves.moves_list[44], 5),
+            (moves.moves_list[2], 8),
+            (moves.moves_list[3], 13),
             (moves.moves_list[24], 21),
-            (moves.moves_list[25], 30),
-            (moves.moves_list[26], 40)
+            (moves.moves_list[18], 30),
+            (moves.moves_list[19], 40)
         ],
-        1,
-        2
-    )
+        "unknown",
+        4
+    ),
+    MonTemplate(
+        "NaN", "They will absorb your vision into their consiousness",
+        constants.MonType.POISON, constants.MonType.BUG,
+        None, None,
+        10, 156, 42, 11, 69, 12, [
+            (moves.moves_list[23], 5),
+            (moves.moves_list[8], 5),
+            (moves.moves_list[9], 8),
+            (moves.moves_list[10], 13),
+            (moves.moves_list[23], 21),
+            (moves.moves_list[32], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        50
+    ),
+    MonTemplate(
+        "NullPointer", "You follow the signs, but they point at the abyss. Your journey has been meaningless",
+        constants.MonType.POISON, constants.MonType.BUG,
+        None, None,
+        70, 117, 77, 21, 127, 13, [
+            (moves.moves_list[23], 5),
+            (moves.moves_list[8], 5),
+            (moves.moves_list[9], 8),
+            (moves.moves_list[10], 13),
+            (moves.moves_list[23], 21),
+            (moves.moves_list[32], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        20
+    ),
+    MonTemplate(
+        "MISSINGNO.", "The shoreline is awash with the screams of those that should not exist",
+        constants.MonType.POISON, constants.MonType.BUG,
+        None, None,
+        15, 287, 87, 137, 13, 11, [
+            (moves.moves_list[23], 5),
+            (moves.moves_list[8], 5),
+            (moves.moves_list[9], 8),
+            (moves.moves_list[10], 13),
+            (moves.moves_list[23], 21),
+            (moves.moves_list[32], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        10
+    ),
+    MonTemplate(
+        "Div. Zero", "These axioms are too feeble to describe the knowledge of the gods",
+        constants.MonType.BUG, constants.MonType.NO_TYPE,
+        None, None,
+        70, 110, 0, 110, 0, 0, [
+            (moves.moves_list[32], 5),
+            (moves.moves_list[9], 5),
+            (moves.moves_list[10], 8),
+            (moves.moves_list[8], 13),
+            (moves.moves_list[19], 21),
+            (moves.moves_list[18], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        40
+    ),
+    MonTemplate(
+        "Out.Memory", "Your head is full, but it is set to burst. Everything fades",
+        constants.MonType.BUG, constants.MonType.NO_TYPE,
+        None, None,
+        90, 111, 111, 111, 111, 44, [
+            (moves.moves_list[32], 5),
+            (moves.moves_list[9], 5),
+            (moves.moves_list[10], 8),
+            (moves.moves_list[8], 13),
+            (moves.moves_list[19], 21),
+            (moves.moves_list[18], 30),
+            (moves.moves_list[43], 40)
+        ],
+        "unknown",
+        10
+    ),
 ]
 
-mons_list[1].evolve_level = 6
-mons_list[1].evolve_mon = mons_list[0]
+print(f"NO. MONS: {len(mons_list)}")
+
+# duck -> goose
+mons_list[ 0].evolve_level = 15
+mons_list[ 0].evolve_mon = mons_list[1]
+# warden -> wizard
+mons_list[ 2].evolve_level = 20
+mons_list[ 2].evolve_mon = mons_list[3]
+# smith -> smite
+mons_list[ 4].evolve_level = 17
+mons_list[ 4].evolve_mon = mons_list[5]
+# wave -> tsunami
+mons_list[ 6].evolve_level = 18
+mons_list[ 6].evolve_mon = mons_list[7]
+# pirate -> swashbucker
+mons_list[ 8].evolve_level = 19
+mons_list[ 8].evolve_mon = mons_list[9]
+# furry -> artist
+mons_list[10].evolve_level = 16
+mons_list[10].evolve_mon = mons_list[11]
+# PhD -> burnout
+mons_list[12].evolve_level = 16
+mons_list[12].evolve_mon = mons_list[13]
+# static -> 'cute
+mons_list[14].evolve_level = 20
+mons_list[14].evolve_mon = mons_list[15]
+# lazer -> LAZER
+mons_list[16].evolve_level = 15
+mons_list[16].evolve_mon = mons_list[17]
+# pint -> keg
+mons_list[18].evolve_level = 18
+mons_list[18].evolve_mon = mons_list[19]
+# multi -> omni
+mons_list[21].evolve_level = 23
+mons_list[21].evolve_mon = mons_list[22]
+# pit -> nado
+mons_list[23].evolve_level = 19
+mons_list[23].evolve_mon = mons_list[24]
+# smol -> haj
+mons_list[27].evolve_level = 17
+mons_list[27].evolve_mon = mons_list[28]
+# nan -> null
+mons_list[31].evolve_level = 25
+mons_list[31].evolve_mon = mons_list[32]
+# null -> missing
+mons_list[32].evolve_level = 39
+mons_list[32].evolve_mon = mons_list[33]
+# div -> outmem
+mons_list[34].evolve_level = 27
+mons_list[34].evolve_mon = mons_list[35]
 
 _cum = 0
 _cum_weights = []

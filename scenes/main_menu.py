@@ -31,6 +31,18 @@ class MainMenu(Scene):
                             ("FOREVER", last_chance),
                         ]))
                     ])),
+                    ("Credits", ("Credits", [
+                        ("Made by:", lambda: self._get_answer("REOPEN")),
+                        ("Molive", lambda: self._get_answer("REOPEN")),
+                        ("Nyaalex", lambda: self._get_answer("REOPEN")),
+                        ("plaaosert", lambda: self._get_answer("REOPEN")),
+                        ("Rynkitty", lambda: self._get_answer("REOPEN")),
+                        ("Special Thanks:", lambda: self._get_answer("REOPEN")),
+                        ("Badge Team", lambda: self._get_answer("REOPEN")),
+                        ("Curtis P-F", lambda: self._get_answer("REOPEN")),
+                        ("Skyler Msfld", lambda: self._get_answer("REOPEN")),
+                        ("You!", lambda: self._get_answer("REOPEN")),
+                    ])),
                     ("Quit App", ("Quit App", [
                         ("Confirm", lambda: self._get_answer("QUIT"))
                     ]))
@@ -40,16 +52,20 @@ class MainMenu(Scene):
         )
 
     async def background_task(self):
-        await asyncio.sleep(1)
-        if self.choice.closed_event.is_set():
-            self.choice.open()
-        await self._next_move_available.wait()
-        self._next_move_available.clear()
+        while True:
+            await asyncio.sleep(0.5)
+            if self.choice.closed_event.is_set():
+                self.choice.open()
+            await self._next_move_available.wait()
+            self._next_move_available.clear()
 
-        if self._next_move == "CONTINUE":
-            await self.fade_to_scene(2)
-        elif self._next_move == "RESET":
-            self.context = GameContext()
-            await self.fade_to_scene(1)
-        elif self._next_move == "QUIT":
-            await self.fade_to_scene(None)
+            if self._next_move == "CONTINUE":
+                await self.fade_to_scene(2)
+            elif self._next_move == "RESET":
+                self.context = GameContext()
+                await self.fade_to_scene(1)
+            elif self._next_move == "QUIT":
+                await self.fade_to_scene(None)
+            
+            if self._next_move != "REOPEN":
+                return
