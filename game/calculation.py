@@ -75,7 +75,7 @@ def get_hit(move_accuracy: int, user_accuracy: int, target_evasion: int) -> bool
 
 def get_catch_rate(mon: Mon, ball: float):
     if ball == 255:
-        return 1.0
+        return (1.0, 1.0)
     three = (3 * mon.stats[constants.STAT_HP])
     base = (three - (2 * mon.hp)) / three
     base *= mon.template.catch_rate

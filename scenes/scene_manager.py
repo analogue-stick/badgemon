@@ -85,7 +85,7 @@ class SceneManager(App):
                     print("FILE UNRECOGNISED")
                     self._context = None
                     return
-                version = int.from_bytes(f.read(1), byteorder='little')
+                version = int.from_bytes(f.read(1), 'little')
                 if version != VERSION:
                     if version > VERSION:
                         print("TOO NEW!")
@@ -101,11 +101,11 @@ class SceneManager(App):
                 f.close()
                 with open(SAVE_PATH+"sav.dat", "rb") as f:
                     f.seek(6)
-                    data = f.read(None)
+                    data = f.read()
                     self._context = GameContext.deserialise(data)
                     return
         except Exception as e:
-            print(e)
+            dump_exception(e)
             self._context = None
 
     def update(self, delta: float):
