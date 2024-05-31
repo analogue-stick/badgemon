@@ -2,16 +2,13 @@ import asyncio
 
 from ..protocol.queue import Queue
 
-import aioble
-import bluetooth
-
-_BADGEMON_SERVICE = bluetooth.UUID('42616467-654d-6f6e-3545-7661723a3333')
-_BADGEMON_COMM_CHAR = bluetooth.UUID(0x0001)
-
-
 import sys
 if sys.implementation.name == "micropython":
-    pass
+    import aioble
+    import bluetooth
+
+    _BADGEMON_SERVICE = bluetooth.UUID('42616467-654d-6f6e-3545-7661723a3333')
+    _BADGEMON_COMM_CHAR = bluetooth.UUID(0x0001)
 else:
     import uuid
     _BADGEMON_SERVICE = uuid.UUID('42616467-654d-6f6e-3545-7661723a3333')

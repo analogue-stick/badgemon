@@ -13,16 +13,19 @@ from ..util.misc import *
 
 from ..scenes.scene import Scene
 class Onboarding(Scene):
-    def _set_wobble(self, x):
-        self._arrow_wobble = x
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._fade_complete = Event()
         self._slide = None
         self._bmons = []
+        chosen = set()
+        common_mons = [m for m in mons_list if m.weight >= 80]
         for _ in range(3):
-            self._bmons.append(Mon(random.choice(mons_list), 5))
+            mon = random.choice(common_mons)
+            while mon in chosen:
+                mon = random.choice(common_mons)
+            chosen.add(mon)
+            self._bmons.append(Mon(random.choice(common_mons), 5))
         self._picked_mon = None
 
     async def _switch_to(self, slide):
@@ -59,6 +62,7 @@ class Onboarding(Scene):
         self._fader._colour = (0.9,0.9,0.9)
         self._fader.reset(fadein=False)
         await asyncio.sleep(0.5)
+        await self.speech.write("NOTE: At time of publish the firmware has a bug in displaying images. This significantly affects how the game looks.")
         await self._switch_to(ASSET_PATH+"onboard/arm.png")
         await self.speech.write("Hello there! Welcome to the world of BADGEMON! My name is Acorn R. Machine. People call me the BADGEMON PROF!")
         await self._switch_to(ASSET_PATH+"mons/mon-1.png")
@@ -91,4 +95,5 @@ class Onboarding(Scene):
         await self._switch_to(ASSET_PATH+"onboard/you.png")
         await self.speech.write(f"{player_name}! Your very own BADGEMON legend is about to unfold! A whole field of dreams and adventures and tents and seminars with BADGEMON awaits! Let's go!")
         await self._switch_to(None)
-        await self.fade_to_scene(4)
+        # use 4 for qr
+        await self.fade_to_scene(2)

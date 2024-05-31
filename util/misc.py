@@ -1,6 +1,7 @@
 from ctx import Context
 from ..config import ASSET_PATH
 import sys
+import os
 
 def ctx_line(self: Context, x: float, y: float, x2: float, y2: float):
     return self.move_to(x,y).line_to(x2,y2)
@@ -35,3 +36,9 @@ def dump_exception(e: Exception):
     else:
         import traceback
         traceback.print_exception(e)
+
+def path_isdir(path):
+    try:
+        return (os.stat(path)[0] & 0x4000) != 0
+    except OSError:
+        return False

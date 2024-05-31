@@ -317,6 +317,9 @@ class Battle(Scene):
 
             same_turn = False
 
+            if not isinstance(action, self.Desc):
+                curr_target.inform(action)
+
             if isinstance(action, Move):
                 print(f"USING MOVE {action}")
                 await self._battle_context.use_move(player_mon, target_mon, action)

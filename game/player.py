@@ -18,7 +18,7 @@ except ImportError:
 from .mons import Mon
 
 #_TIME_BETWEEN_HEALS = const(1000*60*1) # 1 minute
-_TIME_BETWEEN_HEALS = 1000*60*1 # 1 minute
+_TIME_BETWEEN_HEALS = 1000*60*10 # 1 minute
 
 class Player:
     def __init__(self, name: str, badgemon: List['Mon'], badgemon_case: List['Mon'], inventory: Dict['Item', int], last_heal = None, money = 1000, bdex = None):
@@ -152,6 +152,12 @@ class Player:
         """
         pass
 
+    async def inform(self, move: Union['Mon', 'Item', 'Move', None]):
+        """
+        This is overridden by any parent class handling user interactions.
+        """
+        pass
+
     @staticmethod
     def get_meters_walked():
         return time.ticks_ms()/1000
@@ -169,10 +175,11 @@ class Player:
                 guy.full_heal()
             self.last_heal = time.ticks_ms()
             if news is not None:
-                await news.write("Healed!")
+                await news.write("Fully healed!")
         else:
             if news is not None:
-                await news.write(f"Heal is not allowed for another {int((_TIME_BETWEEN_HEALS-diff)/1000)} seconds")
+                time = int((_TIME_BETWEEN_HEALS-diff)/1000)
+                await news.write(f"Heal is not allowed for another " + (f"{time//60} minutes" if time > 60 else f"{time} seconds"))
 
 class Cpu(Player):
 
@@ -188,3 +195,6 @@ class Cpu(Player):
         for mon in self.badgemon:
             if not mon.fainted:
                 return mon
+            
+class BTPlayer(Player):
+    pass

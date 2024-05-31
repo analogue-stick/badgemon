@@ -8,7 +8,7 @@ from ..util.animation import AnimLerp, AnimSin
 from ..scenes.scene import Scene
 from ..game.mons import MonTemplate, mons_list
 from ..util.misc import *
-from ..game.constants import type_to_str
+from ..game.constants import type_to_str, MonType
 from events.input import BUTTON_TYPES
 
 class Badgedex(Scene):
@@ -67,7 +67,11 @@ class Badgedex(Scene):
             ctx.font_size = 20
             ctx.gray(0).move_to(0,-105).text(index).fill()
             
-            types = f"{type_to_str(self._current_mon.type1)}, {type_to_str(self._current_mon.type2)}"
+            if self._current_mon.type2 != MonType.NO_TYPE:
+                types = f"{type_to_str(self._current_mon.type1)}, {type_to_str(self._current_mon.type2)}"
+            else:
+                types = f"{type_to_str(self._current_mon.type1)}"
+            
             shrink_until_fit(ctx, types, 120, 40)
             ctx.gray(0.2).move_to(0,75).text(types).fill()
             

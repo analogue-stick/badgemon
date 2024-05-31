@@ -135,7 +135,7 @@ class Field(Scene):
         if len(trainers) == 0:
             await self.speech.write("No trainers found.")
         else:
-            self.choice.set_choices(("Trainers", [(f"{name}", self._set_device(device)) for name, device in trainers]))
+            self.choice.set_choices(("Trainers", [("Cancel", self._set_device(None))] + [(f"{name}", self._set_device(device)) for name, device in trainers]), True)
             self.choice.open()
             await self.choice.opened_event.wait()
             await self.choice.closed_event.wait()
@@ -269,8 +269,8 @@ class Field(Scene):
                     ("Foreground", change_fg_col),
                     #("pattern", change_pattern),
                 ])),
-                ("Host Fight",self._get_answer(self._host_fight_dummy())),
-                ("Instructions", self._get_answer(self.fade_to_scene(4), True)),
+                #("Host Fight",self._get_answer(self._host_fight())),
+                #("Instructions", self._get_answer(self.fade_to_scene(4), True)),
                 ("Settings", ("Settings",[
                     ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
                 ])),
@@ -278,7 +278,7 @@ class Field(Scene):
                     ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
                 ("Save", self._get_answer(self._save())),
-                ("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
+                #("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
             ])
         )
 
@@ -292,7 +292,7 @@ class Field(Scene):
         shrink_until_fit(ctx, self.context.player.name, 220, 60)
         ctx.move_to(-110, 0).text(self.context.player.name).fill()
         ctx.font_size = 20
-        ctx.move_to(-105, 35).text(f"Badgedex: {sum(self.context.player.badgedex.found)}/40").fill()
+        ctx.move_to(-105, 35).text(f"Badgedex: {sum(self.context.player.badgedex.found)}/{len(mons_list)}").fill()
         positions = [
             (-34-16, -90 -16),
             (   -16, -100-16),
@@ -360,7 +360,7 @@ class Field(Scene):
     
     async def _drive_random_enc(self):
         while True:
-            await asyncio.sleep(300)
+            await asyncio.sleep(600)
             self._random_enc_needed.set()
         self._tasks_finished.set()  
 
@@ -379,8 +379,9 @@ class Field(Scene):
             asyncio.create_task(self._await_random_enc()),
             asyncio.create_task(self._handle_ui()),
             asyncio.create_task(self._drive_random_enc()),
-            asyncio.create_task(self._drive_advertise()),
-            asyncio.create_task(self._await_trainer())]
+            #asyncio.create_task(self._drive_advertise()),
+            #asyncio.create_task(self._await_trainer()),
+            ]
         await self._tasks_finished.wait()
         for t in tasks:
             t.cancel()
