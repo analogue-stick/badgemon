@@ -250,37 +250,41 @@ class Field(Scene):
         change_fg_col = ("Foreground Colour", [(col, self._get_answer(self._set_fg_col(col))) for col in COLOURS.keys()])
         change_pattern = ("Pattern", [(pat, self._get_answer(self._set_pattern(pat))) for pat in PATTERNS])
 
+        options = [
+            ("Badgemon", ("Badgemon",[
+                ("Heal", self._get_answer(self._use_full_heal())),
+                ("Deposit", swap_mon_out),
+                ("Withdraw", swap_mon_in),
+                ("Order", swap_mons),
+                ("Inspect", inspect)
+            ])),
+            ("Badgedex", self._get_answer(self.fade_to_scene(5), True)),
+            ("Item Bag", ("Item Bag", [
+                ("Use Item", use_item),
+                ("Describe", describe_item),
+                ("Buy Item", shop)
+            ])),
+            ("Customisation", ("Customisation", [
+                ("Background", change_bg_col),
+                ("Foreground", change_fg_col),
+                #("pattern", change_pattern),
+            ])),
+            #("Host Fight",self._get_answer(self._host_fight())),
+            #("Instructions", self._get_answer(self.fade_to_scene(4), True)),
+            ("Settings", ("Settings",[
+                ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
+            ])),
+            ("Main Menu", ("Main Menu?",[
+                ("Confirm", self._get_answer(self.fade_to_scene(0), True))
+            ])),
+            ("Save", self._get_answer(self._save())),
+        ]
+        
+        if self.context.player.name == "MOLIVE" or self.context.player.name == "NYAALEX":
+            options.append(("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True)))
+
         self.choice.set_choices(
-            ("Field", [
-                ("Badgemon", ("Badgemon",[
-                    ("Heal", self._get_answer(self._use_full_heal())),
-                    ("Deposit", swap_mon_out),
-                    ("Withdraw", swap_mon_in),
-                    ("Order", swap_mons),
-                    ("Inspect", inspect)
-                ])),
-                ("Badgedex", self._get_answer(self.fade_to_scene(5), True)),
-                ("Item Bag", ("Item Bag", [
-                    ("Use Item", use_item),
-                    ("Describe", describe_item),
-                    ("Buy Item", shop)
-                ])),
-                ("Customisation", ("Customisation", [
-                    ("Background", change_bg_col),
-                    ("Foreground", change_fg_col),
-                    #("pattern", change_pattern),
-                ])),
-                #("Host Fight",self._get_answer(self._host_fight())),
-                #("Instructions", self._get_answer(self.fade_to_scene(4), True)),
-                ("Settings", ("Settings",[
-                    ("Tog. RandEnc", self._get_answer(self._toggle_randomenc()))
-                ])),
-                ("Main Menu", ("Main Menu?",[
-                    ("Confirm", self._get_answer(self.fade_to_scene(0), True))
-                ])),
-                ("Save", self._get_answer(self._save())),
-                ("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
-            ])
+            ("Field", options)
         )
 
     def draw(self, ctx: Context):
