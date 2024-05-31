@@ -279,7 +279,7 @@ class Field(Scene):
                     ("Confirm", self._get_answer(self.fade_to_scene(0), True))
                 ])),
                 ("Save", self._get_answer(self._save())),
-                #("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
+                ("DEBUG BATTLE", self._get_answer(self._initiate_battle(), True))
             ])
         )
 
