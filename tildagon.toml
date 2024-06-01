@@ -37,4 +37,4 @@ description = "A realworld creature collecting RPG for the Tildagon!"
 # increased, we interpret this as a new version being released.
 #
 # Version number must be an integer!
-version = "1.0.2"
+version = "1.0.4"
