@@ -49,9 +49,11 @@ class Stats(Scene):
             shrink_until_fit(ctx, name, 120, 60)
             ctx.gray(0).move_to(0,-80).text(name).fill()
 
-            status = status_to_str(self.mon.status).capitalize()
+            status = status_to_str(self.mon.status)
             if status == "":
                 status = "No Status"
+            else:
+                status = status[0].upper() + status[1:]
             shrink_until_fit(ctx, status, 100, 35)
             ctx.gray(0.2).move_to(0,70).text(status).fill()
 

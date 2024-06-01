@@ -10,7 +10,6 @@ class MainMenu(Scene):
         super().__init__(*args, **kwargs)
         self._next_move_available = Event()
         self._next_move = None
-        self._gen_main_menu_dialog()
 
     def _get_answer(self, ans: str):
         self._next_move = ans
@@ -34,13 +33,13 @@ class MainMenu(Scene):
                     ("Credits", ("Credits", [
                         ("Made by:", lambda: self._get_answer("REOPEN")),
                         ("Molive", lambda: self._get_answer("https://mo.molive.live/")),
-                        ("Nyaalex", lambda: self._get_answer("REOPEN")),
+                        ("Nyaalex", lambda: self._get_answer("https://github.com/ nyaalex")),
                         ("plaaosert", lambda: self._get_answer("https://plaao.net/")),
                         ("Rynkitty", lambda: self._get_answer("REOPEN")),
                         ("Special Thanks:", lambda: self._get_answer("REOPEN")),
                         ("Badge Team", lambda: self._get_answer("https://tildagon.badge. emfcamp.org")),
                         ("Curtis P-F", lambda: self._get_answer("https://cpf.sh/")),
-                        ("Skyler Msfld", lambda: self._get_answer("REOPEN")),
+                        ("Skyler84", lambda: self._get_answer("https://github.com/ Skyler84")),
                         ("GCHQ.NET", lambda: self._get_answer("https://gchq.net /claim/badgemon")),
                         ("You!", lambda: self._get_answer("<3")),
                     ])),
@@ -55,9 +54,7 @@ class MainMenu(Scene):
     async def background_task(self):
         while True:
             await self.speech.write("Found a bug? Call MOLV!")
-            await asyncio.sleep(0.5)
-            if self.choice.closed_event.is_set():
-                self.choice.open()
+            self._gen_main_menu_dialog()
             await self._next_move_available.wait()
             self._next_move_available.clear()
 
