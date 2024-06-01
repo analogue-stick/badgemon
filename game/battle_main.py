@@ -71,7 +71,7 @@ class Battle:
 
         if calculation.get_hit(move.accuracy, user.accuracy, target.evasion):
             if crit:
-                await self.push_news_entry("A CRITITCAL Hit!\n")
+                await self.push_news_entry("A CRITICAL Hit!\n")
             else:
                 await self.push_news_entry("A Hit!\n")
 

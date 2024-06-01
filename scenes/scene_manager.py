@@ -36,11 +36,15 @@ def dump_exception(e: Exception):
         sys.print_exception(e)
     else:
         import traceback
-        traceback.print_exception(e)
+        traceback.print_exception(None, e, None)
 
 class SceneManager(App):
     def __init__(self):
         super().__init__()
+        try:
+            os.mkdir("bmon_gr_saves")
+        except Exception as e:
+            dump_exception(e)
         self._speech = SpeechDialog(
             app=self,
             speech="Scene Testing!"

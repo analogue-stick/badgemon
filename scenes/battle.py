@@ -246,7 +246,7 @@ class Battle(Scene):
     
     async def _gain_badgemon(self, mon: Mon, case, badgedex):
         await self.speech.write("What will you name them? Enter nothing for a default.")
-        mon.nickname = await self.text.wait_for_answer("Nickname?", mon.nickname)
+        mon.nickname = await self.text.wait_for_answer("Nickname?", mon.nickname.upper())
         case.append(mon)
         badgedex.find(mon.template.id)
         await self.speech.write(f"{mon.nickname} has been added to your badgemon case!")
