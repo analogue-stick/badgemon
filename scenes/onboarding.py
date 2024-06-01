@@ -22,10 +22,10 @@ class Onboarding(Scene):
         common_mons = [m for m in mons_list if m.weight >= 80]
         for _ in range(3):
             mon = random.choice(common_mons)
-            while mon in chosen:
+            while mon.id in chosen:
                 mon = random.choice(common_mons)
-            chosen.add(mon)
-            self._bmons.append(Mon(random.choice(common_mons), 5))
+            chosen.add(mon.id)
+            self._bmons.append(Mon(mon, 5))
         self._picked_mon = None
 
     async def _switch_to(self, slide):
@@ -63,6 +63,7 @@ class Onboarding(Scene):
         self._fader.reset(fadein=False)
         await asyncio.sleep(0.5)
         await self.speech.write("NOTE: At time of publish the firmware has a bug in displaying images. This significantly affects how the game looks.")
+        await self.speech.write("Found a bug? Call MOLV!")
         await self._switch_to(ASSET_PATH+"onboard/arm.png")
         await self.speech.write("Hello there! Welcome to the world of BADGEMON! My name is Acorn R. Machine. People call me the BADGEMON PROF!")
         await self._switch_to(ASSET_PATH+"mons/mon-1.png")

@@ -10,7 +10,7 @@ import time
 from ctx import Context
 from ..util.misc import *
 
-VALID_CHAR = "ABDCEFGHIJKLMNOPQRSTUVWXYZ"
+VALID_CHAR = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SPECIAL_CHAR = 2
 
 class TextDialog:            

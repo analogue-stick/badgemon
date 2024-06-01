@@ -54,6 +54,7 @@ class MainMenu(Scene):
 
     async def background_task(self):
         while True:
+            await self.speech.write("Found a bug? Call MOLV!")
             await asyncio.sleep(0.5)
             if self.choice.closed_event.is_set():
                 self.choice.open()
