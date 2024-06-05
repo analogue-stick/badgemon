@@ -219,7 +219,7 @@ static void inline handle_sprite(Sprite *sprite, unsigned short *main_col, unsig
         short offsety = (short)y - sprite->y;
         if (flags & SPR_FLIP_Y)
         {
-            offsety = sprite_width - offsetx - 1;
+            offsety = sprite_width - offsety - 1;
         }
         if (double_sprite)
         {

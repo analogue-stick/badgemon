@@ -1,6 +1,7 @@
 #![feature(portable_simd)]
-use std::simd::prelude::*;
+use std::{simd::prelude::*, time::Instant};
 
+#[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
     x: i16,
     y: i16,
@@ -11,25 +12,26 @@ struct Sprite {
     flags: u16,
 }
 
-const SPR_ENABLED: u16 = (1 << 0);
-const SPR_FLIP_X: u16 = (1 << 1);
-const SPR_FLIP_Y: u16 = (1 << 2);
-const SPR_MAIN_SCREEN: u16 = (1 << 3);
-const SPR_SUB_SCREEN: u16 = (1 << 4);
-const SPR_C_MATH: u16 = (1 << 5);
+const SPR_ENABLED: u16 = 1 << 0;
+const SPR_FLIP_X: u16 = 1 << 1;
+const SPR_FLIP_Y: u16 = 1 << 2;
+const SPR_MAIN_SCREEN: u16 = 1 << 3;
+const SPR_SUB_SCREEN: u16 = 1 << 4;
+const SPR_C_MATH: u16 = 1 << 5;
 // const SPR_PRIORITY: u16 = (1 << 6);
-const SPR_DOUBLE: u16 = (1 << 7);
-const SPR_MAIN_IN_WINDOW: u16 = (1 << 8);
-const SPR_MAIN_OUT_WINDOW: u16 = (1 << 9);
-const SPR_MAIN_WINDOW_LOG2_LOG2: usize = (10);
-const SPR_MAIN_WINDOW_LOG1: u16 = (1 << 10);
-const SPR_MAIN_WINDOW_LOG2: u16 = (1 << 11);
+const SPR_DOUBLE: u16 = 1 << 7;
+const SPR_MAIN_IN_WINDOW: u16 = 1 << 8;
+const SPR_MAIN_OUT_WINDOW: u16 = 1 << 9;
+const SPR_MAIN_WINDOW_LOG2_LOG2: usize = 10;
+const SPR_MAIN_WINDOW_LOG1: u16 = 1 << 10;
+const SPR_MAIN_WINDOW_LOG2: u16 = 1 << 11;
 // #define SPR_SUB_IN_WINDOW (1 << 12)
 // #define SPR_SUB_OUT_WINDOW (1 << 13)
 // #define SPR_SUB_WINDOW_LOG2_LOG2 (14)
 // #define SPR_SUB_WINDOW_LOG1 (1 << 14)
 // #define SPR_SUB_WINDOW_LOG2 (1 << 15)
 
+#[derive(Debug, Clone, Copy, Default)]
 struct State {
     mainscreen_colour: u16,
     subscreen_colour: u16,
@@ -67,40 +69,37 @@ struct State {
 
 const BG0_WIDTH_POWER: usize = 9;
 const BG0_HEIGHT_POWER: usize = 9;
-const BG0_WIDTH: usize = (1 << BG0_WIDTH_POWER);
-const BG0_HEIGHT: usize = (1 << BG0_HEIGHT_POWER);
+const BG0_WIDTH: usize = 1 << BG0_WIDTH_POWER;
+const BG0_HEIGHT: usize = 1 << BG0_HEIGHT_POWER;
 
 const SPRITE_COUNT: usize = 256;
 
 const SPR_WIDTH_POWER: usize = 8;
 const SPR_HEIGHT_POWER: usize = 8;
-const SPR_WIDTH: usize = (1 << SPR_WIDTH_POWER);
-const SPR_HEIGHT: usize = (1 << SPR_HEIGHT_POWER);
+const SPR_WIDTH: usize = 1 << SPR_WIDTH_POWER;
+const SPR_HEIGHT: usize = 1 << SPR_HEIGHT_POWER;
 
-struct SASPPU<'a> {
-    screen: [[u16; 240]; 240],
-
-    BG0: [[u16x8; BG0_WIDTH / 8]; BG0_HEIGHT],
+struct SASPPU {
+    bg0: [[u16x8; BG0_WIDTH / 8]; BG0_HEIGHT],
     sprites: [[u16x8; SPR_WIDTH / 8]; SPR_HEIGHT],
 
     state: State,
-    OAM: [Sprite; SPRITE_COUNT],
-
-    sprite_cache: [&'a Sprite; 16],
+    oam: [Sprite; SPRITE_COUNT],
 }
 
+#[inline]
 fn get_window(
     logic: u8,
-    window_1: u16x8,
-    window_2: u16x8,
+    window_1: mask16x8,
+    window_2: mask16x8,
     in_window: bool,
     out_window: bool,
-) -> u16x8 {
+) -> mask16x8 {
     if in_window && out_window {
-        return u16x8::splat(0xffff);
+        return mask16x8::splat(true);
     }
     if !(in_window | out_window) {
-        return u16x8::splat(0x0000);
+        return mask16x8::splat(false);
     }
     let window = match logic {
         0 => !(window_1 ^ window_2),
@@ -115,22 +114,314 @@ fn get_window(
     return window;
 }
 
-impl SASPPU<'_> {
+#[inline]
+fn swimzleoo(a: u16x8, b: u16x8, offset: usize) -> u16x8 {
+    match offset {
+        0 => a,
+        1 => simd_swizzle!(a, b, [1, 2, 3, 4, 5, 6, 7, 8]),
+        2 => simd_swizzle!(a, b, [2, 3, 4, 5, 6, 7, 8, 9]),
+        3 => simd_swizzle!(a, b, [3, 4, 5, 6, 7, 8, 9, 10]),
+        4 => simd_swizzle!(a, b, [4, 5, 6, 7, 8, 9, 10, 11]),
+        5 => simd_swizzle!(a, b, [5, 6, 7, 8, 9, 10, 11, 12]),
+        6 => simd_swizzle!(a, b, [6, 7, 8, 9, 10, 11, 12, 13]),
+        7 => simd_swizzle!(a, b, [7, 8, 9, 10, 11, 12, 13, 14]),
+        _ => unreachable!(),
+    }
+}
+
+impl SASPPU {
+    #[inline]
     fn handle_bg0(
         &self,
         main_col: &mut u16x8,
         sub_col: &mut u16x8,
-        c_math: &mut u16x8,
         x: i16,
         y: i16,
-        window_1: u16x8,
-        window_2: u16x8,
+        window_1: mask16x8,
+        window_2: mask16x8,
     ) {
         if self.state.enable_bg0 {
-            let bg0 = self.BG0[(y + self.state.bg0scrollv) as usize & (BG0_HEIGHT - 1)]
-                [(x + (self.state.bg0scrollh & 0xFFF0u16 as i16)) as usize & (BG0_WIDTH - 1)];
+            let y_pos = (y + self.state.bg0scrollv) as usize & (BG0_HEIGHT - 1);
+            let x_pos_1 =
+                (x + (self.state.bg0scrollh & 0xFFF8u16 as i16)) as usize & (BG0_WIDTH - 1);
+            let x_pos_2 = (x_pos_1 + 1) as usize & (BG0_WIDTH - 1);
+            let offset = (self.state.bg0scrollh & 0x7u16 as i16) as usize;
+            let bg0_1 = self.bg0[y_pos][x_pos_1];
+            let bg0_2 = self.bg0[y_pos][x_pos_2];
+            let mut bg0 = swimzleoo(bg0_1, bg0_2, offset);
+            let window = get_window(
+                self.state.bg0_main_window_log,
+                window_1,
+                window_2,
+                self.state.bg0_main_in_window,
+                self.state.bg0_main_out_window,
+            ) & bg0.simd_ne(u16x8::splat(0));
+            if self.state.bg0_cmath_enable {
+                bg0 |= u16x8::splat(0x8000);
+            }
+            if self.state.bg0_main_screen_enable {
+                *main_col = window.select(bg0, *main_col);
+            }
+            if self.state.bg0_sub_screen_enable {
+                *sub_col = window.select(bg0, *sub_col);
+            }
+        }
+    }
+
+    fn handle_sprite(
+        &self,
+        sprite: &Sprite,
+        main_col: &mut u16x8,
+        sub_col: &mut u16x8,
+        x: i16,
+        y: i16,
+        window_1: mask16x8,
+        window_2: mask16x8,
+    ) {
+        let flags = sprite.flags;
+        let double_sprite = flags & SPR_DOUBLE > 0;
+        let sprite_width = if double_sprite {
+            sprite.width << 1
+        } else {
+            sprite.width
+        };
+        let mut offset_x = x - sprite.x;
+        if offset_x >= -7 && offset_x < sprite_width as i16 {
+            if flags & SPR_FLIP_X > 0 {
+                offset_x = sprite_width as i16 - offset_x - 1;
+            }
+            let mut offset_y = y - sprite.y;
+            if flags & SPR_FLIP_Y > 0 {
+                offset_y = sprite_width as i16 - offset_y - 1;
+            }
+            let mut offset_y = offset_y as usize;
+            if double_sprite {
+                offset_x >>= 1;
+                offset_y >>= 1;
+            }
+            let x_pos_1 = (offset_x & 0xFFF8u16 as i16) as isize;
+            let x_pos_2 = x_pos_1 + 1;
+            let offset = (sprite.x & 0x7i16) as usize;
+            let spr_1 = if x_pos_1 < 0 {
+                u16x8::splat(0)
+            } else {
+                self.sprites[offset_y + sprite.graphics_y as usize]
+                    [x_pos_1 as usize + sprite.graphics_x as usize]
+            };
+            let spr_2 = if x_pos_2 >= sprite_width as isize {
+                u16x8::splat(0)
+            } else {
+                self.sprites[offset_y + sprite.graphics_y as usize]
+                    [x_pos_2 as usize + sprite.graphics_x as usize]
+            };
+            let mut spr_col = swimzleoo(spr_1, spr_2, offset);
+            let window = get_window(
+                (flags & (SPR_MAIN_WINDOW_LOG1 | SPR_MAIN_WINDOW_LOG2) >> SPR_MAIN_WINDOW_LOG2_LOG2)
+                    as u8,
+                window_1,
+                window_2,
+                flags & SPR_MAIN_IN_WINDOW > 0,
+                flags & SPR_MAIN_OUT_WINDOW > 0,
+            ) & spr_col.simd_ne(u16x8::splat(0));
+            if flags & SPR_C_MATH > 0 {
+                spr_col |= u16x8::splat(0x8000);
+            }
+            if flags & SPR_MAIN_SCREEN > 0 {
+                *main_col = window.select(spr_col, *main_col);
+            }
+            if flags & SPR_SUB_SCREEN > 0 {
+                *sub_col = window.select(spr_col, *sub_col);
+            }
+        }
+    }
+
+    #[inline]
+    fn per_pixel(&self, x: u8, y: u8, sprite_cache: [Option<&Sprite>; 16]) -> u16x8 {
+        let mut main_col =
+            u16x8::splat(self.state.mainscreen_colour | (self.state.cmath_default as u16) << 15);
+        let mut sub_col = u16x8::splat(self.state.subscreen_colour);
+
+        let x_window = u16x8::from_array([0, 1, 2, 3, 4, 5, 6, 7]) + u16x8::splat(x as u16);
+        let window_1 = x_window.simd_ge(u16x8::splat(self.state.window_1_left as u16))
+            & x_window.simd_le(u16x8::splat(self.state.window_1_right as u16));
+        let window_2 = x_window.simd_ge(u16x8::splat(self.state.window_2_left as u16))
+            & x_window.simd_le(u16x8::splat(self.state.window_2_right as u16));
+
+        self.handle_bg0(
+            &mut main_col,
+            &mut sub_col,
+            x as i16,
+            y as i16,
+            window_1,
+            window_2,
+        );
+
+        for spr in sprite_cache
+            .iter()
+            .take_while(|x| x.is_some())
+            .map(|x| x.unwrap())
+        {
+            self.handle_sprite(
+                spr,
+                &mut main_col,
+                &mut sub_col,
+                x as i16,
+                y as i16,
+                window_1,
+                window_2,
+            )
+        }
+
+        let use_cmath =
+            mask16x8::splat(self.state.cmath_enable) & main_col.simd_ge(u16x8::splat(0x8000));
+        if self.state.fade_enable || use_cmath.any() {
+            let mask = u16x8::splat(0b00011111);
+            let mut main_r = (main_col >> 10) & mask;
+            let mut main_g = (main_col >> 5) & mask;
+            let mut main_b = (main_col >> 0) & mask;
+            if use_cmath.any() {
+                let mut sub_r = (sub_col >> 10) & mask;
+                let mut sub_g = (sub_col >> 5) & mask;
+                let mut sub_b = (sub_col >> 0) & mask;
+
+                let main_r_bak = main_r;
+                let main_g_bak = main_g;
+                let main_b_bak = main_b;
+
+                if self.state.double_main_screen {
+                    main_r = (main_r << 1) & mask;
+                    main_g = (main_g << 1) & mask;
+                    main_b = (main_b << 1) & mask;
+                }
+                if self.state.half_main_screen {
+                    main_r = main_r >> 1;
+                    main_g = main_g >> 1;
+                    main_b = main_b >> 1;
+                }
+                if self.state.double_sub_screen {
+                    sub_r = (sub_r << 1) & mask;
+                    sub_g = (sub_g << 1) & mask;
+                    sub_b = (sub_b << 1) & mask;
+                }
+                if self.state.half_sub_screen {
+                    sub_r = sub_r >> 1;
+                    sub_g = sub_g >> 1;
+                    sub_b = sub_b >> 1;
+                }
+                if self.state.add_sub_screen {
+                    main_r = (main_r + sub_r).simd_min(mask);
+                    main_g = (main_g + sub_g).simd_min(mask);
+                    main_b = (main_b + sub_b).simd_min(mask);
+                }
+                if self.state.sub_sub_screen {
+                    main_r = main_r.saturating_sub(sub_r);
+                    main_g = main_g.saturating_sub(sub_g);
+                    main_b = main_b.saturating_sub(sub_b);
+                }
+
+                main_r = use_cmath.select(main_r, main_r_bak);
+                main_g = use_cmath.select(main_g, main_g_bak);
+                main_b = use_cmath.select(main_b, main_b_bak);
+            }
+            if self.state.fade_enable {
+                let fade = u16x8::splat(self.state.screen_fade as u16);
+                main_r = ((main_r * fade) >> 8) & mask;
+                main_g = ((main_g * fade) >> 8) & mask;
+                main_b = ((main_b * fade) >> 8) & mask;
+            }
+            return (main_r << 11) | (main_g << 6) | (main_b);
+        }
+        return ((main_col & u16x8::splat(0b0111111111100000)) << 1)
+            | (main_col & u16x8::splat(0b00011111));
+    }
+
+    fn per_scanline(&self, y: u8) -> [Option<&Sprite>; 16] {
+        let mut sprite_cache = [None; 16];
+        let mut sprites_index = 0;
+        for spr in self.oam.iter() {
+            let flags = spr.flags;
+            if (flags & SPR_ENABLED > 0)
+                && ((flags & SPR_MAIN_SCREEN > 0)
+                    && ((flags & SPR_MAIN_IN_WINDOW > 0) || (flags & SPR_MAIN_OUT_WINDOW > 0)))
+                && (y as i16 >= spr.y)
+                && (((flags & SPR_DOUBLE > 0) && (y < ((spr.height as u8) << 1)))
+                    || (y < spr.height as u8))
+            {
+                sprite_cache[sprites_index] = Some(spr);
+                sprites_index += 1;
+            }
+            if sprites_index == 16 {
+                break;
+            }
+        }
+        return sprite_cache;
+    }
+
+    fn render(&self) -> [[u16; 240]; 240] {
+        let mut screen = [[0u16; 240]; 240];
+        for y in 0..240 {
+            let sprite_cache = self.per_scanline(y);
+            for x in 0..(240 / 8) {
+                let col = self.per_pixel(x * 8, y, sprite_cache);
+
+                screen[y as usize][x as usize * 8..x as usize * 8 + 8]
+                    .clone_from_slice(col.as_array())
+            }
+        }
+        screen
+    }
+
+    fn new() -> Self {
+        SASPPU {
+            bg0: [[u16x8::splat(0); BG0_WIDTH / 8]; BG0_HEIGHT],
+            sprites: [[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT],
+            state: State::default(),
+            oam: [Sprite::default(); SPRITE_COUNT],
         }
     }
 }
 
-fn main() {}
+use minifb::{Key, Window, WindowOptions};
+
+macro_rules! colour {
+    ($r:expr, $g:expr, $b:expr) => {
+        ($r << 10) | ($g << 5) | ($b)
+    };
+}
+
+fn main() {
+    let width = 240;
+    let height = 240;
+
+    let mut window = Window::new(
+        "SASPPU VIEW - Press ESC to exit",
+        width,
+        height,
+        WindowOptions::default(),
+    )
+    .expect("Unable to create the window");
+
+    let mut before_buf: [[u16; 240]; 240];
+    let mut buffer = [0u32; 240 * 240];
+    let mut ppu: SASPPU = SASPPU::new();
+    ppu.state.mainscreen_colour = colour!(31, 0, 0);
+    ppu.state.subscreen_colour = colour!(0, 0, 31);
+    ppu.state.cmath_default = true;
+    ppu.state.cmath_enable = true;
+    ppu.state.add_sub_screen = true;
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        {
+            let now = Instant::now();
+            before_buf = ppu.render();
+            for (x, col) in buffer.iter_mut().zip(before_buf.iter().flatten()) {
+                *x = ((((col >> 11) & 0x1F) as u32) << (16 + 3))
+                    | ((((col >> 5) & 0x3F) as u32) << (8 + 2))
+                    | ((((col >> 0) & 0x1F) as u32) << (0 + 3));
+            }
+
+            let elapsed_time = now.elapsed();
+            println!("Frame:{:.4}ms.", elapsed_time.as_nanos() as f64 / 1000000.0);
+            window.update_with_buffer(&buffer, width, height).unwrap();
+        }
+    }
+}
