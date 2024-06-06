@@ -1,5 +1,9 @@
 #![feature(portable_simd)]
-use std::{simd::prelude::*, time::Instant};
+#![feature(array_chunks)]
+use std::{
+    simd::prelude::*,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
@@ -79,6 +83,8 @@ const SPR_HEIGHT_POWER: usize = 8;
 const SPR_WIDTH: usize = 1 << SPR_WIDTH_POWER;
 const SPR_HEIGHT: usize = 1 << SPR_HEIGHT_POWER;
 
+const BG0_DEFAULT: &[u8; 512 * 512 * 2] = include_bytes!("../assets/kodim05.png.bgraw");
+
 struct SASPPU {
     bg0: [[u16x8; BG0_WIDTH / 8]; BG0_HEIGHT],
     sprites: [[u16x8; SPR_WIDTH / 8]; SPR_HEIGHT],
@@ -144,10 +150,10 @@ impl SASPPU {
             let y_pos = (y + self.state.bg0scrollv) as usize & (BG0_HEIGHT - 1);
             let x_pos_1 =
                 (x + (self.state.bg0scrollh & 0xFFF8u16 as i16)) as usize & (BG0_WIDTH - 1);
-            let x_pos_2 = (x_pos_1 + 1) as usize & (BG0_WIDTH - 1);
+            let x_pos_2 = (x_pos_1 + 8) as usize & (BG0_WIDTH - 1);
             let offset = (self.state.bg0scrollh & 0x7u16 as i16) as usize;
-            let bg0_1 = self.bg0[y_pos][x_pos_1];
-            let bg0_2 = self.bg0[y_pos][x_pos_2];
+            let bg0_1 = self.bg0[y_pos][x_pos_1 >> 3];
+            let bg0_2 = self.bg0[y_pos][x_pos_2 >> 3];
             let mut bg0 = swimzleoo(bg0_1, bg0_2, offset);
             let window = get_window(
                 self.state.bg0_main_window_log,
@@ -200,19 +206,19 @@ impl SASPPU {
                 offset_y >>= 1;
             }
             let x_pos_1 = (offset_x & 0xFFF8u16 as i16) as isize;
-            let x_pos_2 = x_pos_1 + 1;
+            let x_pos_2 = x_pos_1 + 8;
             let offset = (sprite.x & 0x7i16) as usize;
             let spr_1 = if x_pos_1 < 0 {
                 u16x8::splat(0)
             } else {
                 self.sprites[offset_y + sprite.graphics_y as usize]
-                    [x_pos_1 as usize + sprite.graphics_x as usize]
+                    [(x_pos_1 as usize >> 3) + sprite.graphics_x as usize]
             };
             let spr_2 = if x_pos_2 >= sprite_width as isize {
                 u16x8::splat(0)
             } else {
                 self.sprites[offset_y + sprite.graphics_y as usize]
-                    [x_pos_2 as usize + sprite.graphics_x as usize]
+                    [(x_pos_2 as usize >> 3) + sprite.graphics_x as usize]
             };
             let mut spr_col = swimzleoo(spr_1, spr_2, offset);
             let window = get_window(
@@ -236,7 +242,7 @@ impl SASPPU {
     }
 
     #[inline]
-    fn per_pixel(&self, x: u8, y: u8, sprite_cache: [Option<&Sprite>; 16]) -> u16x8 {
+    fn per_pixel(&self, x: u8, y: u8, sprite_cache: &[Option<&Sprite>; 16]) -> u16x8 {
         let mut main_col =
             u16x8::splat(self.state.mainscreen_colour | (self.state.cmath_default as u16) << 15);
         let mut sub_col = u16x8::splat(self.state.subscreen_colour);
@@ -335,8 +341,7 @@ impl SASPPU {
             | (main_col & u16x8::splat(0b00011111));
     }
 
-    fn per_scanline(&self, y: u8) -> [Option<&Sprite>; 16] {
-        let mut sprite_cache = [None; 16];
+    fn per_scanline<'a>(&'a self, y: u8, sprite_cache: &mut [Option<&'a Sprite>; 16]) {
         let mut sprites_index = 0;
         for spr in self.oam.iter() {
             let flags = spr.flags;
@@ -354,13 +359,18 @@ impl SASPPU {
                 break;
             }
         }
-        return sprite_cache;
+        if sprites_index < 16 {
+            sprite_cache[sprites_index] = None;
+        }
     }
 
-    fn render(&self) -> [[u16; 240]; 240] {
-        let mut screen = [[0u16; 240]; 240];
+    fn render<'a>(
+        &'a self,
+        sprite_cache: &mut [Option<&'a Sprite>; 16],
+        screen: &mut [[u16; 240]; 240],
+    ) {
         for y in 0..240 {
-            let sprite_cache = self.per_scanline(y);
+            self.per_scanline(y, sprite_cache);
             for x in 0..(240 / 8) {
                 let col = self.per_pixel(x * 8, y, sprite_cache);
 
@@ -368,7 +378,6 @@ impl SASPPU {
                     .clone_from_slice(col.as_array())
             }
         }
-        screen
     }
 
     fn new() -> Self {
@@ -401,18 +410,43 @@ fn main() {
     )
     .expect("Unable to create the window");
 
-    let mut before_buf: [[u16; 240]; 240];
+    let mut before_buf = [[0u16; 240]; 240];
     let mut buffer = [0u32; 240 * 240];
     let mut ppu: SASPPU = SASPPU::new();
     ppu.state.mainscreen_colour = colour!(31, 0, 0);
     ppu.state.subscreen_colour = colour!(0, 0, 31);
-    ppu.state.cmath_default = true;
-    ppu.state.cmath_enable = true;
-    ppu.state.add_sub_screen = true;
+    ppu.state.bg0_main_screen_enable = true;
+    ppu.state.bg0_main_in_window = true;
+    ppu.state.bg0_main_out_window = true;
+    ppu.state.enable_bg0 = true;
+    for val in ppu
+        .bg0
+        .iter_mut()
+        .flatten()
+        .zip(BG0_DEFAULT.array_chunks::<16>())
+    {
+        for v in val
+            .0
+            .as_mut_array()
+            .iter_mut()
+            .zip(val.1.array_chunks::<2>())
+        {
+            *v.0 = u16::from_le_bytes(*v.1);
+        }
+    }
     while window.is_open() && !window.is_key_down(Key::Escape) {
         {
+            let mut sprite_cache = [None; 16];
             let now = Instant::now();
-            before_buf = ppu.render();
+            let epoch = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos() as f64
+                / 10000000000.0;
+            ppu.state.bg0scrollh = ((epoch * 2.0).sin() * 256.0 + 256.0) as i16;
+            ppu.state.bg0scrollv = ((epoch * 3.0).cos() * 256.0 + 256.0) as i16;
+            //ppu.state.bg0scrollh = 1;
+            ppu.render(&mut sprite_cache, &mut before_buf);
             for (x, col) in buffer.iter_mut().zip(before_buf.iter().flatten()) {
                 *x = ((((col >> 11) & 0x1F) as u32) << (16 + 3))
                     | ((((col >> 5) & 0x3F) as u32) << (8 + 2))
