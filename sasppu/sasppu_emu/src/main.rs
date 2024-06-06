@@ -77,6 +77,7 @@ const BG0_WIDTH: usize = 1 << BG0_WIDTH_POWER;
 const BG0_HEIGHT: usize = 1 << BG0_HEIGHT_POWER;
 
 const SPRITE_COUNT: usize = 256;
+const SPRITE_CACHE: usize = 16;
 
 const SPR_WIDTH_POWER: usize = 8;
 const SPR_HEIGHT_POWER: usize = 8;
@@ -84,6 +85,7 @@ const SPR_WIDTH: usize = 1 << SPR_WIDTH_POWER;
 const SPR_HEIGHT: usize = 1 << SPR_HEIGHT_POWER;
 
 const BG0_DEFAULT: &[u8; 512 * 512 * 2] = include_bytes!("../assets/kodim05.png.bgraw");
+const SPR_DEFAULT: &[u8; 256 * 32 * 2] = include_bytes!("../assets/sprites.png.bgraw");
 
 struct SASPPU {
     bg0: [[u16x8; BG0_WIDTH / 8]; BG0_HEIGHT],
@@ -108,10 +110,10 @@ fn get_window(
         return mask16x8::splat(false);
     }
     let window = match logic {
-        0 => !(window_1 ^ window_2),
-        1 => window_1 ^ window_2,
-        2 => window_1 & window_2,
-        3 => window_1 | window_2,
+        0 => window_1 | window_2,
+        1 => window_1 & window_2,
+        2 => window_1 ^ window_2,
+        3 => !(window_1 ^ window_2),
         _ => unreachable!(),
     };
     if out_window {
@@ -205,22 +207,50 @@ impl SASPPU {
                 offset_x >>= 1;
                 offset_y >>= 1;
             }
-            let x_pos_1 = (offset_x & 0xFFF8u16 as i16) as isize;
-            let x_pos_2 = x_pos_1 + 8;
-            let offset = (sprite.x & 0x7i16) as usize;
-            let spr_1 = if x_pos_1 < 0 {
+            let x_pos_1 =
+                (offset_x & if double_sprite { 0xFFFCu16 } else { 0xFFF8u16 } as i16) as isize;
+            let x_pos_2 = if flags & SPR_FLIP_X > 0 {
+                x_pos_1 - 8
+            } else {
+                x_pos_1 + 8
+            };
+            let offset = ((8 - (sprite.x & 0x7i16)) % 8) as usize;
+            let mut spr_1 = if x_pos_1 >= sprite.width as isize || x_pos_1 < 0 {
                 u16x8::splat(0)
             } else {
                 self.sprites[offset_y + sprite.graphics_y as usize]
                     [(x_pos_1 as usize >> 3) + sprite.graphics_x as usize]
             };
-            let spr_2 = if x_pos_2 >= sprite_width as isize {
+            let mut spr_2 = if x_pos_2 >= sprite.width as isize || x_pos_2 < 0 {
                 u16x8::splat(0)
             } else {
                 self.sprites[offset_y + sprite.graphics_y as usize]
                     [(x_pos_2 as usize >> 3) + sprite.graphics_x as usize]
             };
+            if double_sprite {
+                if x_pos_1 & 0x4 == 0 {
+                    if flags & SPR_FLIP_X > 0 {
+                        spr_1 = spr_1.interleave(spr_1).0;
+                        spr_2 = spr_2.interleave(spr_2).1;
+                    } else {
+                        (spr_1, spr_2) = spr_1.interleave(spr_1);
+                    }
+                } else {
+                    if flags & SPR_FLIP_X > 0 {
+                        (spr_2, spr_1) = spr_1.interleave(spr_1);
+                    } else {
+                        spr_1 = spr_1.interleave(spr_1).1;
+                        spr_2 = spr_2.interleave(spr_2).0;
+                    }
+                }
+            }
+            if flags & SPR_FLIP_X > 0 {
+                (spr_1, spr_2) = (spr_1.reverse(), spr_2.reverse());
+            }
             let mut spr_col = swimzleoo(spr_1, spr_2, offset);
+            //if x_pos_1 & 0x4 > 0 {
+            //    spr_col = u16x8::splat(0);
+            //}
             let window = get_window(
                 (flags & (SPR_MAIN_WINDOW_LOG1 | SPR_MAIN_WINDOW_LOG2) >> SPR_MAIN_WINDOW_LOG2_LOG2)
                     as u8,
@@ -242,7 +272,7 @@ impl SASPPU {
     }
 
     #[inline]
-    fn per_pixel(&self, x: u8, y: u8, sprite_cache: &[Option<&Sprite>; 16]) -> u16x8 {
+    fn per_pixel(&self, x: u8, y: u8, sprite_cache: &[Option<&Sprite>; SPRITE_CACHE]) -> u16x8 {
         let mut main_col =
             u16x8::splat(self.state.mainscreen_colour | (self.state.cmath_default as u16) << 15);
         let mut sub_col = u16x8::splat(self.state.subscreen_colour);
@@ -341,32 +371,35 @@ impl SASPPU {
             | (main_col & u16x8::splat(0b00011111));
     }
 
-    fn per_scanline<'a>(&'a self, y: u8, sprite_cache: &mut [Option<&'a Sprite>; 16]) {
+    fn per_scanline<'a>(&'a self, y: u8, sprite_cache: &mut [Option<&'a Sprite>; SPRITE_CACHE]) {
         let mut sprites_index = 0;
         for spr in self.oam.iter() {
             let flags = spr.flags;
             if (flags & SPR_ENABLED > 0)
-                && ((flags & SPR_MAIN_SCREEN > 0)
+                && (((flags & SPR_MAIN_SCREEN > 0) || (flags & SPR_SUB_SCREEN > 0))
                     && ((flags & SPR_MAIN_IN_WINDOW > 0) || (flags & SPR_MAIN_OUT_WINDOW > 0)))
                 && (y as i16 >= spr.y)
-                && (((flags & SPR_DOUBLE > 0) && (y < ((spr.height as u8) << 1)))
-                    || (y < spr.height as u8))
+                && (((flags & SPR_DOUBLE > 0) && ((y as i16) < ((spr.height as i16) << 1) + spr.y))
+                    || ((y as i16) < (spr.height as i16 + spr.y)))
+                && ((spr.x as i16) < 240)
+                && (((flags & SPR_DOUBLE > 0) && (spr.x > -((spr.width as i16) << 1)))
+                    || (spr.x > -(spr.width as i16)))
             {
                 sprite_cache[sprites_index] = Some(spr);
                 sprites_index += 1;
             }
-            if sprites_index == 16 {
+            if sprites_index == SPRITE_CACHE {
                 break;
             }
         }
-        if sprites_index < 16 {
+        if sprites_index < SPRITE_CACHE {
             sprite_cache[sprites_index] = None;
         }
     }
 
     fn render<'a>(
         &'a self,
-        sprite_cache: &mut [Option<&'a Sprite>; 16],
+        sprite_cache: &mut [Option<&'a Sprite>; SPRITE_CACHE],
         screen: &mut [[u16; 240]; 240],
     ) {
         for y in 0..240 {
@@ -399,8 +432,8 @@ macro_rules! colour {
 }
 
 fn main() {
-    let width = 240;
-    let height = 240;
+    let width = 960;
+    let height = 960;
 
     let mut window = Window::new(
         "SASPPU VIEW - Press ESC to exit",
@@ -410,20 +443,68 @@ fn main() {
     )
     .expect("Unable to create the window");
 
+    const TEST_SPR_COUNT: usize = 32;
+
     let mut before_buf = [[0u16; 240]; 240];
-    let mut buffer = [0u32; 240 * 240];
+    let mut buffer = [0u32; 960 * 960];
     let mut ppu: SASPPU = SASPPU::new();
     ppu.state.mainscreen_colour = colour!(31, 0, 0);
-    ppu.state.subscreen_colour = colour!(0, 0, 31);
+    ppu.state.subscreen_colour = colour!(0, 0, 0);
     ppu.state.bg0_main_screen_enable = true;
     ppu.state.bg0_main_in_window = true;
-    ppu.state.bg0_main_out_window = true;
+    //ppu.state.bg0_main_out_window = true;
+    ppu.state.window_1_left = 30;
+    ppu.state.window_1_right = 160;
+    ppu.state.window_2_left = 80;
+    ppu.state.window_2_right = 210;
     ppu.state.enable_bg0 = true;
+    ppu.state.bg0_cmath_enable = true;
+    ppu.state.cmath_enable = true;
+    ppu.state.sub_sub_screen = true;
+    for (i, spr) in ppu.oam.iter_mut().take(TEST_SPR_COUNT).enumerate() {
+        spr.flags |= SPR_ENABLED;
+        if i & 1 > 0 {
+            spr.flags |= SPR_SUB_SCREEN;
+            spr.flags |= SPR_MAIN_IN_WINDOW;
+        } else {
+            spr.flags |= SPR_MAIN_SCREEN;
+            spr.flags |= SPR_MAIN_OUT_WINDOW;
+        }
+        spr.flags |= 2 << SPR_MAIN_WINDOW_LOG2_LOG2;
+        //spr.flags |= SPR_FLIP_X;
+        //spr.flags |= SPR_FLIP_Y;
+        //spr.flags |= SPR_DOUBLE;
+        spr.width = 32;
+        spr.height = 32;
+        spr.x = 0;
+        spr.graphics_x = ((i as u8 >> 1) % 8) * 4;
+    }
+
     for val in ppu
         .bg0
         .iter_mut()
         .flatten()
         .zip(BG0_DEFAULT.array_chunks::<16>())
+    {
+        for v in val
+            .0
+            .as_mut_array()
+            //buffer[(y * 960) + (x * 2)] = val;
+            //buffer[(y * 960 + 480) + (x * 2)] = val;
+            //buffer[(y * 960 + 480) + (x * 2 + 1)] = val;
+            //buffer[(y * 960) + (x * 2 + 1)] = val;
+            .iter_mut()
+            .zip(val.1.array_chunks::<2>())
+        {
+            *v.0 = u16::from_le_bytes(*v.1);
+        }
+    }
+
+    for val in ppu
+        .sprites
+        .iter_mut()
+        .flatten()
+        .zip(SPR_DEFAULT.array_chunks::<16>())
     {
         for v in val
             .0
@@ -436,7 +517,7 @@ fn main() {
     }
     while window.is_open() && !window.is_key_down(Key::Escape) {
         {
-            let mut sprite_cache = [None; 16];
+            let mut sprite_cache = [None; SPRITE_CACHE];
             let now = Instant::now();
             let epoch = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -445,12 +526,27 @@ fn main() {
                 / 10000000000.0;
             ppu.state.bg0scrollh = ((epoch * 2.0).sin() * 256.0 + 256.0) as i16;
             ppu.state.bg0scrollv = ((epoch * 3.0).cos() * 256.0 + 256.0) as i16;
-            //ppu.state.bg0scrollh = 1;
+            for (i, spr) in ppu.oam.iter_mut().take(TEST_SPR_COUNT).enumerate() {
+                spr.x = ((epoch * (5.0 + (0.3 * (i >> 1) as f64))).sin() * (120.0 - 16.0)
+                    + (120.0 - 16.0)) as i16;
+                spr.y = ((epoch * (7.0 + (0.2 * (i >> 1) as f64))).cos() * (120.0 - 16.0)
+                    + (120.0 - 16.0)) as i16;
+            }
             ppu.render(&mut sprite_cache, &mut before_buf);
             for (x, col) in buffer.iter_mut().zip(before_buf.iter().flatten()) {
                 *x = ((((col >> 11) & 0x1F) as u32) << (16 + 3))
                     | ((((col >> 5) & 0x3F) as u32) << (8 + 2))
                     | ((((col >> 0) & 0x1F) as u32) << (0 + 3));
+            }
+            for y in (0..240).rev() {
+                for x in (0..240).rev() {
+                    let val = buffer[(y * 240) + x];
+                    for xx in 0..4 {
+                        for yy in 0..4 {
+                            buffer[(y * 960 * 4 + (960 * yy)) + (x * 4) + (xx)] = val;
+                        }
+                    }
+                }
             }
 
             let elapsed_time = now.elapsed();
