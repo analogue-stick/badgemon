@@ -62,7 +62,6 @@ class Onboarding(Scene):
         self._fader._colour = (0.9,0.9,0.9)
         self._fader.reset(fadein=False)
         await asyncio.sleep(0.5)
-        await self.speech.write("NOTE: At time of publish the firmware has a bug in displaying images. This significantly affects how the game looks.")
         await self.speech.write("Found a bug? Call MOLV!")
         await self._switch_to(ASSET_PATH+"onboard/arm.png")
         await self.speech.write("Hello there! Welcome to the world of BADGEMON! My name is Acorn R. Machine. People call me the BADGEMON PROF!")
