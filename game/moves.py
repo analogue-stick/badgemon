@@ -261,8 +261,7 @@ class Move:
     def __init__(
         self, name: str, desc: str, move_type: constants.MonType, max_pp: int, power: int, accuracy: int,
         effect_on_hit: MoveEffect = None, effect_on_miss: MoveEffect = None,
-            special_override: MoveOverrideSpecial = MoveOverrideSpecial.NO_OVERRIDE,
-            animation = None
+            special_override: MoveOverrideSpecial = MoveOverrideSpecial.NO_OVERRIDE
     ):
         """
         Any kind of move.
@@ -288,7 +287,6 @@ class Move:
         self.effect_on_hit = effect_on_hit
         self.effect_on_miss = effect_on_miss
         self.special_override = special_override
-        self.animation = animation
 
 
 moves_list = [
