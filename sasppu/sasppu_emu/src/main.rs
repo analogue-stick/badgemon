@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-mod simd;
+//mod simd;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
@@ -223,7 +223,7 @@ fn handle_bg<
 
 macro_rules! generate_handle_bgs {
     ($consts:expr) => {
-        &handle_bg::<
+        handle_bg::<
             { ($consts) & 0b1000000 > 0 },
             { ($consts) & 0b0100000 > 0 },
             { ($consts) & 0b0010000 > 0 },
@@ -235,19 +235,11 @@ macro_rules! generate_handle_bgs {
     };
 }
 
-type HandleBgType = &'static dyn Fn(
-    &Background,
-    &GraphicsPlane,
-    &mut u16x8,
-    &mut u16x8,
-    i16,
-    i16,
-    mask16x8,
-    mask16x8,
-);
+type HandleBgType =
+    fn(&Background, &GraphicsPlane, &mut u16x8, &mut u16x8, i16, i16, mask16x8, mask16x8);
 
 seq!(N in 0..128 {
-const HANDLE_BG_LOOKUP: [HandleBgType; 128] =
+static HANDLE_BG_LOOKUP: [HandleBgType; 128] =
     [
         #(
         generate_handle_bgs!(N),
@@ -255,6 +247,7 @@ const HANDLE_BG_LOOKUP: [HandleBgType; 128] =
     ];
 });
 
+#[inline]
 fn select_correct_handle_bg(state: &Background) -> HandleBgType {
     let lookup = (if state.cmath_enable { 0b1000000 } else { 0 })
         | (if state.main_screen_enable {
@@ -293,8 +286,8 @@ fn handle_sprite<
     sub_col: &mut u16x8,
     x: i16,
     y: i16,
-    THIS_SPR_MAIN_SCREEN_WINDOW: u8,
-    THIS_SPR_SUB_SCREEN_WINDOW: u8,
+    this_spr_main_screen_window: u8,
+    this_spr_sub_screen_window: u8,
     window_1: mask16x8,
     window_2: mask16x8,
 ) {
@@ -359,9 +352,9 @@ fn handle_sprite<
             (spr_1, spr_2) = (spr_1.reverse(), spr_2.reverse());
         }
         let mut spr_col = swimzleoo(spr_1, spr_2, offset);
-        let main_window = get_window(THIS_SPR_MAIN_SCREEN_WINDOW, window_1, window_2)
+        let main_window = get_window(this_spr_main_screen_window, window_1, window_2)
             & spr_col.simd_ne(u16x8::splat(0));
-        let sub_window = get_window(THIS_SPR_SUB_SCREEN_WINDOW, window_1, window_2)
+        let sub_window = get_window(this_spr_sub_screen_window, window_1, window_2)
             & spr_col.simd_ne(u16x8::splat(0));
         if THIS_SPR_C_MATH {
             spr_col |= u16x8::splat(0x8000);
@@ -377,7 +370,7 @@ fn handle_sprite<
 
 macro_rules! generate_handle_sprites {
     ($consts:expr) => {
-        &handle_sprite::<
+        handle_sprite::<
             { (((($consts) as u16) & 0b00000000000001) > 0) },
             { (((($consts) as u16) & 0b00000000000010) > 0) },
             { (((($consts) as u16) & 0b00000000000100) > 0) },
@@ -388,21 +381,11 @@ macro_rules! generate_handle_sprites {
     };
 }
 
-type HandleSpriteType = &'static dyn Fn(
-    &Sprite,
-    &SpritePlane,
-    &mut u16x8,
-    &mut u16x8,
-    i16,
-    i16,
-    u8,
-    u8,
-    mask16x8,
-    mask16x8,
-);
+type HandleSpriteType =
+    fn(&Sprite, &SpritePlane, &mut u16x8, &mut u16x8, i16, i16, u8, u8, mask16x8, mask16x8);
 
 seq!(N in 0..64 {
-const HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 64] =
+static HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 64] =
     [
         #(
         generate_handle_sprites!(N),
@@ -410,6 +393,7 @@ const HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 64] =
     ];
 });
 
+#[inline]
 fn select_correct_handle_sprite(state: &Sprite) -> HandleSpriteType {
     let lookup = (state.flags >> 2) & 0x3F;
     return HANDLE_SPRITE_LOOKUP[lookup as usize];
@@ -520,7 +504,7 @@ fn handle_cmath<
 
 macro_rules! generate_handle_cmaths {
     ($consts:expr) => {
-        &handle_cmath::<
+        handle_cmath::<
             { ($consts) & 0b00000001 > 0 },
             { ($consts) & 0b00000010 > 0 },
             { ($consts) & 0b00000100 > 0 },
@@ -533,10 +517,10 @@ macro_rules! generate_handle_cmaths {
     };
 }
 
-type HandleCMathType = &'static dyn Fn(&ColorMath, &mut u16x8, &mut u16x8);
+type HandleCMathType = fn(&ColorMath, &mut u16x8, &mut u16x8);
 
 seq!(N in 0..256 {
-const HANDLE_CMATH_LOOKUP: [HandleCMathType; 256] =
+static HANDLE_CMATH_LOOKUP: [HandleCMathType; 256] =
     [
         #(
         generate_handle_cmaths!(N),
@@ -544,6 +528,7 @@ const HANDLE_CMATH_LOOKUP: [HandleCMathType; 256] =
     ];
 });
 
+#[inline]
 fn select_correct_handle_cmaths(state: &ColorMath) -> HandleCMathType {
     let lookup = (if state.cmath_enable { 0b10000000 } else { 0 })
         | (if state.fade_enable { 0b01000000 } else { 0 })
@@ -570,7 +555,7 @@ fn select_correct_handle_cmaths(state: &ColorMath) -> HandleCMathType {
 
 macro_rules! generate_per_pixels {
     ($consts:expr) => {
-        &SASPPU::per_pixel::<
+        SASPPU::per_pixel::<
             { ($consts) & 0b00001 > 0 },
             { ($consts) & 0b00010 > 0 },
             { ($consts) & 0b00100 > 0 },
@@ -580,18 +565,11 @@ macro_rules! generate_per_pixels {
     };
 }
 
-type PerPixelType = &'static dyn Fn(
-    &SASPPU,
-    u8,
-    u8,
-    &SpriteCaches,
-    HandleBgType,
-    HandleBgType,
-    HandleCMathType,
-) -> u16x8;
+type PerPixelType =
+    fn(&SASPPU, u8, u8, &SpriteCaches, HandleBgType, HandleBgType, HandleCMathType) -> u16x8;
 
 seq!(N in 0..32 {
-const PER_PIXEL_LOOKUP: [PerPixelType; 32] =
+static PER_PIXEL_LOOKUP: [PerPixelType; 32] =
     [
         #(
         generate_per_pixels!(N),
@@ -705,6 +683,7 @@ impl SASPPU {
         return main_col;
     }
 
+    #[inline]
     fn select_correct_per_pixel(&self, caches: &SpriteCaches) -> PerPixelType {
         let lookup = (if self.bg0_state.enable { 0b00001 } else { 0 })
             | (if self.bg1_state.enable { 0b00010 } else { 0 })
@@ -818,6 +797,8 @@ fn main() {
     )
     .expect("Unable to create the window");
 
+    window.set_target_fps(0);
+
     const TEST_SPR_COUNT: usize = 32;
 
     let mut before_buf = [[0u16; 240]; 240];
@@ -881,6 +862,7 @@ fn main() {
             *v.0 = u16::from_le_bytes(*v.1);
         }
     }
+    let mut i = 0usize;
     let mut times = VecDeque::new();
     while window.is_open() && !window.is_key_down(Key::Escape) {
         {
@@ -920,13 +902,17 @@ fn main() {
             if times.len() > 100 {
                 times.pop_front();
             }
-            let elapsed_time: u128 =
-                times.iter().sum::<Duration>().as_nanos() / times.len() as u128;
-            println!(
-                "Frame: {:.4}ms, Avg: {:.4}",
-                current_time.as_nanos() as f64 / 1000000.0,
-                elapsed_time as f64 / 1000000.0
-            );
+            let elapsed_time: f64 =
+                times.iter().sum::<Duration>().as_secs_f64() / times.len() as f64;
+            if i & 0xF == 0 {
+                println!(
+                    "Frame: {:.4}ms, Avg: {:.4}, Avg. FPS: {:.4}",
+                    current_time.as_secs_f64() as f64 * 1000.0,
+                    elapsed_time as f64 * 1000.0,
+                    1.0f64 / (elapsed_time as f64)
+                );
+            }
+            i = i.wrapping_add(1);
             window.update_with_buffer(&buffer, width, height).unwrap();
         }
     }
