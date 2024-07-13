@@ -1,10 +1,14 @@
 #![feature(portable_simd)]
+#![feature(generic_const_exprs)]
 #![feature(array_chunks)]
+use seq_macro::seq;
 use std::{
     collections::VecDeque,
     simd::prelude::*,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+mod simd;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
@@ -282,8 +286,6 @@ fn handle_sprite<
     const THIS_SPR_SUB_SCREEN: bool,
     const THIS_SPR_C_MATH: bool,
     const THIS_SPR_DOUBLE: bool,
-    const THIS_SPR_MAIN_SCREEN_WINDOW: u8,
-    const THIS_SPR_SUB_SCREEN_WINDOW: u8,
 >(
     sprite: &Sprite,
     graphics: &SpritePlane,
@@ -291,6 +293,8 @@ fn handle_sprite<
     sub_col: &mut u16x8,
     x: i16,
     y: i16,
+    THIS_SPR_MAIN_SCREEN_WINDOW: u8,
+    THIS_SPR_SUB_SCREEN_WINDOW: u8,
     window_1: mask16x8,
     window_2: mask16x8,
 ) {
@@ -380,17 +384,25 @@ macro_rules! generate_handle_sprites {
             { (((($consts) as u16) & 0b00000000001000) > 0) },
             { (((($consts) as u16) & 0b00000000010000) > 0) },
             { (((($consts) as u16) & 0b00000000100000) > 0) },
-            { (((($consts) as u16) & 0b00001111000000) >> 6) as u8 },
-            { (((($consts) as u16) & 0b11110000000000) >> 10) as u8 },
         >
     };
 }
 
-type HandleSpriteType =
-    &'static dyn Fn(&Sprite, &SpritePlane, &mut u16x8, &mut u16x8, i16, i16, mask16x8, mask16x8);
+type HandleSpriteType = &'static dyn Fn(
+    &Sprite,
+    &SpritePlane,
+    &mut u16x8,
+    &mut u16x8,
+    i16,
+    i16,
+    u8,
+    u8,
+    mask16x8,
+    mask16x8,
+);
 
-seq!(N in 0..16384 {
-const HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 16384] =
+seq!(N in 0..64 {
+const HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 64] =
     [
         #(
         generate_handle_sprites!(N),
@@ -399,7 +411,7 @@ const HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 16384] =
 });
 
 fn select_correct_handle_sprite(state: &Sprite) -> HandleSpriteType {
-    let mut lookup = state.flags >> 2;
+    let lookup = (state.flags >> 2) & 0x3F;
     return HANDLE_SPRITE_LOOKUP[lookup as usize];
 }
 
@@ -590,11 +602,11 @@ const PER_PIXEL_LOOKUP: [PerPixelType; 32] =
 impl SASPPU {
     #[inline]
     fn per_pixel<
-        const bg0_enable: bool,
-        const bg1_enable: bool,
-        const spr0_enable: bool,
-        const spr1_enable: bool,
-        const cmath_enable: bool,
+        const BG0_ENABLE: bool,
+        const BG1_ENABLE: bool,
+        const SPR0_ENABLE: bool,
+        const SPR1_ENABLE: bool,
+        const CMATH_ENABLE: bool,
     >(
         &self,
         x: u8,
@@ -615,7 +627,7 @@ impl SASPPU {
         let window_2 = x_window.simd_ge(u16x8::splat(self.main_state.window_2_left as u16))
             & x_window.simd_le(u16x8::splat(self.main_state.window_2_right as u16));
 
-        if bg0_enable {
+        if BG0_ENABLE {
             handle_bg0(
                 &self.bg0_state,
                 &self.bg0,
@@ -628,7 +640,7 @@ impl SASPPU {
             );
         }
 
-        if spr0_enable {
+        if SPR0_ENABLE {
             for spr in sprite_caches[0]
                 .iter()
                 .take_while(|x| x.is_some())
@@ -641,13 +653,15 @@ impl SASPPU {
                     &mut sub_col,
                     x as i16,
                     y as i16,
+                    ((spr.flags >> SPR_MAIN_WINDOW_POW2) & 0xF) as u8,
+                    ((spr.flags >> SPR_SUB_WINDOW_POW2) & 0xF) as u8,
                     window_1,
                     window_2,
                 )
             }
         }
 
-        if bg1_enable {
+        if BG1_ENABLE {
             handle_bg1(
                 &self.bg1_state,
                 &self.bg1,
@@ -660,7 +674,7 @@ impl SASPPU {
             );
         }
 
-        if spr1_enable {
+        if SPR1_ENABLE {
             for spr in sprite_caches[1]
                 .iter()
                 .take_while(|x| x.is_some())
@@ -673,13 +687,15 @@ impl SASPPU {
                     &mut sub_col,
                     x as i16,
                     y as i16,
+                    ((spr.flags >> SPR_MAIN_WINDOW_POW2) & 0xF) as u8,
+                    ((spr.flags >> SPR_SUB_WINDOW_POW2) & 0xF) as u8,
                     window_1,
                     window_2,
                 )
             }
         }
 
-        if cmath_enable {
+        if CMATH_ENABLE {
             handle_cmath(&self.cmath_state, &mut main_col, &mut sub_col);
         } else {
             main_col = ((main_col & u16x8::splat(0b0111111111100000)) << 1)
@@ -783,7 +799,6 @@ impl SASPPU {
 }
 
 use minifb::{Key, Window, WindowOptions};
-use seq_macro::seq;
 
 macro_rules! colour {
     ($r:expr, $g:expr, $b:expr) => {
@@ -796,7 +811,7 @@ fn main() {
     let height = 960;
 
     let mut window = Window::new(
-        "SASPPU VIEW - Press ESC to exit",
+        "SASPPU EMU - Press ESC to exit",
         width,
         height,
         WindowOptions::default(),

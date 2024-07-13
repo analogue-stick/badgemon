@@ -6,5 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-minifb = "0.27.0"
-seq-macro = "0.3.5"
+log = "0.4"
+minifb = "0.27"
+seq-macro = "0.3"
+
+[features]
+panic_on_exqreg = []
