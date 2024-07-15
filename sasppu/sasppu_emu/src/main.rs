@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-//mod simd;
+mod simd;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
@@ -291,8 +291,7 @@ fn handle_sprite<
     window_1: mask16x8,
     window_2: mask16x8,
 ) {
-    let double_sprite = THIS_SPR_DOUBLE;
-    let sprite_width = if double_sprite {
+    let sprite_width = if THIS_SPR_DOUBLE {
         sprite.width << 1
     } else {
         sprite.width
@@ -307,12 +306,16 @@ fn handle_sprite<
             offset_y = sprite_width as i16 - offset_y - 1;
         }
         let mut offset_y = offset_y as usize;
-        if double_sprite {
+        if THIS_SPR_DOUBLE {
             offset_x >>= 1;
             offset_y >>= 1;
         }
-        let x_pos_1 =
-            (offset_x & if double_sprite { 0xFFFCu16 } else { 0xFFF8u16 } as i16) as isize;
+        let x_pos_1 = (offset_x
+            & if THIS_SPR_DOUBLE {
+                0xFFFCu16
+            } else {
+                0xFFF8u16
+            } as i16) as isize;
         let x_pos_2 = if THIS_SPR_FLIP_X {
             x_pos_1 - 8
         } else {
@@ -331,7 +334,7 @@ fn handle_sprite<
             graphics[offset_y + sprite.graphics_y as usize]
                 [(x_pos_2 as usize >> 3) + sprite.graphics_x as usize]
         };
-        if double_sprite {
+        if THIS_SPR_DOUBLE {
             if x_pos_1 & 0x4 == 0 {
                 if THIS_SPR_FLIP_X {
                     spr_1 = spr_1.interleave(spr_1).0;
