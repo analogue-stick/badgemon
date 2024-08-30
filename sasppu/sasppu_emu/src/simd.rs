@@ -30,14 +30,12 @@ fn validate_freg(reg: Reg) {
 }
 
 fn validate_sel(sel: u8, sel_size: u8) {
-    #[cfg(debug_assertions)]
     if sel >= sel_size {
         panic!("SEL {} TOO HIGH", sel);
     }
 }
 
 fn validate_qreg(reg: Reg) {
-    #[cfg(debug_assertions)]
     if reg >= 16 {
         panic!("QREG {} DOES NOT EXIST", reg);
     }
@@ -54,14 +52,12 @@ fn validate_qreg(reg: Reg) {
 }
 
 fn validate_register_share(reg: Reg, others: &[Reg]) {
-    #[cfg(debug_assertions)]
     if others.contains(&reg) {
         warn!("Register {} is used during two parallel operations", reg)
     }
 }
 
 fn validate_signed_immediate(imm: i32, max: i32, min: i32) {
-    #[cfg(debug_assertions)]
     if imm < min {
         warn!("Immediate {} is less than the minimum ({})", imm, min)
     }
@@ -76,18 +72,15 @@ fn validate_signed_immediate_by_bits(imm: i32, bitwidth: usize) {
 }
 
 fn validate_signed_mask(imm: i32, mask: i32) {
-    #[cfg(debug_assertions)]
     if imm & mask != imm {
         warn!("Immediate {} does not conform to mask ({})", imm, mask)
     }
 }
 
 fn validate_unsigned_immediate(imm: u32, max: u32, min: u32) {
-    #[cfg(debug_assertions)]
     if imm < min {
         warn!("Immediate {} is less than the minimum ({})", imm, min)
     }
-    #[cfg(debug_assertions)]
     if imm > max {
         warn!("Immediate {} is more than the maximum ({})", imm, max)
     }
@@ -98,7 +91,6 @@ fn validate_unsigned_immediate_by_bits(imm: u32, bitwidth: usize) {
 }
 
 fn validate_unsigned_mask(imm: u32, mask: u32) {
-    #[cfg(debug_assertions)]
     if imm & mask != imm {
         warn!("Immediate {} does not conform to mask ({})", imm, mask)
     }
@@ -161,7 +153,7 @@ fn store64(buf: &mut [u16x8], val: u16x4, ac: usize) {
         } else {
             *n_val = simd_swizzle!(*n_val, large, [0, 1, 2, 3, 8, 9, 10, 11]);
         }
-        debug!("stored {:?}", val);
+        debug!("stored {:?}", *n_val);
     } else {
         panic!(
             "OUT OF BOUNDS: tried store64 to address {} in array of length {}.",

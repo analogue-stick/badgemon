@@ -12,3 +12,12 @@ seq-macro = "0.3"
 
 [features]
 panic_on_exqreg = []
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+strip = true
+
+[profile.release-minsize]
+opt-level = "s"
+inherits = "release"
