@@ -1,24 +1,24 @@
 #![feature(portable_simd)]
-#![feature(generic_const_exprs)]
 #![feature(array_chunks)]
-use seq_macro::seq;
 use std::{
     collections::VecDeque,
     simd::prelude::*,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+use seq_macro::seq;
+
 mod simd;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Sprite {
-    x: i16,
-    y: i16,
-    width: u8,
-    height: u8,
+    x:          i16,
+    y:          i16,
+    width:      u8,
+    height:     u8,
     graphics_x: u8,
     graphics_y: u8,
-    flags: u16,
+    flags:      u16,
 }
 
 const SPR_ENABLED: u16 = 1 << 0;
@@ -47,37 +47,37 @@ const WINDOW_X: u16 = 0b1000;
 
 #[derive(Debug, Clone, Copy, Default)]
 struct Background {
-    enable: bool,
-    scroll_h: i16,
-    scroll_v: i16,
-    cmath_enable: bool,
+    enable:             bool,
+    scroll_h:           i16,
+    scroll_v:           i16,
+    cmath_enable:       bool,
     main_screen_enable: bool,
-    sub_screen_enable: bool,
-    main_window_log: u8,
-    sub_window_log: u8,
+    sub_screen_enable:  bool,
+    main_window_log:    u8,
+    sub_window_log:     u8,
 }
 #[derive(Debug, Clone, Copy, Default)]
 struct ColorMath {
-    half_main_screen: bool,
+    half_main_screen:   bool,
     double_main_screen: bool,
-    half_sub_screen: bool,
-    double_sub_screen: bool,
-    add_sub_screen: bool,
-    sub_sub_screen: bool,
-    fade_enable: bool,
-    screen_fade: u8,
-    cmath_enable: bool,
+    half_sub_screen:    bool,
+    double_sub_screen:  bool,
+    add_sub_screen:     bool,
+    sub_sub_screen:     bool,
+    fade_enable:        bool,
+    screen_fade:        u8,
+    cmath_enable:       bool,
 }
 #[derive(Debug, Clone, Copy, Default)]
 struct State {
     mainscreen_colour: u16,
-    subscreen_colour: u16,
-    cmath_default: bool,
+    subscreen_colour:  u16,
+    cmath_default:     bool,
 
     // windowing
-    window_1_left: u8,
+    window_1_left:  u8,
     window_1_right: u8,
-    window_2_left: u8,
+    window_2_left:  u8,
     window_2_right: u8,
 }
 
@@ -105,13 +105,13 @@ type SpritePlane = Box<[[u16x8; SPR_WIDTH / 8]; SPR_WIDTH]>;
 
 struct SASPPU {
     main_state: State,
-    bg0_state: Background,
-    bg1_state: Background,
-    oam: Box<[Sprite; SPRITE_COUNT]>,
+    bg0_state:  Background,
+    bg1_state:  Background,
+    oam:        Box<[Sprite; SPRITE_COUNT]>,
 
-    bg0: GraphicsPlane,
-    bg1: GraphicsPlane,
-    sprites: SpritePlane,
+    bg0:         GraphicsPlane,
+    bg1:         GraphicsPlane,
+    sprites:     SpritePlane,
     cmath_state: ColorMath,
 }
 
@@ -182,42 +182,49 @@ fn handle_bg<
 >(
     state: &Background,
     graphics: &GraphicsPlane,
-    main_col: &mut u16x8,
-    sub_col: &mut u16x8,
+    main_col: &mut u16x8, // q0
+    sub_col: &mut u16x8,  // q1
     x: i16,
     y: i16,
-    window_1: mask16x8,
-    window_2: mask16x8,
+    window_1: mask16x8, // q2
+    window_2: mask16x8, // q3
 ) {
     let y_pos = (y + state.scroll_v) as usize & (BG_HEIGHT - 1);
     let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & (BG_WIDTH - 1);
     let x_pos_2 = (x_pos_1 + 8) as usize & (BG_WIDTH - 1);
     let offset = (state.scroll_h & 0x7u16 as i16) as usize;
-    let bg0_1 = graphics[y_pos][x_pos_1 >> 3];
-    let bg0_2 = graphics[y_pos][x_pos_2 >> 3];
-    let mut bg0 = swimzleoo(bg0_1, bg0_2, offset);
-    let main_window = if MAIN_SCREEN_WINDOW_0 {
-        mask16x8::splat(false)
-    } else if SUB_SCREEN_WINDOW_15 {
-        mask16x8::splat(true)
-    } else {
-        get_window(state.main_window_log, window_1, window_2)
-    } & bg0.simd_ne(u16x8::splat(0));
-    let sub_window = if SUB_SCREEN_WINDOW_0 {
-        mask16x8::splat(false)
-    } else if SUB_SCREEN_WINDOW_15 {
-        mask16x8::splat(true)
-    } else {
-        get_window(state.sub_window_log, window_1, window_2)
-    } & bg0.simd_ne(u16x8::splat(0));
+    let bg0_1 = graphics[y_pos][x_pos_1 >> 3]; // -> q4
+    let bg0_2 = graphics[y_pos][x_pos_2 >> 3]; // -> q5
+    let mut bg0 = swimzleoo(bg0_1, bg0_2, offset); // q4, q5 -> q4
+
     if CMATH_ENABLE {
-        bg0 |= u16x8::splat(0x8000);
+        bg0 |= u16x8::splat(0x8000); // q5; q4, q5 -> q4
     }
+
+    let main_window = if MAIN_SCREEN_WINDOW_0 {
+        // -> q5
+        mask16x8::splat(false) // -> q5
+    } else if SUB_SCREEN_WINDOW_15 {
+        mask16x8::splat(true) // -> q5
+    } else {
+        get_window(state.main_window_log, window_1, window_2) // q2, q3, q5, q6, q7 -> q5
+    } & bg0.simd_ne(u16x8::splat(0)); // q6; q4, q6 -> q6; q5, q6 -> q5
+
     if MAIN_SCREEN_ENABLE {
-        *main_col = main_window.select(bg0, *main_col);
+        *main_col = main_window.select(bg0, *main_col); // q0, q4, q5 -> q0
     }
+
+    let sub_window = if SUB_SCREEN_WINDOW_0 {
+        // -> q5
+        mask16x8::splat(false) // -> q5
+    } else if SUB_SCREEN_WINDOW_15 {
+        mask16x8::splat(true) // -> q5
+    } else {
+        get_window(state.sub_window_log, window_1, window_2) // q2, q3, q5, q6, q7 -> q5
+    } & bg0.simd_ne(u16x8::splat(0)); // q6; q4, q6 -> q6; q5, q6 -> q5
+
     if SUB_SCREEN_ENABLE {
-        *sub_col = sub_window.select(bg0, *sub_col);
+        *sub_col = sub_window.select(bg0, *sub_col); // q1, q4, q5 -> q1
     }
 }
 
@@ -282,14 +289,14 @@ fn handle_sprite<
 >(
     sprite: &Sprite,
     graphics: &SpritePlane,
-    main_col: &mut u16x8,
-    sub_col: &mut u16x8,
+    main_col: &mut u16x8, // q0
+    sub_col: &mut u16x8,  // q1
     x: i16,
     y: i16,
     this_spr_main_screen_window: u8,
     this_spr_sub_screen_window: u8,
-    window_1: mask16x8,
-    window_2: mask16x8,
+    window_1: mask16x8, // q2
+    window_2: mask16x8, // q3
 ) {
     let sprite_width = if THIS_SPR_DOUBLE {
         sprite.width << 1
@@ -323,12 +330,14 @@ fn handle_sprite<
         };
         let offset = ((8 - (sprite.x & 0x7i16)) % 8) as usize;
         let mut spr_1 = if x_pos_1 >= sprite.width as isize || x_pos_1 < 0 {
+            // q4
             u16x8::splat(0)
         } else {
             graphics[offset_y + sprite.graphics_y as usize]
                 [(x_pos_1 as usize >> 3) + sprite.graphics_x as usize]
         };
         let mut spr_2 = if x_pos_2 >= sprite.width as isize || x_pos_2 < 0 {
+            // q5
             u16x8::splat(0)
         } else {
             graphics[offset_y + sprite.graphics_y as usize]
@@ -354,17 +363,17 @@ fn handle_sprite<
         if THIS_SPR_FLIP_X {
             (spr_1, spr_2) = (spr_1.reverse(), spr_2.reverse());
         }
-        let mut spr_col = swimzleoo(spr_1, spr_2, offset);
-        let main_window = get_window(this_spr_main_screen_window, window_1, window_2)
-            & spr_col.simd_ne(u16x8::splat(0));
-        let sub_window = get_window(this_spr_sub_screen_window, window_1, window_2)
-            & spr_col.simd_ne(u16x8::splat(0));
+        let mut spr_col = swimzleoo(spr_1, spr_2, offset); // q4
         if THIS_SPR_C_MATH {
             spr_col |= u16x8::splat(0x8000);
         }
+        let main_window = get_window(this_spr_main_screen_window, window_1, window_2) // q5, q6, q7 -> q5
+            & spr_col.simd_ne(u16x8::splat(0));
         if THIS_SPR_MAIN_SCREEN {
             *main_col = main_window.select(spr_col, *main_col);
         }
+        let sub_window = get_window(this_spr_sub_screen_window, window_1, window_2) // q5, q6, q7 -> q5
+            & spr_col.simd_ne(u16x8::splat(0));
         if THIS_SPR_SUB_SCREEN {
             *sub_col = sub_window.select(spr_col, *sub_col);
         }
@@ -428,7 +437,15 @@ macro_rules! halve_screen {
 }
 
 macro_rules! add_screens {
-    ($main_r:ident, $main_g:ident, $main_b:ident, $sub_r:ident, $sub_g:ident, $sub_b:ident, $mask:ident) => {
+    (
+        $main_r:ident,
+        $main_g:ident,
+        $main_b:ident,
+        $sub_r:ident,
+        $sub_g:ident,
+        $sub_b:ident,
+        $mask:ident
+    ) => {
         $main_r = ($main_r + $sub_r).simd_min($mask);
         $main_g = ($main_g + $sub_g).simd_min($mask);
         $main_b = ($main_b + $sub_b).simd_min($mask);
@@ -455,8 +472,8 @@ fn handle_cmath<
     const CMATH_ENABLE: bool,
 >(
     cmath_state: &ColorMath,
-    main_col: &mut u16x8,
-    sub_col: &mut u16x8,
+    main_col: &mut u16x8, // q0
+    sub_col: &mut u16x8, // q1
 ) {
     let use_cmath = mask16x8::splat(CMATH_ENABLE) & main_col.simd_ge(u16x8::splat(0x8000));
     if FADE_ENABLE || use_cmath.any() {
@@ -597,17 +614,25 @@ impl SASPPU {
         handle_bg1: HandleBgType,
         handle_cmath: HandleCMathType,
     ) -> u16x8 {
+        // main_col = q0
         let mut main_col = u16x8::splat(
             self.main_state.mainscreen_colour | (self.main_state.cmath_default as u16) << 15,
         );
+        // sub_col = q1
         let mut sub_col = u16x8::splat(self.main_state.subscreen_colour);
 
+        // x_window = q3
         let x_window = u16x8::from_array([0, 1, 2, 3, 4, 5, 6, 7]) + u16x8::splat(x as u16);
-        let window_1 = x_window.simd_ge(u16x8::splat(self.main_state.window_1_left as u16))
-            & x_window.simd_le(u16x8::splat(self.main_state.window_1_right as u16));
-        let window_2 = x_window.simd_ge(u16x8::splat(self.main_state.window_2_left as u16))
-            & x_window.simd_le(u16x8::splat(self.main_state.window_2_right as u16));
+        // window_1 = q2
+        let window_1 = (x_window.simd_gt(u16x8::splat(self.main_state.window_1_left as u16))
+            | x_window.simd_eq(u16x8::splat(self.main_state.window_1_left as u16)))
+            & x_window.simd_lt(u16x8::splat(self.main_state.window_1_right as u16));
+        // window_2 = q3
+        let window_2 = (x_window.simd_gt(u16x8::splat(self.main_state.window_2_left as u16))
+            | x_window.simd_eq(u16x8::splat(self.main_state.window_2_left as u16)))
+            & x_window.simd_lt(u16x8::splat(self.main_state.window_2_right as u16));
 
+        // q0, q1, q2, q3, q4, q5, q6, q7 -> q0, q1
         if BG0_ENABLE {
             handle_bg0(
                 &self.bg0_state,
@@ -768,14 +793,14 @@ impl SASPPU {
 
     fn new() -> Self {
         SASPPU {
-            bg0: Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
-            bg1: Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
-            sprites: Box::new([[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT]),
-            main_state: State::default(),
-            bg0_state: Background::default(),
-            bg1_state: Background::default(),
+            bg0:         Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
+            bg1:         Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
+            sprites:     Box::new([[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT]),
+            main_state:  State::default(),
+            bg0_state:   Background::default(),
+            bg1_state:   Background::default(),
             cmath_state: ColorMath::default(),
-            oam: Box::new([Sprite::default(); SPRITE_COUNT]),
+            oam:         Box::new([Sprite::default(); SPRITE_COUNT]),
         }
     }
 }
