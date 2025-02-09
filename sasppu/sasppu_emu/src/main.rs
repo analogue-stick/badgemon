@@ -201,9 +201,9 @@ fn handle_bg<
 ) {
     let y_pos = (y + state.scroll_v) as usize & ((MAP_HEIGHT * 8) - 1);
     let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & ((MAP_WIDTH * 8) - 1);
-    let x_pos_2 = (x_pos_1 + 8) as usize & ((MAP_WIDTH * 8) - 1);
+    let x_pos_2 = (x_pos_1 + 8) & ((MAP_WIDTH * 8) - 1);
     let offset_x = (state.scroll_h & 0x7u16 as i16) as usize;
-    let offset_y = (y_pos & 0x7) as usize;
+    let offset_y = y_pos & 0x7;
     let bg0_1_map = map[y_pos >> 3][x_pos_1 >> 3]; // -> q4
     let bg0_1 = if (bg0_1_map & 0b10) > 0 {
         graphics[(bg0_1_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
@@ -315,7 +315,7 @@ fn select_correct_handle_bg(state: &Background) -> HandleBgType {
         })
         | (if state.sub_window_log == 0 { 0b10 } else { 0 })
         | (if state.sub_window_log == 15 { 0b1 } else { 0 });
-    return HANDLE_BG_LOOKUP[lookup];
+    HANDLE_BG_LOOKUP[lookup]
 }
 
 #[inline]
@@ -391,13 +391,11 @@ fn handle_sprite<
                 } else {
                     (spr_1, spr_2) = spr_1.interleave(spr_1);
                 }
+            } else if THIS_SPR_FLIP_X {
+                (spr_2, spr_1) = spr_1.interleave(spr_1);
             } else {
-                if THIS_SPR_FLIP_X {
-                    (spr_2, spr_1) = spr_1.interleave(spr_1);
-                } else {
-                    spr_1 = spr_1.interleave(spr_1).1;
-                    spr_2 = spr_2.interleave(spr_2).0;
-                }
+                spr_1 = spr_1.interleave(spr_1).1;
+                spr_2 = spr_2.interleave(spr_2).0;
             }
         }
         if THIS_SPR_FLIP_X {
@@ -448,7 +446,7 @@ static HANDLE_SPRITE_LOOKUP: [HandleSpriteType; 64] =
 #[inline]
 fn select_correct_handle_sprite(state: &Sprite) -> HandleSpriteType {
     let lookup = (state.flags >> 2) & 0x3F;
-    return HANDLE_SPRITE_LOOKUP[lookup as usize];
+    HANDLE_SPRITE_LOOKUP[lookup as usize]
 }
 
 macro_rules! split_main {
@@ -470,9 +468,9 @@ macro_rules! double_screen {
 
 macro_rules! halve_screen {
     ($main_r:ident, $main_g:ident, $main_b:ident, $mask:ident) => {
-        $main_r = $main_r >> 1;
-        $main_g = $main_g >> 1;
-        $main_b = $main_b >> 1;
+        $main_r >>= 1;
+        $main_g >>= 1;
+        $main_b >>= 1;
     };
 }
 
@@ -610,7 +608,7 @@ fn select_correct_handle_cmaths(state: &ColorMath) -> HandleCMathType {
         } else {
             0
         });
-    return HANDLE_CMATH_LOOKUP[lookup as usize];
+    HANDLE_CMATH_LOOKUP[lookup as usize]
 }
 
 macro_rules! generate_per_pixels {
@@ -750,7 +748,7 @@ impl SASPPU {
                 | (main_col & u16x8::splat(0b00011111));
         }
 
-        return main_col;
+        main_col
     }
 
     #[inline]
@@ -764,7 +762,7 @@ impl SASPPU {
             } else {
                 0
             });
-        return PER_PIXEL_LOOKUP[lookup as usize];
+        PER_PIXEL_LOOKUP[lookup as usize]
     }
 
     fn per_scanline<'a>(&'a self, y: u8, sprite_caches: &mut SpriteCaches<'a>) {
@@ -785,7 +783,7 @@ impl SASPPU {
                 && (y as i16 >= spr.y)
                 && (((flags & SPR_DOUBLE > 0) && ((y as i16) < ((spr.height as i16) << 1) + spr.y))
                     || ((y as i16) < (spr.height as i16 + spr.y)))
-                && ((spr.x as i16) < 240)
+                && (spr.x < 240)
                 && (((flags & SPR_DOUBLE > 0) && (spr.x > -((spr.width as i16) << 1)))
                     || (spr.x > -(spr.width as i16)))
             {
@@ -818,7 +816,7 @@ impl SASPPU {
 
             for x in 0..(240 / 8) {
                 let col = per_pixel(
-                    &self,
+                    self,
                     x * 8,
                     y,
                     sprite_caches,
@@ -835,8 +833,8 @@ impl SASPPU {
 
     fn new() -> Self {
         SASPPU {
-            bg0:         Box::new([[016; MAP_WIDTH]; MAP_HEIGHT]),
-            bg1:         Box::new([[016; MAP_WIDTH]; MAP_HEIGHT]),
+            bg0:         Box::new([[16; MAP_WIDTH]; MAP_HEIGHT]),
+            bg1:         Box::new([[16; MAP_WIDTH]; MAP_HEIGHT]),
             main_state:  State::default(),
             bg0_state:   Background::default(),
             bg1_state:   Background::default(),
@@ -972,7 +970,7 @@ fn main() {
             for (x, col) in buffer.iter_mut().zip(before_buf.iter().flatten()) {
                 *x = ((((col >> 11) & 0x1F) as u32) << (16 + 3))
                     | ((((col >> 5) & 0x3F) as u32) << (8 + 2))
-                    | ((((col >> 0) & 0x1F) as u32) << (0 + 3));
+                    | (((*col & 0x1F) as u32) << 3);
             }
             for y in (0..240).rev() {
                 for x in (0..240).rev() {
@@ -994,9 +992,9 @@ fn main() {
             if i & 0xF == 0 {
                 println!(
                     "Frame: {:.4}ms, Avg: {:.4}, Avg. FPS: {:.4}",
-                    current_time.as_secs_f64() as f64 * 1000.0,
-                    elapsed_time as f64 * 1000.0,
-                    1.0f64 / (elapsed_time as f64)
+                    current_time.as_secs_f64() * 1000.0,
+                    elapsed_time * 1000.0,
+                    1.0f64 / elapsed_time
                 );
             }
             i = i.wrapping_add(1);

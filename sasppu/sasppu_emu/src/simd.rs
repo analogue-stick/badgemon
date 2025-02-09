@@ -1,7 +1,7 @@
 //Library to make rust functions of the ESP32S3's SIMD instructions.
 use std::{
     ops::IndexMut,
-    simd::{prelude::*, ToBytes}, u128,
+    simd::{prelude::*, ToBytes},
 };
 
 use log::{debug, trace, warn};
@@ -488,9 +488,9 @@ impl ESP32S3 {
         let mut c = simd_swizzle!(self.qreg[qx], [1, 1, 3, 3, 5, 5, 7, 7]).cast() as i16x8;
         let d = simd_swizzle!(self.qreg[qy], [1, 0, 3, 2, 5, 4, 7, 6]).cast() as i16x8;
         if sel4 >> 1 == 0 {
-            c = c * i16x8::from_array([-1, 1, -1, 1, -1, 1, -1, 1]);
+            c *= i16x8::from_array([-1, 1, -1, 1, -1, 1, -1, 1]);
         } else {
-            c = c * i16x8::from_array([1, -1, 1, -1, 1, -1, 1, -1]);
+            c *= i16x8::from_array([1, -1, 1, -1, 1, -1, 1, -1]);
         }
         let c = c;
 
@@ -554,7 +554,7 @@ impl ESP32S3 {
 
     pub fn fft_ams_s16_ld_incp(
         &mut self,
-        buf: &[u16x8],
+        _buf: &[u16x8],
         qu: Reg,
         ac: Reg,
         qz: Reg,
@@ -581,7 +581,7 @@ impl ESP32S3 {
 
     pub fn fft_ams_s16_ld_incp_uaup(
         &mut self,
-        buf: &[u16x8],
+        _buf: &[u16x8],
         qu: Reg,
         ac: Reg,
         qz: Reg,
@@ -608,7 +608,7 @@ impl ESP32S3 {
 
     pub fn fft_ams_s16_ld_r32_decp(
         &mut self,
-        buf: &[u16x8],
+        _buf: &[u16x8],
         qu: Reg,
         ac: Reg,
         qz: Reg,
@@ -635,7 +635,7 @@ impl ESP32S3 {
 
     pub fn fft_ams_s16_st_incp(
         &mut self,
-        buf: &mut [u16x8],
+        _buf: &mut [u16x8],
         qv: Reg,
         qz1: Reg,
         at: Reg,
@@ -662,7 +662,7 @@ impl ESP32S3 {
 
     pub fn fft_cmul_s16_ld_xp(
         &mut self,
-        buf: &[u16x8],
+        _buf: &[u16x8],
         qu: Reg,
         ac: Reg,
         ad: Reg,
@@ -687,7 +687,7 @@ impl ESP32S3 {
 
     pub fn fft_cmul_s16_st_xp(
         &mut self,
-        buf: &mut [u16x8],
+        _buf: &mut [u16x8],
         qx: Reg,
         qy: Reg,
         qv: Reg,
@@ -727,7 +727,7 @@ impl ESP32S3 {
 
     pub fn fft_r2bf_s16_st_incp(
         &mut self,
-        buf: &mut [u16x8],
+        _buf: &mut [u16x8],
         qa0: Reg,
         qx: Reg,
         qy: Reg,
@@ -795,7 +795,7 @@ impl ESP32S3 {
         self.areg[ac] = self.areg[ac].wrapping_add_signed(((imm >> 3) as i8 as i32) << 3);
     }
 
-    pub fn ld_qacc_h_h_32_ip(&mut self, buf: &[u16x8], ac: Reg, imm: i32) {
+    pub fn ld_qacc_h_h_32_ip(&mut self, _buf: &[u16x8], ac: Reg, imm: i32) {
         trace!("EE.LD.QACC_H.H.32.IP a{}, imm{}", ac, imm);
         validate_areg(ac);
         validate_signed_immediate_by_bits(imm, 10);
@@ -810,7 +810,7 @@ impl ESP32S3 {
         self.areg[ac] = self.areg[ac].wrapping_add_signed(((imm >> 3) as i8 as i32) << 3);*/
     }
 
-    pub fn ld_qacc_h_l_128_ip(&mut self, buf: &[u16x8], ac: Reg, imm: i32) {
+    pub fn ld_qacc_h_l_128_ip(&mut self, _buf: &[u16x8], ac: Reg, imm: i32) {
         trace!("EE.LD.QACC_H.L.128.IP a{}, imm{}", ac, imm);
         validate_areg(ac);
         validate_signed_immediate_by_bits(imm, 12);
@@ -825,7 +825,7 @@ impl ESP32S3 {
         self.areg[ac] = self.areg[ac].wrapping_add_signed(((imm >> 3) as i8 as i32) << 3);*/
     }
 
-    pub fn ld_qacc_l_h_32_ip(&mut self, buf: &[u16x8], ac: Reg, imm: i32) {
+    pub fn ld_qacc_l_h_32_ip(&mut self, _buf: &[u16x8], ac: Reg, imm: i32) {
         trace!("EE.LD.QACC_L.H.32.IP a{}, imm{}", ac, imm);
         validate_areg(ac);
         validate_signed_immediate_by_bits(imm, 10);
@@ -840,7 +840,7 @@ impl ESP32S3 {
         self.areg[ac] = self.areg[ac].wrapping_add_signed(((imm >> 3) as i8 as i32) << 3);*/
     }
 
-    pub fn ld_qacc_l_l_128_ip(&mut self, buf: &[u16x8], ac: Reg, imm: i32) {
+    pub fn ld_qacc_l_l_128_ip(&mut self, _buf: &[u16x8], ac: Reg, imm: i32) {
         trace!("EE.LD.QACC_L.L.128.IP a{}, imm{}", ac, imm);
         validate_areg(ac);
         validate_signed_immediate_by_bits(imm, 12);
