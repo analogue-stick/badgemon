@@ -81,8 +81,8 @@ struct State {
     window_2_right: u8,
 }
 
-const BG_WIDTH_POWER: usize = 9;
-const BG_HEIGHT_POWER: usize = 9;
+const BG_WIDTH_POWER: usize = 8;
+const BG_HEIGHT_POWER: usize = 8;
 const BG_WIDTH: usize = 1 << BG_WIDTH_POWER;
 const BG_HEIGHT: usize = 1 << BG_HEIGHT_POWER;
 
@@ -97,22 +97,31 @@ const SPR_HEIGHT_POWER: usize = 8;
 const SPR_WIDTH: usize = 1 << SPR_WIDTH_POWER;
 const SPR_HEIGHT: usize = 1 << SPR_HEIGHT_POWER;
 
-const BG0_DEFAULT: &[u8; 512 * 512 * 2] = include_bytes!("../assets/kodim05.png.bgraw");
+const MAP_WIDTH_POWER: usize = 6;
+const MAP_HEIGHT_POWER: usize = 6;
+const MAP_WIDTH: usize = 1 << MAP_WIDTH_POWER;
+const MAP_HEIGHT: usize = 1 << MAP_HEIGHT_POWER;
+
+const BG_DEFAULT: &[u8; 256 * 256 * 2] = include_bytes!("../assets/kodim05.png.bgraw");
 const SPR_DEFAULT: &[u8; 256 * 32 * 2] = include_bytes!("../assets/sprites.png.bgraw");
 
-type GraphicsPlane = Box<[[u16x8; BG_WIDTH / 8]; BG_HEIGHT]>;
-type SpritePlane = Box<[[u16x8; SPR_WIDTH / 8]; SPR_WIDTH]>;
+type GraphicsPlane = Box<[u16x8; (BG_WIDTH / 8) * BG_HEIGHT]>;
+type SpritePlane = Box<[[u16x8; SPR_WIDTH / 8]; SPR_HEIGHT]>;
+type SpriteMap = Box<[Sprite; SPRITE_COUNT]>;
+type BackgroundMap = Box<[[u16; MAP_WIDTH]; MAP_HEIGHT]>;
 
 struct SASPPU {
-    main_state: State,
-    bg0_state:  Background,
-    bg1_state:  Background,
-    oam:        Box<[Sprite; SPRITE_COUNT]>,
-
-    bg0:         GraphicsPlane,
-    bg1:         GraphicsPlane,
-    sprites:     SpritePlane,
+    main_state:  State,
+    bg0_state:   Background,
+    bg1_state:   Background,
     cmath_state: ColorMath,
+
+    oam: SpriteMap,
+    bg0: BackgroundMap,
+    bg1: BackgroundMap,
+
+    background: GraphicsPlane,
+    sprites:    SpritePlane,
 }
 
 macro_rules! window_logic_window {
@@ -181,6 +190,7 @@ fn handle_bg<
     const SUB_SCREEN_WINDOW_15: bool,
 >(
     state: &Background,
+    map: &BackgroundMap,
     graphics: &GraphicsPlane,
     main_col: &mut u16x8, // q0
     sub_col: &mut u16x8,  // q1
@@ -189,13 +199,34 @@ fn handle_bg<
     window_1: mask16x8, // q2
     window_2: mask16x8, // q3
 ) {
-    let y_pos = (y + state.scroll_v) as usize & (BG_HEIGHT - 1);
-    let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & (BG_WIDTH - 1);
-    let x_pos_2 = (x_pos_1 + 8) as usize & (BG_WIDTH - 1);
-    let offset = (state.scroll_h & 0x7u16 as i16) as usize;
-    let bg0_1 = graphics[y_pos][x_pos_1 >> 3]; // -> q4
-    let bg0_2 = graphics[y_pos][x_pos_2 >> 3]; // -> q5
-    let mut bg0 = swimzleoo(bg0_1, bg0_2, offset); // q4, q5 -> q4
+    let y_pos = (y + state.scroll_v) as usize & ((MAP_HEIGHT * 8) - 1);
+    let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & ((MAP_WIDTH * 8) - 1);
+    let x_pos_2 = (x_pos_1 + 8) as usize & ((MAP_WIDTH * 8)  - 1);
+    let offset_x = (state.scroll_h & 0x7u16 as i16) as usize;
+    let offset_y = (y_pos & 0x7) as usize;
+    let bg0_1_map = map[y_pos >> 3][x_pos_1 >> 3]; // -> q4
+    let bg0_1 = if (bg0_1_map & 0b10) > 0 {
+        graphics[(bg0_1_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
+    } else {
+        graphics[(bg0_1_map >> 3) as usize + (offset_y * (BG_WIDTH >> 3))]
+    }; // -> q4
+    let bg0_1 = if (bg0_1_map & 0b01) > 0 {
+        bg0_1.reverse()
+    } else {
+        bg0_1
+    }; // -> q4
+    let bg0_2_map = map[y_pos >> 3][x_pos_2 >> 3]; // -> q5
+    let bg0_2 = if (bg0_2_map & 0b10) > 0 {
+        graphics[(bg0_2_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
+    } else {
+        graphics[(bg0_2_map >> 3) as usize + (offset_y * (BG_WIDTH >> 3))]
+    }; // -> q5
+    let bg0_2 = if (bg0_2_map & 0b01) > 0 {
+        bg0_2.reverse()
+    } else {
+        bg0_2
+    }; // -> q5
+    let mut bg0 = swimzleoo(bg0_1, bg0_2, offset_x); // q4, q5 -> q4
 
     if CMATH_ENABLE {
         bg0 |= u16x8::splat(0x8000); // q5; q4, q5 -> q4
@@ -242,8 +273,17 @@ macro_rules! generate_handle_bgs {
     };
 }
 
-type HandleBgType =
-    fn(&Background, &GraphicsPlane, &mut u16x8, &mut u16x8, i16, i16, mask16x8, mask16x8);
+type HandleBgType = fn(
+    &Background,
+    &BackgroundMap,
+    &GraphicsPlane,
+    &mut u16x8,
+    &mut u16x8,
+    i16,
+    i16,
+    mask16x8,
+    mask16x8,
+);
 
 seq!(N in 0..128 {
 static HANDLE_BG_LOOKUP: [HandleBgType; 128] =
@@ -473,7 +513,7 @@ fn handle_cmath<
 >(
     cmath_state: &ColorMath,
     main_col: &mut u16x8, // q0
-    sub_col: &mut u16x8, // q1
+    sub_col: &mut u16x8,  // q1
 ) {
     let use_cmath = mask16x8::splat(CMATH_ENABLE) & main_col.simd_ge(u16x8::splat(0x8000));
     if FADE_ENABLE || use_cmath.any() {
@@ -637,6 +677,7 @@ impl SASPPU {
             handle_bg0(
                 &self.bg0_state,
                 &self.bg0,
+                &self.background,
                 &mut main_col,
                 &mut sub_col,
                 x as i16,
@@ -671,6 +712,7 @@ impl SASPPU {
             handle_bg1(
                 &self.bg1_state,
                 &self.bg1,
+                &self.background,
                 &mut main_col,
                 &mut sub_col,
                 x as i16,
@@ -793,14 +835,15 @@ impl SASPPU {
 
     fn new() -> Self {
         SASPPU {
-            bg0:         Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
-            bg1:         Box::new([[u16x8::splat(0); BG_WIDTH / 8]; BG_HEIGHT]),
-            sprites:     Box::new([[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT]),
+            bg0:         Box::new([[016; MAP_WIDTH]; MAP_HEIGHT]),
+            bg1:         Box::new([[016; MAP_WIDTH]; MAP_HEIGHT]),
             main_state:  State::default(),
             bg0_state:   Background::default(),
             bg1_state:   Background::default(),
             cmath_state: ColorMath::default(),
             oam:         Box::new([Sprite::default(); SPRITE_COUNT]),
+            background:  Box::new([u16x8::splat(0); (BG_WIDTH / 8) * BG_HEIGHT]),
+            sprites:     Box::new([[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT]),
         }
     }
 }
@@ -860,10 +903,9 @@ fn main() {
     }
 
     for val in ppu
-        .bg0
+        .background
         .iter_mut()
-        .flatten()
-        .zip(BG0_DEFAULT.array_chunks::<16>())
+        .zip(BG_DEFAULT.array_chunks::<16>())
     {
         for v in val
             .0
@@ -872,6 +914,22 @@ fn main() {
             .zip(val.1.array_chunks::<2>())
         {
             *v.0 = u16::from_le_bytes(*v.1);
+        }
+    }
+
+    for y in 0..MAP_HEIGHT {
+        let (ypos, flipy) = if y >= MAP_HEIGHT / 2 {
+            (MAP_HEIGHT - y - 1, true)  
+          } else {
+              (y, false)
+          };
+        for x in 0..MAP_WIDTH {
+            let (xpos, flipx) = if x >= MAP_WIDTH / 2 {
+              (MAP_WIDTH - x - 1, true)  
+            } else {
+                (x, false)
+            };
+            ppu.bg0[y][x] = ((xpos + (ypos * BG_WIDTH)) * 8) as u16 | ((flipy as u16) << 1) | (flipx as u16);
         }
     }
 

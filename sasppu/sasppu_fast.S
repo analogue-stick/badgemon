@@ -3,6 +3,132 @@
 // Part of SASPPU
 // Written by Molive
 //
+
+// Sprite
+// size = 10, align = 2
+  .struct 0
+Sprite:
+  .space 0
+Sprite.x:
+  .space 2
+Sprite.y:
+  .space 2
+Sprite.width:
+  .space 1
+Sprite.height:
+  .space 1
+Sprite.graphics.x:
+  .space 1
+Sprite.graphics.y:
+  .space 1
+Sprite.flags:
+  .space 2
+size_of_Sprite:
+
+// size = 6, align = 2
+  .struct 0
+Background:
+  .space 0
+Background.scroll.x:
+  .space 2
+Background.scroll.y:
+  .space 2
+Background.windows:
+  .space 1
+Background.flags:
+  .space 1
+size_of_Background:
+
+// size = 2, align = 1
+  .struct 0
+ColorMath:
+  .space 0
+ColorMath.screen_fade:
+  .space 1
+ColorMath.flags:
+  .space 1
+size_of_ColorMath
+
+// size = 10, align = 2
+  .struct 0
+State:
+  .space 0
+State.mainscreen_colour:
+  .space 2
+State.subscreen_colour:
+  .space 2
+State.window_1.left:
+  .space 1
+State.window_1.right:
+  .space 1
+State.window_2.left:
+  .space 1
+State.window_2.right:
+  .space 1
+State.flags:
+  .space 1
+size_of_State:
+
+.set BG_WIDTH_POWER (8)
+.set BG_HEIGHT_POWER (8)
+.set BG_WIDTH (1 << BG_WIDTH_POWER)
+.set BG_HEIGHT (1 << BG_HEIGHT_POWER)
+
+.set SPRITE_COUNT (256)
+.set SPRITE_CACHE (16)
+
+.set SPR_WIDTH_POWER (8)
+.set SPR_HEIGHT_POWER (8)
+.set SPR_WIDTH (1 << SPR_WIDTH_POWER)
+.set SPR_HEIGHT (1 << SPR_HEIGHT_POWER)
+
+.set SPR_ENABLED (1 << 0)
+.set SPR_PRIORITY (1 << 1)
+.set SPR_FLIP_X (1 << 2)
+.set SPR_FLIP_Y (1 << 3)
+.set SPR_MAIN_SCREEN (1 << 4)
+.set SPR_SUB_SCREEN (1 << 5)
+.set SPR_C_MATH (1 << 6)
+.set SPR_DOUBLE (1 << 7)
+.set SPR_MAIN_WINDOW_POW2 (8)
+.set SPR_MAIN_WINDOW_LOG1 (1 << 8)
+.set SPR_MAIN_WINDOW_LOG2 (1 << 9)
+.set SPR_MAIN_WINDOW_LOG3 (1 << 1)
+.set SPR_MAIN_WINDOW_LOG4 (1 << 1)
+.set SPR_SUB_WINDOW_POW2 (12)
+.set SPR_SUB_WINDOW_LOG1 (1 << 12)
+.set SPR_SUB_WINDOW_LOG2 (1 << 13)
+.set SPR_SUB_WINDOW_LOG3 (1 << 14)
+.set SPR_SUB_WINDOW_LOG4 (1 << 15)
+
+.set WINDOW_A (0b0001)
+.set WINDOW_B (0b0010)
+.set WINDOW_AB (0b0100)
+.set WINDOW_X (0b1000)
+
+  .bss
+  .align 2
+SASPPU.main_state:
+  .zero size_of_State
+SASPPU.bg0_state:
+  .zero size_of_Background
+SASPPU.bg1_state:
+  .zero size_of_Background
+SASPPU.cmath_state:
+  .zero size_of_ColorMath
+SASPPU.oam:
+  .zero (size_of_Sprite * SPRITE_COUNT)
+
+.align 16
+// 128kb
+SASPPU.bg0:
+  .zero (BG_WIDTH * BG_HEIGHT) 
+SASPPU.bg1:
+  .zero (BG_WIDTH * BG_HEIGHT)
+SASPPU.sprites:
+  .zero (SPR_WIDTH * SPR_HEIGHT)
+
+
 	.text
 	.align 4
 
@@ -19,88 +145,3 @@ s3_add16x8:
   ee.vst.128.ip q2,a4,16   # store the 8 "C" values, then add 16 to A4
 	movi.n	a2,0             # return value of 0
 	retw.n                   # restore state (windowed registers) and return to caller
-
-PSEUDOCODE:
-
-.bss
-  WINDOW_STATE_0: .res 16
-  WINDOW_STATE_1: .res 16
-  WINDOW_STATE_2: .res 16
-  WINDOW_STATE_3: .res 16
-
-// Q0: x A3: y Q1: main_col Q2: sub_col Q3: c_math
-// Ruins all other Q registers.
-handle_bg0:
-#if enable_bg0 && ((bg0_main_screen_enable && (bg0_main_in_window || bg0_main_out_window)) || (bg0_sub_screen_enable && (bg0_sub_in_window || bg0_sub_out_window)))
-  q4 = (((a3+bg0scrollv)&0x01FF << 9) + (x+bg0scrollh)) & 0xFFF0
-  q5 = (((a3+bg0scrollv)&0x01FF << 9) + (x+bg0scrollh) + 16) & 0xFFF0
-  q4 = (q4 ++ q5) << // perform the weird unaligned access thing
-  q5 = 0
-  q5 = q4 == q5 // q5 = bg0 == 0
-  q5 = ~q5 // bg0 != 0
-
-#if bg0_main_screen_enable && (bg0_main_in_window || bg0_main_out_window)
-#if bg0_main_in_window && bg0_main_out_window
-  q6 = q5
-#else
-  q6 = WINDOW_STATE[bg0_main_window_log]
-#if bg0_main_out_window
-  q6 = ~q6
-#endif
-#endif
-  // q6 = get_window(..)
-  q6 = q6 & q5 // q6 = bg0 != 0 && bg0_main_screen_enable && get_window(..)
-  q7 = q4 & q6
-  q6 = ~q6
-  q1 = q1 & q6
-  q1 = q1 | q7 // select statement. Takes four commands :/
-  q3 = q3 & q6
-  q6 = ~q6
-  q7 = bg0_cmath_enable // broadcast
-  q7 = q7 & q6
-  q3 = q3 | q7 // Set c_math also
-#endif
-
-#if bg0_sub_screen_enable && (bg0_sub_in_window || bg0_sub_out_window)
-#if bg0_sub_in_window && bg0_sub_out_window
-  q6 = q5
-#else
-  q6 = WINDOW_STATE[bg0_sub_window_log]
-#if bg0_sub_out_window
-  q6 = ~q6
-#endif
-#endif
-  // q6 = get_window(..)
-  q6 = q6 & q5 // q6 = bg0 != 0 && bg0_sub_screen_enable && get_window(..)
-  q7 = q4 & q6
-  q6 = ~q6
-  q2 = q2 & q6
-  q2 = q2 | q7 // select statement. Takes four commands :/
-#endif
-#endif
-  retw.n
-
-// A2: x A3: y
-per_8pixels:
-  q0 = x positions
-  q1 = mainscreen_colour // main_col, broadcast
-  q2 = subscreen_colour // sub_col, broadcast
-  q3 = false // c_math, broadcast
-
-  q4 = (q0 >= window_1_left) && (q0 <= window_1_right)
-  q5 = (q0 >= window_2_left) && (q0 <= window_2_right)
-  q6 = q4 | q5
-  WINDOW_STATE_0 = q6
-  q6 = q4 & q5
-  WINDOW_STATE_1 = q6
-  q6 = q4 ^ q5
-  WINDOW_STATE_2 = q6
-  q6 = ~q6
-  WINDOW_STATE_3 = q6
-  
-  handle_bg0()
-
-  a1 = 16
-high_sprite_loop:
-  a1 -= 1
-  bne high_sprite_loop
