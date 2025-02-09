@@ -201,7 +201,7 @@ fn handle_bg<
 ) {
     let y_pos = (y + state.scroll_v) as usize & ((MAP_HEIGHT * 8) - 1);
     let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & ((MAP_WIDTH * 8) - 1);
-    let x_pos_2 = (x_pos_1 + 8) as usize & ((MAP_WIDTH * 8)  - 1);
+    let x_pos_2 = (x_pos_1 + 8) as usize & ((MAP_WIDTH * 8) - 1);
     let offset_x = (state.scroll_h & 0x7u16 as i16) as usize;
     let offset_y = (y_pos & 0x7) as usize;
     let bg0_1_map = map[y_pos >> 3][x_pos_1 >> 3]; // -> q4
@@ -919,17 +919,18 @@ fn main() {
 
     for y in 0..MAP_HEIGHT {
         let (ypos, flipy) = if y >= MAP_HEIGHT / 2 {
-            (MAP_HEIGHT - y - 1, true)  
-          } else {
-              (y, false)
-          };
+            (MAP_HEIGHT - y - 1, true)
+        } else {
+            (y, false)
+        };
         for x in 0..MAP_WIDTH {
             let (xpos, flipx) = if x >= MAP_WIDTH / 2 {
-              (MAP_WIDTH - x - 1, true)  
+                (MAP_WIDTH - x - 1, true)
             } else {
                 (x, false)
             };
-            ppu.bg0[y][x] = ((xpos + (ypos * BG_WIDTH)) * 8) as u16 | ((flipy as u16) << 1) | (flipx as u16);
+            ppu.bg0[y][x] =
+                ((xpos + (ypos * BG_WIDTH)) * 8) as u16 | ((flipy as u16) << 1) | (flipx as u16);
         }
     }
 
