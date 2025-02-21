@@ -8,7 +8,7 @@ edition = "2024"
 [dependencies]
 log = "0.4"
 minifb = "0.28.0"
-seq-macro = "0.3"
+sasppu-sys = {path = "../sasppu-sys", version = "*"}
 
 [features]
 panic_on_exqreg = []

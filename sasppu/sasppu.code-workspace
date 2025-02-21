@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "sasppu-sys"
+		},
+		{
+			"path": "sasppu_emu"
+		},
+		{
+			"path": "sasppu_view"
+		}
+	],
+	"settings": {}
+}
