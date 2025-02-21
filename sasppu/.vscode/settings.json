@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "*.asm": "lldb.disassembly",
+        "stdint.h": "c",
+        "any": "c",
+        "array": "c",
+        "charconv": "c",
+        "compare": "c",
+        "functional": "c",
+        "ratio": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "variant": "c",
+        "cstdint": "c",
+        "map": "c",
+        "format": "c",
+        "*.tcc": "c"
+    }
+}

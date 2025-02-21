@@ -39,36 +39,6 @@ Background.flags:
   .space 1
 size_of_Background:
 
-// size = 2, align = 1
-  .struct 0
-ColorMath:
-  .space 0
-ColorMath.screen_fade:
-  .space 1
-ColorMath.flags:
-  .space 1
-size_of_ColorMath
-
-// size = 10, align = 2
-  .struct 0
-State:
-  .space 0
-State.mainscreen_colour:
-  .space 2
-State.subscreen_colour:
-  .space 2
-State.window_1.left:
-  .space 1
-State.window_1.right:
-  .space 1
-State.window_2.left:
-  .space 1
-State.window_2.right:
-  .space 1
-State.flags:
-  .space 1
-size_of_State:
-
 .set BG_WIDTH_POWER (8)
 .set BG_HEIGHT_POWER (8)
 .set BG_WIDTH (1 << BG_WIDTH_POWER)
@@ -81,6 +51,11 @@ size_of_State:
 .set SPR_HEIGHT_POWER (8)
 .set SPR_WIDTH (1 << SPR_WIDTH_POWER)
 .set SPR_HEIGHT (1 << SPR_HEIGHT_POWER)
+
+.set MAP_WIDTH_POWER (6)
+.set MAP_HEIGHT_POWER (6)
+.set MAP_WIDTH (1 << MAP_WIDTH_POWER)
+.set MAP_HEIGHT (1 << MAP_HEIGHT_POWER)
 
 .set SPR_ENABLED (1 << 0)
 .set SPR_PRIORITY (1 << 1)
@@ -106,42 +81,343 @@ size_of_State:
 .set WINDOW_AB (0b0100)
 .set WINDOW_X (0b1000)
 
-  .bss
+  .section .bss
   .align 2
-SASPPU.main_state:
-  .zero size_of_State
+SASPPU.main_state.mainscreen_colour:
+  .zero 1
+SASPPU.main_state.subscreen_colour:
+  .zero 1
+SASPPU.main_state.window_1.left:
+  .zero 1
+SASPPU.main_state.window_1.right:
+  .zero 1
+SASPPU.main_state.window_2.left:
+  .zero 1
+SASPPU.main_state.window_2.right:
+  .zero 1
+SASPPU.main_state.flags:
+  .zero 1
 SASPPU.bg0_state:
   .zero size_of_Background
 SASPPU.bg1_state:
   .zero size_of_Background
-SASPPU.cmath_state:
-  .zero size_of_ColorMath
+SASPPU.cmath_state.screen_fade:
+  .zero 1
+SASPPU.cmath_state.flags:
+  .zero 1
+
 SASPPU.oam:
   .zero (size_of_Sprite * SPRITE_COUNT)
-
-.align 16
-// 128kb
 SASPPU.bg0:
-  .zero (BG_WIDTH * BG_HEIGHT) 
+  .zero (MAP_WIDTH * MAP_HEIGHT * 2)
 SASPPU.bg1:
-  .zero (BG_WIDTH * BG_HEIGHT)
+  .zero (MAP_WIDTH * MAP_HEIGHT * 2)
+
+// 256kb allocation
+.align 16
+SASPPU.background:
+  .zero (BG_WIDTH * BG_HEIGHT * 2)
 SASPPU.sprites:
-  .zero (SPR_WIDTH * SPR_HEIGHT)
+  .zero (SPR_WIDTH * SPR_HEIGHT * 2)
+
+// CONSTANTS
+	.section	.rodata
+	.align	16
+	.type	vector_increments, @object
+	.size	vector_increments, 16
+vector_increments:
+	.short	0
+	.short	1
+	.short	2
+	.short	3
+	.short	4
+	.short	5
+	.short	6
+	.short	7
+
+.text
+
+.macro window_macro_q6 wincase
+.if \wincase == 14
+  ee.orq q5, q2, q3
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 13
+  ee.andq q5, q2, q3
+  ee.orq q6, q5, q6
+  ee.notq q5, q6
+.elseif \wincase == 12
+  ee.xorq q5, q2, q3
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 11
+  ee.notq q5, q3
+  ee.notq q6, q6
+  ee.orq q5, q2, q5
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 10
+  ee.notq q6, q6
+  ee.andq q5, q2, q6
+  ee.notq q6, q5
+.elseif \wincase == 9
+  ee.orq q6, q3, q6
+  ee.notq q5, q6
+.elseif \wincase == 8
+  ee.notq q5, q3
+  ee.andq q5, q2, q5
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 7
+  ee.notq q5, q2
+  ee.orq q5, q3, q5
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 6
+  ee.notq q6, q6
+  ee.andq q5, q3, q6
+  ee.notq q6, q5
+.elseif \wincase == 5
+  ee.orq q6, q2, q6
+  ee.notq q5, q6
+.elseif \wincase == 4
+  ee.notq q5, q2
+  ee.andq q5, q3, q5
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 3
+  ee.xorq q5, q2, q3
+  ee.orq q6, q5, q6
+  ee.notq q5, q6
+.elseif \wincase == 2
+  ee.andq q5, q2, q3
+  ee.notq q6, q6
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 1
+  ee.orq q5, q2, q3
+  ee.orq q6, q5, q6
+  ee.notq q5, q6
+.elseif \wincase == 15
+  ee.notq q5, q6
+.endif
+.endm
+
+.macro window_macro_q7 wincase
+.if \wincase == 14
+  ee.orq q5, q2, q3
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 13
+  ee.andq q5, q2, q3
+  ee.orq q6, q5, q7
+  ee.notq q5, q6
+.elseif \wincase == 12
+  ee.xorq q5, q2, q3
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 11
+  ee.notq q5, q3
+  ee.orq q5, q2, q5
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 10
+  ee.notq q6, q7
+  ee.andq q5, q2, q6
+  ee.notq q6, q5
+.elseif \wincase == 9
+  ee.orq q6, q3, q7
+  ee.notq q5, q6
+.elseif \wincase == 8
+  ee.notq q5, q3
+  ee.andq q5, q2, q5
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 7
+  ee.notq q5, q2
+  ee.orq q5, q3, q5
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 6
+  ee.notq q6, q7
+  ee.andq q5, q3, q6
+  ee.notq q6, q5
+.elseif \wincase == 5
+  ee.orq q6, q2, q7
+  ee.notq q5, q6
+.elseif \wincase == 4
+  ee.notq q5, q2
+  ee.andq q5, q3, q5
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 3
+  ee.xorq q5, q2, q3
+  ee.orq q6, q5, q7
+  ee.notq q5, q6
+.elseif \wincase == 2
+  ee.andq q5, q2, q3
+  ee.notq q6, q7
+  ee.andq q5, q5, q6
+  ee.notq q6, q5
+.elseif \wincase == 1
+  ee.orq q5, q2, q3
+  ee.orq q6, q5, q7
+  ee.notq q5, q6
+.elseif \wincase == 15
+  mov.qr q6, q7
+  ee.notq q5, q6
+.endif
+.endm
+
+; both window settings are the same.
+.macro window_macro_both wincase
+.if \wincase == 0
+.exitm
+.endif
+
+  ee.zero.q q6
+  ee.vcmp.eq.s16 q6, q4, q6
+  window_macro_q6 \wincase
+  ee.andq q0, q0, q6
+  ee.andq q1, q1, q6
+  ee.andq q4, q4 ,q5
+  ee.orq q0, q0, q4
+  ee.orq q1, q1, q4
+.endm
+
+; just the main window
+.macro window_macro_main wincase
+.if \wincase == 0
+.exitm
+.endif
+
+  window_macro_q7 \wincase
+  ee.andq q0, q0, q6
+  ee.andq q5, q4 ,q5
+  ee.orq q0, q0, q5
+.endm
+
+; just the sub window
+.macro window_macro_sub wincase
+.if \wincase == 0
+.exitm
+.endif
+
+  window_macro_q7 \wincase
+  ee.andq q1, q1, q6
+  ee.andq q5, q4 ,q5
+  ee.orq q1, q1, q5
+.endm
+
+; Calculates the windows
+.macro window_macro \mainwincase \subwincase
+.if \mainwincase == \subwincase
+  window_macro_both \mainwincase
+.else
+
+  ee.zero.q q7
+  ee.vcmp.eq.s16 q7, q4, q7
+  window_macro_main \mainwincase
+  window_macro_sub \subwincase
+.endif
+.endm
+
+// void handle_bg( //a0 return, a1 stack
+  // uint8_t x, // a2
+  // uint8_t y, // a3
+  // SpriteCaches *sprite_caches, // a4
+  // HandleBgType *handle_bg0, // a5
+  // HandleBgType *handle_bg1, // a6
+  // HandleCMathType *handle_cmath, // a7
+  // vector_increments, // a8
+  // struct Background *bg_state, // a9
+  // BackgroundMap *bg_map, // a10
+  //);
+.macro handle_bg cmath_enable, main_screen_enable, sub_screen_enable, mainwincase subwincase
+  
+.endm
 
 
-	.text
-	.align 4
+// void per_pixel( //a0 return, a1 stack
+  // uint8_t x, // a2
+  // uint8_t y, // a3
+  // SpriteCaches *sprite_caches, // a4
+  // HandleBgType *handle_bg0, // a5
+  // HandleBgType *handle_bg1, // a6
+  // HandleCMathType *handle_cmath, // a7
+//);
+	.literal_position
+	.literal .LCvector_increments, vector_increments
+	.literal .LCmainscreen_colour, SASPPU.main_state.mainscreen_colour
+	.literal .LCsubscreen_colour, SASPPU.main_state.subscreen_colour
+	.literal .LCwindow_1_left, SASPPU.main_state.window_1.left
+	.literal .LCwindow_1_right, SASPPU.main_state.window_1.right
+	.literal .LCwindow_2_left, SASPPU.main_state.window_2.left
+	.literal .LCwindow_2_right, SASPPU.main_state.window_2.right
+	.literal .LCbg0, SASPPU.bg0
+	.literal .LCbg0_state, SASPPU.bg0_state
+	.literal .LCbg1, SASPPU.bg1
+	.literal .LCbg1_state, SASPPU.bg1_state
+  .align 4
+	.global per_pixel
+  .type   per_pixel, @function
+per_pixel:
+  entry	sp, 80
+	l32r	a8, .LCvector_increments
+	l32r	a9, .LCmainscreen_colour
+	l32r	a10, .LCsubscreen_colour
+	l32r	a11, .LCwindow_1_left
+	l32r	a12, .LCwindow_1_right
+	l32r	a13, .LCwindow_2_left
+	l32r	a14, .LCwindow_2_right
 
-// Simple signed 16-bit x 8 add
-// registers with the args:     A2            A3            A4
-// Call as int s3_add16x8(int16_t *pA, int16_t *pB, int16_t *pC);
-	.global s3_add16x8
-  .type   s3_add16x8,@function
-s3_add16x8:
-  entry   a1,16            # prepare windowed registers and reserve 16 bytes of stack
-  ee.vld.128.ip	q0,a2,16   # load 8 "A" values into Q0 from A2, then add 16 to A2
-  ee.vld.128.ip	q1,a3,16   # load 8 "B" values into Q1 from A3, then add 16 to A3
-  ee.vadds.s16 q2,q0,q1    # C = A+B (with saturation)
-  ee.vst.128.ip q2,a4,16   # store the 8 "C" values, then add 16 to A4
-	movi.n	a2,0             # return value of 0
-	retw.n                   # restore state (windowed registers) and return to caller
+  ld.qr q0, a8, 0 // load increments
+  ee.vldbc.16 q1, sp // broadcast x 
+  ee.vadds.16 q0, q0, q1 // x_window
+  ee.vldbc.16 q2, a11 // load window_1_left
+  ee.vldbc.16 q3, a12 // load window_1_right
+  ee.vcmp.eq.s16 q4, q0, q2
+  ee.vcmp.gt.s16 q5, q0, q2
+  ee.vcmp.eq.s16 q6, q0, q3
+  ee.orq q4, q4, q5
+  ee.vcmp.lt.s16 q5, q0, q3
+  ee.vldbc.16 q3, a13 // load window_2_left
+  ee.orq q5, q5, q6
+  ee.vldbc.16 q7, a14 // load window_2_right
+  ee.andq q2, q4, q5
+  ee.vcmp.eq.s16 q4, q0, q3
+  ee.vcmp.gt.s16 q5, q0, q3
+  ee.vcmp.eq.s16 q6, q0, q7
+  ee.orq q4, q4, q5
+  ee.vcmp.lt.s16 q5, q0, q7
+  ee.vcmp.lt.s16 q5, q0, q7
+  ee.vldbc.16 q0, a9 // load main_col
+  ee.orq q5, q5, q6
+  ee.vldbc.16 q1, a10 // load sub_col
+  ee.andq q3, q4, q5
+
+	l32r	a9, .LCbg0_state
+  l32r	a10, .LCbg0
+
+  // handle bg0
+	callx8	a5
+
+  // handle bg1
+	callx8	a6
+
+  // handle cmath
+	callx8	a8
+
+	retw.n
+	.size	per_pixel, .-per_pixel

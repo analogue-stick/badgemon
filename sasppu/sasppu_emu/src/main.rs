@@ -65,8 +65,8 @@ struct ColorMath {
     add_sub_screen:     bool,
     sub_sub_screen:     bool,
     fade_enable:        bool,
-    screen_fade:        u8,
     cmath_enable:       bool,
+    screen_fade:        u8,
 }
 #[derive(Debug, Clone, Copy, Default)]
 struct State {
@@ -189,13 +189,13 @@ fn handle_bg<
     const SUB_SCREEN_WINDOW_0: bool,
     const SUB_SCREEN_WINDOW_15: bool,
 >(
-    state: &Background,
-    map: &BackgroundMap,
+    state: &Background, // a9
+    map: &BackgroundMap, // a10
     graphics: &GraphicsPlane,
     main_col: &mut u16x8, // q0
     sub_col: &mut u16x8,  // q1
-    x: i16,
-    y: i16,
+    x: i16, // a2
+    y: i16, // a3
     window_1: mask16x8, // q2
     window_2: mask16x8, // q3
 ) {
@@ -235,7 +235,7 @@ fn handle_bg<
     let main_window = if MAIN_SCREEN_WINDOW_0 {
         // -> q5
         mask16x8::splat(false) // -> q5
-    } else if SUB_SCREEN_WINDOW_15 {
+    } else if MAIN_SCREEN_WINDOW_15 {
         mask16x8::splat(true) // -> q5
     } else {
         get_window(state.main_window_log, window_1, window_2) // q2, q3, q5, q6, q7 -> q5
