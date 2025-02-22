@@ -1,2 +1,11 @@
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-Ctarget-cpu=native"]
+
+[target.xtensa-esp32s3-none-elf]
+runner = "espflash flash --monitor"
+rustflags = [
+  "-C", "link-arg=-nostartfiles",
+]
+
+[unstable]
+build-std = ["core"]

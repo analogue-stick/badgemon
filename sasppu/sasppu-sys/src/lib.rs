@@ -928,8 +928,8 @@ impl SASPPU {
             bg1_state:   Background::new(),
             cmath_state: ColorMath::new(),
             oam:         [Sprite::new(); SPRITE_COUNT],
-            background:  [u16x8::splat(0); (BG_WIDTH / 8) * BG_HEIGHT],
-            sprites:     [[u16x8::splat(0); SPR_WIDTH / 8]; SPR_HEIGHT],
+            background:  [u16x8::from_array([0; 8]); (BG_WIDTH / 8) * BG_HEIGHT],
+            sprites:     [[u16x8::from_array([0; 8]); SPR_WIDTH / 8]; SPR_HEIGHT],
         }
     }
 }
