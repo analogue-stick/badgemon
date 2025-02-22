@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "sasppu_view"
+		},
+		{
+			"path": "."
 		}
 	],
 	"settings": {}

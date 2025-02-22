@@ -345,7 +345,29 @@ vector_increments:
   // BackgroundMap *bg_map, // a10
   //);
 .macro handle_bg cmath_enable, main_screen_enable, sub_screen_enable, mainwincase subwincase
+  l16si	a11, a9, Background.scroll.x
+  l16si	a12, a9, Background.scroll.y
+  add.n	a13, a11, a2
+	add.n	a14, a12, a3
+  extui	a13, a13, 3, (MAP_HEIGHT_POWER) // x_pos_1
+  extui	a14, a14, 3, (MAP_HEIGHT_POWER) // y_pos
+	addi.n a15, a13, 1 // x_pos_2
+  slli	a14, a14, (MAP_WIDTH_POWER)
+  extui	a15, a15, 0, (MAP_HEIGHT_POWER) // x_pos_2
+  addx2.n	a10, a14, a10
+	addx2.n	a15, a15, a10
+  addx2.n	a13, a13, a10
+  l16ui a15, a15, 0 // x_pos_2
+  l16ui a13, a13, 0 // x_pos_1
+flip_1:
+  bbci.l a13, 1, no_flip_1
+
+no_flip_1:
+reverse_1:
+  bcci.l a13, 0, no_reverse_1
   
+no_reverse_1:
+flip_2:
 .endm
 
 

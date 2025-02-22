@@ -62,8 +62,8 @@ pub const WINDOW_X: u16 = 0b1000;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Background {
-    pub scroll_h:           i16,
-    pub scroll_v:           i16,
+    pub scroll_x:           i16,
+    pub scroll_y:           i16,
     pub main_window_log:    u8,
     pub sub_window_log:     u8,
     pub cmath_enable:       bool,
@@ -75,8 +75,8 @@ pub struct Background {
 impl Background {
     pub const fn new() -> Self {
         Background {
-            scroll_h:           0,
-            scroll_v:           0,
+            scroll_x:           0,
+            scroll_y:           0,
             main_window_log:    0xF,
             sub_window_log:     0xF,
             cmath_enable:       false,
@@ -283,23 +283,23 @@ fn handle_bg<
     window_1: mask16x8,   // q2
     window_2: mask16x8,   // q3
 ) {
-    let y_pos = (y + state.scroll_v) as usize & ((MAP_HEIGHT * 8) - 1);
-    let x_pos_1 = (x + (state.scroll_h & 0xFFF8u16 as i16)) as usize & ((MAP_WIDTH * 8) - 1);
-    let x_pos_2 = (x_pos_1 + 8) & ((MAP_WIDTH * 8) - 1);
-    let offset_x = (state.scroll_h & 0x7u16 as i16) as usize;
-    let offset_y = y_pos & 0x7;
-    let bg0_1_map = map[y_pos >> 3][x_pos_1 >> 3]; // -> q4
+    let y_pos = (((y + state.scroll_y) as usize) >> 3) & ((MAP_HEIGHT) - 1);
+    let x_pos_1 = (((x + state.scroll_x) as usize) >> 3) & ((MAP_WIDTH) - 1);
+    let x_pos_2 = (x_pos_1 + 1) & ((MAP_WIDTH) - 1);
+    let offset_x = (state.scroll_x & 0x7u16 as i16) as usize;
+    let offset_y = (state.scroll_y & 0x7u16 as i16) as usize;
+    let bg0_1_map = map[y_pos][x_pos_1]; // -> q4
     let bg0_1 = if (bg0_1_map & 0b10) > 0 {
         graphics[(bg0_1_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
     } else {
         graphics[(bg0_1_map >> 3) as usize + (offset_y * (BG_WIDTH >> 3))]
     }; // -> q4
-    let bg0_1 = if (bg0_1_map & 0b01) > 0 {
+    let bg0_1: Simd<u16, 8> = if (bg0_1_map & 0b01) > 0 {
         bg0_1.reverse()
     } else {
         bg0_1
     }; // -> q4
-    let bg0_2_map = map[y_pos >> 3][x_pos_2 >> 3]; // -> q5
+    let bg0_2_map = map[y_pos][x_pos_2]; // -> q5
     let bg0_2 = if (bg0_2_map & 0b10) > 0 {
         graphics[(bg0_2_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
     } else {

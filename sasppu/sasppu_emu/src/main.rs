@@ -124,8 +124,8 @@ fn main() {
                 .unwrap()
                 .as_nanos() as f64
                 / 10000000000.0;
-            ppu.bg0_state.scroll_h = ((epoch * 2.0).sin() * 256.0 + 256.0) as i16;
-            ppu.bg0_state.scroll_v = ((epoch * 3.0).cos() * 256.0 + 256.0) as i16;
+            ppu.bg0_state.scroll_x = ((epoch * 2.0).sin() * 256.0 + 256.0) as i16;
+            ppu.bg0_state.scroll_y = ((epoch * 3.0).cos() * 256.0 + 256.0) as i16;
             for (i, spr) in ppu.oam.iter_mut().take(TEST_SPR_COUNT).enumerate() {
                 spr.x = ((epoch * (5.0 + (0.3 * (i >> 1) as f64))).sin() * (120.0 - 16.0)
                     + (120.0 - 16.0)) as i16;

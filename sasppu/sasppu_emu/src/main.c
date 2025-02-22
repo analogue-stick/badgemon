@@ -127,93 +127,37 @@ typedef void(HandleCMathType)(uint16x8_t *, uint16x8_t *);
 
 typedef uint16x8_t *(PerPixelType)(uint8_t, uint8_t, SpriteCaches *, HandleBgType *, HandleBgType *, HandleCMathType *);
 
-/*
-void handle_bg(
+struct pair
+{
+    uint16_t a;
+    uint16_t d;
+    uint16_t e;
+    uint16_t b;
+};
+
+struct pair handle_bg(
     struct Background *state, // a9
     BackgroundMap *map,       // a10
-    u16x8_t *main_col,        // q0
-    u16x8_t *sub_col,         // q1
-    int16_t x,               // a2
-    int16_t y,               // a3
+    uint16x8_t *main_col,     // q0
+    uint16x8_t *sub_col,      // q1
+    int16_t x,                // a2
+    int16_t y,                // a3
     mask16x8_t window_1,      // q2
     mask16x8_t window_2       // q3
 )
 {
-    uintptr_t y_pos = (y + (*state).scroll_y) & ((MAP_HEIGHT * 8) - 1);
-    uintptr_t x_pos_1 = (x + ((*state).scroll_x & 0xFFF8)) & ((MAP_WIDTH * 8) - 1);
-    uintptr_t x_pos_2 = (x_pos_1 + 8) & ((MAP_WIDTH * 8) - 1);
-    uintptr_t offset_x = ((*state).scroll_x & 0x7);
-    uintptr_t offset_y = y_pos & 0x7;
-    uint16_t bg0_1_map = map[y_pos >> 3][x_pos_1 >> 3]; // -> q4
-    u16x8_t bg0_1;
-    if ((bg0_1_map & 0b10) > 0)
-    {
-        bg0_1 = background[(bg0_1_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))];
-    } else {
-        bg0_1 = background[(bg0_1_map >> 3) as usize + (offset_y * (BG_WIDTH >> 3))];
-    } // -> q4
-    if ((bg0_1_map & 0b01) > 0)
-    {
-        bg0_1.reverse()
-    }
-    else {
-        bg0_1};                                    // -> q4
-    let bg0_2_map = map[y_pos >> 3][x_pos_2 >> 3]; // -> q5
-    let bg0_2 = if (bg0_2_map & 0b10) > 0
-    {
-        graphics[(bg0_2_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]
-    }
-    else {
-        graphics[(bg0_2_map >> 3) as usize + (offset_y * (BG_WIDTH >> 3))]}; // -> q5
-    let bg0_2 = if (bg0_2_map & 0b01) > 0
-    {
-        bg0_2.reverse()
-    }
-    else {
-        bg0_2};                                      // -> q5
-    let mut bg0 = swimzleoo(bg0_1, bg0_2, offset_x); // q4, q5 -> q4
-
-    if CMATH_ENABLE
-    {
-        bg0 |= u16x8::splat(0x8000); // q5; q4, q5 -> q4
-    }
-
-    let main_window = if MAIN_SCREEN_WINDOW_0
-    {
-        // -> q5
-        mask16x8::splat(false) // -> q5
-    }
-    else if MAIN_SCREEN_WINDOW_15
-    {
-        mask16x8::splat(true) // -> q5
-    }
-    else {
-        get_window(state.main_window_log, window_1, window_2) // q2, q3, q5, q6, q7 -> q5
-    } & bg0.simd_ne(u16x8::splat(0));                         // q6; q4, q6 -> q6; q5, q6 -> q5
-
-    if MAIN_SCREEN_ENABLE
-    {
-        *main_col = main_window.select(bg0, *main_col); // q0, q4, q5 -> q0
-    }
-
-    let sub_window = if SUB_SCREEN_WINDOW_0
-    {
-        // -> q5
-        mask16x8::splat(false) // -> q5
-    }
-    else if SUB_SCREEN_WINDOW_15
-    {
-        mask16x8::splat(true) // -> q5
-    }
-    else {
-        get_window(state.sub_window_log, window_1, window_2) // q2, q3, q5, q6, q7 -> q5
-    } & bg0.simd_ne(u16x8::splat(0));                        // q6; q4, q6 -> q6; q5, q6 -> q5
-
-    if SUB_SCREEN_ENABLE
-    {
-        *sub_col = sub_window.select(bg0, *sub_col); // q1, q4, q5 -> q1
-    }
-}*/
+    uintptr_t y_pos = (((uintptr_t)(y + (*state).scroll_y)) >> 3) & ((MAP_HEIGHT)-1);
+    uintptr_t x_pos_1 = (((uintptr_t)(x + (*state).scroll_x)) >> 3) & ((MAP_WIDTH)-1);
+    uintptr_t x_pos_2 = (x_pos_1 + 1) & ((MAP_WIDTH)-1);
+    uintptr_t offset_x = (uintptr_t)((*state).scroll_x & 0x7);
+    uintptr_t offset_y = (uintptr_t)((*state).scroll_y & 0x7);
+    uint16_t bg0_1_map = map[y_pos][x_pos_1];
+    uint16_t bg0_2_map = map[y_pos][x_pos_2];
+    struct pair p;
+    p.a = bg0_1_map;
+    p.b = bg0_2_map;
+    return p;
+}
 
 #define BG0_ENABLE (1)
 #define BG1_ENABLE (1)
