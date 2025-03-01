@@ -11,6 +11,9 @@
 		},
 		{
 			"path": "."
+		},
+		{
+			"path": "sasppu_simd_rev"
 		}
 	],
 	"settings": {}

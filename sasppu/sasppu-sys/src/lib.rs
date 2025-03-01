@@ -286,8 +286,8 @@ fn handle_bg<
     let y_pos = (((y + state.scroll_y) as usize) >> 3) & ((MAP_HEIGHT) - 1);
     let x_pos_1 = (((x + state.scroll_x) as usize) >> 3) & ((MAP_WIDTH) - 1);
     let x_pos_2 = (x_pos_1 + 1) & ((MAP_WIDTH) - 1);
-    let offset_x = (state.scroll_x & 0x7u16 as i16) as usize;
-    let offset_y = (state.scroll_y & 0x7u16 as i16) as usize;
+    let offset_x = ((x + state.scroll_x) & 0x7u16 as i16) as usize;
+    let offset_y = ((y + state.scroll_y) & 0x7u16 as i16) as usize;
     let bg0_1_map = map[y_pos][x_pos_1]; // -> q4
     let bg0_1 = if (bg0_1_map & 0b10) > 0 {
         graphics[(bg0_1_map >> 3) as usize + ((7 - offset_y) * (BG_WIDTH >> 3))]

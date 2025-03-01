@@ -359,15 +359,18 @@ vector_increments:
   addx2.n	a13, a13, a10
   l16ui a15, a15, 0 // x_pos_2
   l16ui a13, a13, 0 // x_pos_1
-flip_1:
-  bbci.l a13, 1, no_flip_1
-
-no_flip_1:
-reverse_1:
-  bcci.l a13, 0, no_reverse_1
+  andi.n a11, a11, 7 // offset_x
+  andi.n a12, a12, 7 // offset_y
+y_flip_1:
+  bbci.l a13, 1, no_y_flip_1
   
-no_reverse_1:
-flip_2:
+no_y_flip_1:
+load_1:
+x_flip_1:
+  bcci.l a13, 0, no_x_flip_1
+  
+no_x_flip_1:
+y_flip_2:
 .endm
 
 
