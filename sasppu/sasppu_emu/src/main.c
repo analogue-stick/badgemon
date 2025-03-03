@@ -167,6 +167,11 @@ struct pair handle_bg(
 
 static const uint16x8_t incr = {0, 1, 2, 3, 4, 5, 6, 7};
 
+uint32_t large()
+{
+    return 123758349;
+}
+
 uint16x8_t *per_pixel(
     uint8_t x,
     uint8_t y,

@@ -3,6 +3,9 @@
 // Part of SASPPU
 // Written by Molive
 //
+// This code is a disaster. Every block is trying to do about 3 things at once, with the code interleaved to avoid data hazards.
+// Good luck.
+//
 
 // Sprite
 // size = 10, align = 2
@@ -39,47 +42,47 @@ Background.flags:
   .space 1
 size_of_Background:
 
-.set BG_WIDTH_POWER (8)
-.set BG_HEIGHT_POWER (8)
-.set BG_WIDTH (1 << BG_WIDTH_POWER)
-.set BG_HEIGHT (1 << BG_HEIGHT_POWER)
+.set BG_WIDTH_POWER, (8)
+.set BG_HEIGHT_POWER, (8)
+.set BG_WIDTH, (1 << BG_WIDTH_POWER)
+.set BG_HEIGHT, (1 << BG_HEIGHT_POWER)
 
-.set SPRITE_COUNT (256)
-.set SPRITE_CACHE (16)
+.set SPRITE_COUNT, (256)
+.set SPRITE_CACHE, (16)
 
-.set SPR_WIDTH_POWER (8)
-.set SPR_HEIGHT_POWER (8)
-.set SPR_WIDTH (1 << SPR_WIDTH_POWER)
-.set SPR_HEIGHT (1 << SPR_HEIGHT_POWER)
+.set SPR_WIDTH_POWER, (8)
+.set SPR_HEIGHT_POWER, (8)
+.set SPR_WIDTH, (1 << SPR_WIDTH_POWER)
+.set SPR_HEIGHT, (1 << SPR_HEIGHT_POWER)
 
-.set MAP_WIDTH_POWER (6)
-.set MAP_HEIGHT_POWER (6)
-.set MAP_WIDTH (1 << MAP_WIDTH_POWER)
-.set MAP_HEIGHT (1 << MAP_HEIGHT_POWER)
+.set MAP_WIDTH_POWER, (6)
+.set MAP_HEIGHT_POWER, (6)
+.set MAP_WIDTH, (1 << MAP_WIDTH_POWER)
+.set MAP_HEIGHT, (1 << MAP_HEIGHT_POWER)
 
-.set SPR_ENABLED (1 << 0)
-.set SPR_PRIORITY (1 << 1)
-.set SPR_FLIP_X (1 << 2)
-.set SPR_FLIP_Y (1 << 3)
-.set SPR_MAIN_SCREEN (1 << 4)
-.set SPR_SUB_SCREEN (1 << 5)
-.set SPR_C_MATH (1 << 6)
-.set SPR_DOUBLE (1 << 7)
-.set SPR_MAIN_WINDOW_POW2 (8)
-.set SPR_MAIN_WINDOW_LOG1 (1 << 8)
-.set SPR_MAIN_WINDOW_LOG2 (1 << 9)
-.set SPR_MAIN_WINDOW_LOG3 (1 << 1)
-.set SPR_MAIN_WINDOW_LOG4 (1 << 1)
-.set SPR_SUB_WINDOW_POW2 (12)
-.set SPR_SUB_WINDOW_LOG1 (1 << 12)
-.set SPR_SUB_WINDOW_LOG2 (1 << 13)
-.set SPR_SUB_WINDOW_LOG3 (1 << 14)
-.set SPR_SUB_WINDOW_LOG4 (1 << 15)
+.set SPR_ENABLED, (1 << 0)
+.set SPR_PRIORITY, (1 << 1)
+.set SPR_FLIP_X, (1 << 2)
+.set SPR_FLIP_Y, (1 << 3)
+.set SPR_MAIN_SCREEN, (1 << 4)
+.set SPR_SUB_SCREEN, (1 << 5)
+.set SPR_C_MATH, (1 << 6)
+.set SPR_DOUBLE, (1 << 7)
+.set SPR_MAIN_WINDOW_POW2, (8)
+.set SPR_MAIN_WINDOW_LOG1, (1 << 8)
+.set SPR_MAIN_WINDOW_LOG2, (1 << 9)
+.set SPR_MAIN_WINDOW_LOG3, (1 << 1)
+.set SPR_MAIN_WINDOW_LOG4, (1 << 1)
+.set SPR_SUB_WINDOW_POW2, (12)
+.set SPR_SUB_WINDOW_LOG1, (1 << 12)
+.set SPR_SUB_WINDOW_LOG2, (1 << 13)
+.set SPR_SUB_WINDOW_LOG3, (1 << 14)
+.set SPR_SUB_WINDOW_LOG4, (1 << 15)
 
-.set WINDOW_A (0b0001)
-.set WINDOW_B (0b0010)
-.set WINDOW_AB (0b0100)
-.set WINDOW_X (0b1000)
+.set WINDOW_A, (0b0001)
+.set WINDOW_B, (0b0010)
+.set WINDOW_AB, (0b0100)
+.set WINDOW_X, (0b1000)
 
   .section .bss
   .align 2
@@ -134,6 +137,8 @@ vector_increments:
 	.short	5
 	.short	6
 	.short	7
+cmath_bit:
+	.short	0x8000
 
 .text
 
@@ -143,144 +148,172 @@ vector_increments:
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 13
+.endif
+.if \wincase == 13
   ee.andq q5, q2, q3
   ee.orq q6, q5, q6
   ee.notq q5, q6
-.elseif \wincase == 12
+.endif
+.if \wincase == 12
   ee.xorq q5, q2, q3
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 11
+.endif
+.if \wincase == 11
   ee.notq q5, q3
   ee.notq q6, q6
   ee.orq q5, q2, q5
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 10
+.endif
+.if \wincase == 10
   ee.notq q6, q6
   ee.andq q5, q2, q6
   ee.notq q6, q5
-.elseif \wincase == 9
+.endif
+.if \wincase == 9
   ee.orq q6, q3, q6
   ee.notq q5, q6
-.elseif \wincase == 8
+.endif
+.if \wincase == 8
   ee.notq q5, q3
   ee.andq q5, q2, q5
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 7
+.endif
+.if \wincase == 7
   ee.notq q5, q2
   ee.orq q5, q3, q5
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 6
+.endif
+.if \wincase == 6
   ee.notq q6, q6
   ee.andq q5, q3, q6
   ee.notq q6, q5
-.elseif \wincase == 5
+.endif
+.if \wincase == 5
   ee.orq q6, q2, q6
   ee.notq q5, q6
-.elseif \wincase == 4
+.endif
+.if \wincase == 4
   ee.notq q5, q2
   ee.andq q5, q3, q5
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 3
+.endif
+.if \wincase == 3
   ee.xorq q5, q2, q3
   ee.orq q6, q5, q6
   ee.notq q5, q6
-.elseif \wincase == 2
+.endif
+.if \wincase == 2
   ee.andq q5, q2, q3
   ee.notq q6, q6
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 1
+.endif
+.if \wincase == 1
   ee.orq q5, q2, q3
   ee.orq q6, q5, q6
   ee.notq q5, q6
-.elseif \wincase == 15
+.endif
+.if \wincase == 15
   ee.notq q5, q6
 .endif
 .endm
 
 .macro window_macro_q7 wincase
+.if \wincase == 15
+  mv.qr q6, q7
+  ee.notq q5, q6
+.endif
 .if \wincase == 14
   ee.orq q5, q2, q3
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 13
+.endif
+.if \wincase == 13
   ee.andq q5, q2, q3
   ee.orq q6, q5, q7
   ee.notq q5, q6
-.elseif \wincase == 12
+.endif
+.if \wincase == 12
   ee.xorq q5, q2, q3
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 11
+.endif
+.if \wincase == 11
   ee.notq q5, q3
   ee.orq q5, q2, q5
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 10
+.endif
+.if \wincase == 10
   ee.notq q6, q7
   ee.andq q5, q2, q6
   ee.notq q6, q5
-.elseif \wincase == 9
+.endif
+.if \wincase == 9
   ee.orq q6, q3, q7
   ee.notq q5, q6
-.elseif \wincase == 8
+.endif
+.if \wincase == 8
   ee.notq q5, q3
   ee.andq q5, q2, q5
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 7
+.endif
+.if \wincase == 7
   ee.notq q5, q2
   ee.orq q5, q3, q5
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 6
+.endif
+.if \wincase == 6
   ee.notq q6, q7
   ee.andq q5, q3, q6
   ee.notq q6, q5
-.elseif \wincase == 5
+.endif
+.if \wincase == 5
   ee.orq q6, q2, q7
   ee.notq q5, q6
-.elseif \wincase == 4
+.endif
+.if \wincase == 4
   ee.notq q5, q2
   ee.andq q5, q3, q5
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 3
+.endif
+.if \wincase == 3
   ee.xorq q5, q2, q3
   ee.orq q6, q5, q7
   ee.notq q5, q6
-.elseif \wincase == 2
+.endif
+.if \wincase == 2
   ee.andq q5, q2, q3
   ee.notq q6, q7
   ee.andq q5, q5, q6
   ee.notq q6, q5
-.elseif \wincase == 1
+.endif
+.if \wincase == 1
   ee.orq q5, q2, q3
   ee.orq q6, q5, q7
-  ee.notq q5, q6
-.elseif \wincase == 15
-  mov.qr q6, q7
   ee.notq q5, q6
 .endif
 .endm
 
-; both window settings are the same.
+// both window settings are the same.
 .macro window_macro_both wincase
 .if \wincase == 0
 .exitm
@@ -296,7 +329,7 @@ vector_increments:
   ee.orq q1, q1, q4
 .endm
 
-; just the main window
+// just the main window
 .macro window_macro_main wincase
 .if \wincase == 0
 .exitm
@@ -308,7 +341,7 @@ vector_increments:
   ee.orq q0, q0, q5
 .endm
 
-; just the sub window
+// just the sub window
 .macro window_macro_sub wincase
 .if \wincase == 0
 .exitm
@@ -320,16 +353,35 @@ vector_increments:
   ee.orq q1, q1, q5
 .endm
 
-; Calculates the windows
-.macro window_macro \mainwincase \subwincase
+// Calculates the windows
+.macro window_macro mainwincase subwincase
 .if \mainwincase == \subwincase
   window_macro_both \mainwincase
 .else
 
+.if \subwincase == 0
+  ee.zero.q q6
+  ee.vcmp.eq.s16 q6, q4, q6
+  window_macro_q6 \mainwincase
+  ee.andq q0, q0, q6
+  ee.andq q4, q4 ,q5
+  ee.orq q0, q0, q4
+.else
+.if \mainwincase == 0
+  ee.zero.q q6
+  ee.vcmp.eq.s16 q6, q4, q6
+  window_macro_q6 \subwincase
+  ee.andq q1, q1, q6
+  ee.andq q4, q4 ,q5
+  ee.orq q1, q1, q4
+.else
   ee.zero.q q7
   ee.vcmp.eq.s16 q7, q4, q7
   window_macro_main \mainwincase
   window_macro_sub \subwincase
+.endif
+.endif
+
 .endif
 .endm
 
@@ -344,35 +396,97 @@ vector_increments:
   // struct Background *bg_state, // a9
   // BackgroundMap *bg_map, // a10
   //);
-.macro handle_bg cmath_enable, main_screen_enable, sub_screen_enable, mainwincase subwincase
-  l16si	a11, a9, Background.scroll.x
-  l16si	a12, a9, Background.scroll.y
-  add.n	a13, a11, a2
-	add.n	a14, a12, a3
-  extui	a13, a13, 3, (MAP_HEIGHT_POWER) // x_pos_1
-  extui	a14, a14, 3, (MAP_HEIGHT_POWER) // y_pos
+.macro handle_bg unique, cmath_enable, mainwincase, subwincase
+  l16si	a11, a9, Background.scroll.x // load scroll.x
+  l16si	a12, a9, Background.scroll.y // load scroll.y
+  add.n	a11, a11, a2 // x + scroll.x
+	add.n	a12, a12, a3 // y + scroll.y
+  extui	a13, a11, 3, (MAP_HEIGHT_POWER) // x_pos_1
+  extui	a14, a12, 3, (MAP_HEIGHT_POWER) // y_pos
 	addi.n a15, a13, 1 // x_pos_2
   slli	a14, a14, (MAP_WIDTH_POWER)
   extui	a15, a15, 0, (MAP_HEIGHT_POWER) // x_pos_2
-  addx2.n	a10, a14, a10
-	addx2.n	a15, a15, a10
-  addx2.n	a13, a13, a10
-  l16ui a15, a15, 0 // x_pos_2
-  l16ui a13, a13, 0 // x_pos_1
-  andi.n a11, a11, 7 // offset_x
-  andi.n a12, a12, 7 // offset_y
-y_flip_1:
-  bbci.l a13, 1, no_y_flip_1
-  
-no_y_flip_1:
-load_1:
-x_flip_1:
-  bcci.l a13, 0, no_x_flip_1
-  
-no_x_flip_1:
-y_flip_2:
+  addx2	a10, a14, a10
+  movi a14, 7
+	addx2	a15, a15, a10
+  and a11, a11, a14 // offset_x ((x + scroll.x) & 7)
+  wsr.sar	a11
+  addx2	a13, a13, a10
+  and a12, a12, a14 // offset_y ((y + scroll.y) & 7)
+  l16ui a15, a15, 0 // bg0_2_map
+  l16ui a13, a13, 0 // bg0_1_map
+
+  l32r a9, .LCbackground
+y_flip_1_\unique:
+  addi.n a10, a12, 0
+  bbci.l a13, 1, no_y_flip_1_\unique
+  sub a10, a14, a10
+no_y_flip_1_\unique:
+  slli a10, a10, (BG_WIDTH_POWER + 1)
+  addx2 a10, a13, a10
+  add.n a10, a9, a10
+  ld.qr q4, a10, 0 // load bg0_1 (offset_y flip)
+y_flip_2_\unique:
+  addi.n a10, a12, 0
+  bbci.l a15, 1, no_y_flip_2_\unique
+  sub a10, a14, a10
+no_y_flip_2_\unique:
+  slli a10, a10, (BG_WIDTH_POWER + 1)
+  addx2 a10, a15, a10
+  add.n a10, a9, a10
+  ld.qr q5, a10, 0 // load bg0_1 (offset_y flip)
+
+  bbci.l a13, 0, no_x_flip_1_\unique
+  bbci.l a15, 0, no_x_flip_2_1_\unique
+  // flip both
+  ee.vzip.16 q4, q5
+  ee.vzip.16 q5, q4
+  ee.vzip.16 q4, q5
+  ee.vzip.16 q5, q4
+  j no_x_flip_2_2_\unique
+no_x_flip_2_1_\unique:
+  // flip just 1
+  ee.vzip.16 q4, q6
+  ee.vzip.16 q6, q4
+  ee.vzip.16 q4, q6
+  ee.vzip.16 q6, q4
+  j no_x_flip_2_2_\unique
+no_x_flip_1_\unique:
+  bbci.l a15, 0, no_x_flip_2_2_\unique
+  // flip just 2
+  ee.vzip.16 q5, q6
+  ee.vzip.16 q6, q5
+  ee.vzip.16 q5, q6
+  ee.vzip.16 q6, q5
+no_x_flip_2_2_\unique:
+
+  ee.src.q q4, q4, q5 // swimzleoo
+.if \cmath_enable
+  l32r a15, .LCcmath_bit
+  ee.vldbc.16 q5, a15
+  ee.orq q4, q4, q5 
+.endif
+
+  window_macro \mainwincase, \subwincase
 .endm
 
+.macro handle_bg_wrap unique, cmath_enable, sub_screen_enable, main_screen_enable, subwincase, mainwincase
+.set main_screen_enable_\unique, \main_screen_enable * \mainwincase
+.set sub_screen_enable_\unique, \sub_screen_enable * \subwincase
+.if main_screen_enable_\unique == 0
+.if sub_screen_enable_\unique == 0
+.exitm
+.else
+handle_bg \unique, \cmath_enable, 0, \subwincase
+.endif
+.else
+.if sub_screen_enable_\unique == 0
+handle_bg \unique, \cmath_enable, \mainwincase, 0
+.else
+handle_bg \unique, \cmath_enable, \mainwincase, \subwincase
+.endif
+.endif
+.endm
 
 // void per_pixel( //a0 return, a1 stack
   // uint8_t x, // a2
@@ -394,6 +508,8 @@ y_flip_2:
 	.literal .LCbg0_state, SASPPU.bg0_state
 	.literal .LCbg1, SASPPU.bg1
 	.literal .LCbg1_state, SASPPU.bg1_state
+	.literal .LCbackground, SASPPU.background
+	.literal .LCcmath_bit, cmath_bit
   .align 4
 	.global per_pixel
   .type   per_pixel, @function
@@ -409,7 +525,7 @@ per_pixel:
 
   ld.qr q0, a8, 0 // load increments
   ee.vldbc.16 q1, sp // broadcast x 
-  ee.vadds.16 q0, q0, q1 // x_window
+  ee.vadds.s16 q0, q0, q1 // x_window
   ee.vldbc.16 q2, a11 // load window_1_left
   ee.vldbc.16 q3, a12 // load window_1_right
   ee.vcmp.eq.s16 q4, q0, q2
@@ -446,3 +562,7 @@ per_pixel:
 
 	retw.n
 	.size	per_pixel, .-per_pixel
+
+  .align 4
+
+.include "sasppu_handle_bg_gen.S"
