@@ -60,6 +60,15 @@ fn main() {
             spr.flags |= SPR_MAIN_SCREEN;
             spr.flags |= (WINDOW_X | WINDOW_A | WINDOW_B) << SPR_MAIN_WINDOW_POW2;
         }
+        if i & 2 > 0 {
+            spr.flags |= SPR_FLIP_X;
+        }
+        if i & 3 > 0 {
+            spr.flags |= SPR_FLIP_Y;
+        }
+        if i & 4 > 0 {
+            spr.flags |= SPR_DOUBLE;
+        }
         spr.width = 32;
         spr.height = 32;
         spr.x = 0;

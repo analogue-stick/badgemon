@@ -1,5 +1,5 @@
 /build/
 sasppu.mpy
 
-sasppu_handle_bg_gen.S
+sasppu_gen.S
 main.o

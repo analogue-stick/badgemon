@@ -5,13 +5,10 @@ MPY_DIR = ../micropython
 MOD = sasppu
 
 # Source files (.c or .py)
-SRC = sasppu_fast.S
+SRC = sasppu_fast.S sasppu_fast.c
 
 # Architecture to build for (x86, x64, armv6m, armv7m, xtensa, xtensawin)
 #ARCH = xtensawin
 ARCH = xtensa
 
-CFLAGS += 
-
-# Include to get the rules for compiling and linking the module
-include $(MPY_DIR)/py/dynruntime.mk
+CFLAGS += -fPIC

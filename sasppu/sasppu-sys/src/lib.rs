@@ -535,23 +535,23 @@ fn select_correct_handle_sprite(state: &Sprite) -> HandleSpriteType {
 
 macro_rules! split_main {
     ($main_col:ident, $mask:ident) => {{
-        let main_r = (*$main_col >> 10) & $mask;
-        let main_g = (*$main_col >> 5) & $mask;
-        let main_b = (*$main_col >> 0) & $mask;
+        let main_r = (*$main_col << 1) & $mask;
+        let main_g = (*$main_col << 6) & $mask;
+        let main_b = (*$main_col << 11); //& $mask;
         (main_r, main_g, main_b)
     }};
 }
 
 macro_rules! double_screen {
-    ($main_r:ident, $main_g:ident, $main_b:ident, $mask:ident) => {
-        $main_r = ($main_r << 1) & $mask;
-        $main_g = ($main_g << 1) & $mask;
-        $main_b = ($main_b << 1) & $mask;
+    ($main_r:ident, $main_g:ident, $main_b:ident) => {
+        $main_r = $main_r.saturating_add($main_r);
+        $main_g = $main_r.saturating_add($main_g);
+        $main_b = $main_r.saturating_add($main_b);
     };
 }
 
 macro_rules! halve_screen {
-    ($main_r:ident, $main_g:ident, $main_b:ident, $mask:ident) => {
+    ($main_r:ident, $main_g:ident, $main_b:ident) => {
         $main_r >>= 1;
         $main_g >>= 1;
         $main_b >>= 1;
@@ -559,18 +559,10 @@ macro_rules! halve_screen {
 }
 
 macro_rules! add_screens {
-    (
-        $main_r:ident,
-        $main_g:ident,
-        $main_b:ident,
-        $sub_r:ident,
-        $sub_g:ident,
-        $sub_b:ident,
-        $mask:ident
-    ) => {
-        $main_r = ($main_r + $sub_r).simd_min($mask);
-        $main_g = ($main_g + $sub_g).simd_min($mask);
-        $main_b = ($main_b + $sub_b).simd_min($mask);
+    ($main_r:ident, $main_g:ident, $main_b:ident, $sub_r:ident, $sub_g:ident, $sub_b:ident) => {
+        $main_r = $main_r.saturating_add($sub_r);
+        $main_g = $main_g.saturating_add($sub_g);
+        $main_b = $main_b.saturating_add($sub_b);
     };
 }
 
@@ -599,7 +591,7 @@ fn handle_cmath<
 ) {
     let use_cmath = mask16x8::splat(CMATH_ENABLE) & main_col.simd_ge(u16x8::splat(0x8000));
     if FADE_ENABLE || use_cmath.any() {
-        let mask = u16x8::splat(0b00011111);
+        let mask = u16x8::splat(0b1111100000000000);
         let (mut main_r, mut main_g, mut main_b) = split_main!(main_col, mask);
         if use_cmath.any() {
             let (mut sub_r, mut sub_g, mut sub_b) = split_main!(sub_col, mask);
@@ -609,19 +601,19 @@ fn handle_cmath<
             let main_b_bak = main_b;
 
             if DOUBLE_MAIN_SCREEN {
-                double_screen!(main_r, main_g, main_b, mask);
+                double_screen!(main_r, main_g, main_b);
             }
             if HALF_MAIN_SCREEN {
-                halve_screen!(main_r, main_g, main_b, mask);
+                halve_screen!(main_r, main_g, main_b);
             }
             if DOUBLE_SUB_SCREEN {
-                double_screen!(sub_r, sub_g, sub_b, mask);
+                double_screen!(sub_r, sub_g, sub_b);
             }
             if HALF_SUB_SCREEN {
-                halve_screen!(sub_r, sub_g, sub_b, mask);
+                halve_screen!(sub_r, sub_g, sub_b);
             }
             if ADD_SUB_SCREEN {
-                add_screens!(main_r, main_g, main_b, sub_r, sub_g, sub_b, mask);
+                add_screens!(main_r, main_g, main_b, sub_r, sub_g, sub_b);
             }
             if SUB_SUB_SCREEN {
                 sub_screens!(main_r, main_g, main_b, sub_r, sub_g, sub_b);
@@ -633,11 +625,11 @@ fn handle_cmath<
         }
         if FADE_ENABLE {
             let fade = u16x8::splat(cmath_state.screen_fade as u16);
-            main_r = ((main_r * fade) >> 8) & mask;
-            main_g = ((main_g * fade) >> 8) & mask;
-            main_b = ((main_b * fade) >> 8) & mask;
+            main_r = (main_r * fade) >> 8;
+            main_g = (main_g * fade) >> 8;
+            main_b = (main_b * fade) >> 8;
         }
-        *main_col = (main_r << 11) | (main_g << 6) | (main_b);
+        *main_col = (main_r) | (main_g >> 5) | (main_b >> 11);
     } else {
         *main_col = ((*main_col & u16x8::splat(0b0111111111100000)) << 1)
             | (*main_col & u16x8::splat(0b00011111));

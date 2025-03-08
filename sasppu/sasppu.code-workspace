@@ -16,5 +16,13 @@
 			"path": "sasppu_simd_rev"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"*.asm": "lldb.disassembly",
+			"ios": "cpp",
+			"sasppu_fast.h": "c",
+			"__locale": "c",
+			"stdint.h": "c"
+		}
+	}
 }

@@ -24,8 +24,10 @@ Sprite.graphics.x:
   .space 1
 Sprite.graphics.y:
   .space 1
+Sprite.windows:
+  .space 1
 Sprite.flags:
-  .space 2
+  .space 1
 size_of_Sprite:
 
 // size = 6, align = 2
@@ -64,20 +66,19 @@ size_of_Background:
 .set SPR_PRIORITY, (1 << 1)
 .set SPR_FLIP_X, (1 << 2)
 .set SPR_FLIP_Y, (1 << 3)
-.set SPR_MAIN_SCREEN, (1 << 4)
-.set SPR_SUB_SCREEN, (1 << 5)
-.set SPR_C_MATH, (1 << 6)
-.set SPR_DOUBLE, (1 << 7)
-.set SPR_MAIN_WINDOW_POW2, (8)
-.set SPR_MAIN_WINDOW_LOG1, (1 << 8)
-.set SPR_MAIN_WINDOW_LOG2, (1 << 9)
-.set SPR_MAIN_WINDOW_LOG3, (1 << 1)
-.set SPR_MAIN_WINDOW_LOG4, (1 << 1)
-.set SPR_SUB_WINDOW_POW2, (12)
-.set SPR_SUB_WINDOW_LOG1, (1 << 12)
-.set SPR_SUB_WINDOW_LOG2, (1 << 13)
-.set SPR_SUB_WINDOW_LOG3, (1 << 14)
-.set SPR_SUB_WINDOW_LOG4, (1 << 15)
+.set SPR_C_MATH, (1 << 4)
+.set SPR_DOUBLE, (1 << 5)
+
+.set BG_C_MATH, (1 << 0)
+
+.set CMATH_HALF_MAIN_SCREEN, (1 << 0)
+.set CMATH_DOUBLE_MAIN_SCREEN, (1 << 1)
+.set CMATH_HALF_SUB_SCREEN, (1 << 2)
+.set CMATH_DOUBLE_SUB_SCREEN, (1 << 3)
+.set CMATH_ADD_SUB_SCREEN, (1 << 4)
+.set CMATH_SUB_SUB_SCREEN, (1 << 5)
+.set CMATH_FADE_ENABLE, (1 << 6)
+.set CMATH_CMATH_ENABLE, (1 << 7)
 
 .set WINDOW_A, (0b0001)
 .set WINDOW_B, (0b0010)
@@ -86,59 +87,112 @@ size_of_Background:
 
   .section .bss
   .align 2
-SASPPU.main_state.mainscreen_colour:
+  .global SASPPU_main_state_mainscreen_colour
+  .type   SASPPU_main_state_mainscreen_colour, @object
+SASPPU_main_state_mainscreen_colour:
+  .zero 2
+  .global SASPPU_main_state_subscreen_colour
+  .type   SASPPU_main_state_subscreen_colour, @object
+SASPPU_main_state_subscreen_colour:
+  .zero 2
+  .global SASPPU_main_state_window_1_left
+  .type   SASPPU_main_state_window_1_left, @object
+SASPPU_main_state_window_1_left:
   .zero 1
-SASPPU.main_state.subscreen_colour:
+  .global SASPPU_main_state_window_1_right
+  .type   SASPPU_main_state_window_1_right, @object
+SASPPU_main_state_window_1_right:
   .zero 1
-SASPPU.main_state.window_1.left:
+  .global SASPPU_main_state_window_2_left
+  .type   SASPPU_main_state_window_2_left, @object
+SASPPU_main_state_window_2_left:
   .zero 1
-SASPPU.main_state.window_1.right:
+  .global SASPPU_main_state_window_2_right
+  .type   SASPPU_main_state_window_2_right, @object
+SASPPU_main_state_window_2_right:
   .zero 1
-SASPPU.main_state.window_2.left:
+  .global SASPPU_main_state_flags
+  .type   SASPPU_main_state_flags, @object
+SASPPU_main_state_flags:
   .zero 1
-SASPPU.main_state.window_2.right:
-  .zero 1
-SASPPU.main_state.flags:
-  .zero 1
-SASPPU.bg0_state:
+  .global SASPPU_bg0_state
+  .type   SASPPU_bg0_state, @object
+SASPPU_bg0_state:
   .zero size_of_Background
-SASPPU.bg1_state:
+  .global SASPPU_bg1_state
+  .type   SASPPU_bg1_state, @object
+SASPPU_bg1_state:
   .zero size_of_Background
-SASPPU.cmath_state.screen_fade:
+  .global SASPPU_cmath_state_screen_fade
+  .type   SASPPU_cmath_state_screen_fade, @object
+SASPPU_cmath_state_screen_fade:
   .zero 1
-SASPPU.cmath_state.flags:
+  .global SASPPU_cmath_state_flags
+  .type   SASPPU_cmath_state_flags, @object
+SASPPU_cmath_state_flags:
   .zero 1
 
-SASPPU.oam:
+  .global SASPPU_oam
+  .type   SASPPU_oam, @object
+SASPPU_oam:
   .zero (size_of_Sprite * SPRITE_COUNT)
-SASPPU.bg0:
+  .global SASPPU_bg0
+  .type   SASPPU_bg0, @object
+SASPPU_bg0:
   .zero (MAP_WIDTH * MAP_HEIGHT * 2)
-SASPPU.bg1:
+  .global SASPPU_bg1
+  .type   SASPPU_bg1, @object
+SASPPU_bg1:
   .zero (MAP_WIDTH * MAP_HEIGHT * 2)
 
 // 256kb allocation
 .align 16
-SASPPU.background:
+  .global SASPPU_background
+  .type   SASPPU_background, @object
+SASPPU_background:
   .zero (BG_WIDTH * BG_HEIGHT * 2)
-SASPPU.sprites:
+  .global SASPPU_sprites
+  .type   SASPPU_sprites, @object
+SASPPU_sprites:
   .zero (SPR_WIDTH * SPR_HEIGHT * 2)
+  .global SASPPU_sprite_cache
+  .type   SASPPU_sprite_cache, @object
+SASPPU_sprite_cache:
+  .zero (SPRITE_CACHE * 4)
+
+  .global SASPPU_frame_buffer
+  .type   SASPPU_frame_buffer, @object
+SASPPU_frame_buffer:
+  .zero ((240 * 240) * 2)
 
 // CONSTANTS
-	.section	.rodata
-	.align	16
-	.type	vector_increments, @object
-	.size	vector_increments, 16
+  .section .rodata
+  .align 16
+  .type vector_increments, @object
+  .size vector_increments, 16
 vector_increments:
-	.short	0
-	.short	1
-	.short	2
-	.short	3
-	.short	4
-	.short	5
-	.short	6
-	.short	7
+  .short 0
+  .short 1
+  .short 2
+  .short 3
+  .short 4
+  .short 5
+  .short 6
+  .short 7
 cmath_bit:
-	.short	0x8000
+  .short 0x8000
+cmath_mask_low:
+  .short 0b0000000000011111
+cmath_mask_high:
+  .short 0b0111111111100000
+cmath_mask_split:
+  .short 0b1111100000000000
+cmath_one:
+  .short 1
+cmath_six:
+  .short (1 << 6)
+cmath_eleven:
+  .short (1 << 11)
 
 .text
 
@@ -354,7 +408,7 @@ cmath_bit:
 .endm
 
 // Calculates the windows
-.macro window_macro mainwincase subwincase
+.macro window_macro mainwincase, subwincase
 .if \mainwincase == \subwincase
   window_macro_both \mainwincase
 .else
@@ -385,6 +439,11 @@ cmath_bit:
 .endif
 .endm
 
+.macro window_wrapper subwincase, mainwincase
+  window_macro \mainwincase, \subwincase
+  ret.n
+.endm
+
 // void handle_bg( //a0 return, a1 stack
   // uint8_t x, // a2
   // uint8_t y, // a3
@@ -393,25 +452,30 @@ cmath_bit:
   // HandleBgType *handle_bg1, // a6
   // HandleCMathType *handle_cmath, // a7
   // vector_increments, // a8
-  // struct Background *bg_state, // a9
-  // BackgroundMap *bg_map, // a10
   //);
-.macro handle_bg unique, cmath_enable, mainwincase, subwincase
-  l16si	a11, a9, Background.scroll.x // load scroll.x
-  l16si	a12, a9, Background.scroll.y // load scroll.y
-  add.n	a11, a11, a2 // x + scroll.x
-	add.n	a12, a12, a3 // y + scroll.y
-  extui	a13, a11, 3, (MAP_HEIGHT_POWER) // x_pos_1
-  extui	a14, a12, 3, (MAP_HEIGHT_POWER) // y_pos
-	addi.n a15, a13, 1 // x_pos_2
-  slli	a14, a14, (MAP_WIDTH_POWER)
-  extui	a15, a15, 0, (MAP_HEIGHT_POWER) // x_pos_2
-  addx2	a10, a14, a10
+.macro handle_bg bgn, unique
+.if \bgn == bg0
+  l32r  a9,  .LCbg0_state
+  l32r  a10, .LCbg0
+.else
+  l32r  a9,  .LCbg1_state
+  l32r  a10, .LCbg1
+.endif
+  l16si  a11, a9, Background.scroll.x // load scroll.x
+  l16si  a12, a9, Background.scroll.y // load scroll.y
+  add.n  a11, a11, a2 // x + scroll.x
+  add.n  a12, a12, a3 // y + scroll.y
+  extui  a13, a11, 3, (MAP_HEIGHT_POWER) // x_pos_1
+  extui  a14, a12, 3, (MAP_HEIGHT_POWER) // y_pos
+  addi.n a15, a13, 1 // x_pos_2
+  slli  a14, a14, (MAP_WIDTH_POWER)
+  extui  a15, a15, 0, (MAP_HEIGHT_POWER) // x_pos_2
+  addx2  a10, a14, a10
   movi a14, 7
-	addx2	a15, a15, a10
+  addx2  a15, a15, a10
   and a11, a11, a14 // offset_x ((x + scroll.x) & 7)
-  wsr.sar	a11
-  addx2	a13, a13, a10
+  wsr.sar  a11
+  addx2  a13, a13, a10
   and a12, a12, a14 // offset_y ((y + scroll.y) & 7)
   l16ui a15, a15, 0 // bg0_2_map
   l16ui a13, a13, 0 // bg0_1_map
@@ -459,33 +523,403 @@ no_x_flip_1_\unique:
   ee.vzip.16 q5, q6
   ee.vzip.16 q6, q5
 no_x_flip_2_2_\unique:
+  ee.src.q q4, q4, q5 // swimzleoo
+
+.if \bgn == bg0
+  l32r  a9,  .LCbg0_state
+.else
+  l32r  a9,  .LCbg1_state
+.endif
+  l8ui  a15, a9, Background.flags
+  bbci.l a15, 0, no_cmath_\unique
+  l32r a14, .LCcmath_bit
+  ee.vldbc.16 q5, a14
+  ee.orq q4, q4, q5 
+no_cmath_\unique:
+.if \bgn == bg0
+  callx0 a5
+.else
+  callx0 a6
+.endif
+.endm
+
+// void handle_sprite( //a0 return, a1 stack
+  // uint8_t x, // a2
+  // uint8_t y, // a3
+  // SpriteCaches *sprite_caches, // a4
+  // HandleBgType *handle_bg0, // a5
+  // HandleBgType *handle_bg1, // a6
+  // HandleCMathType *handle_cmath, // a7
+  // vector_increments, // a8
+  // Sprite *sprite, // a9
+  //);
+.macro handle_sprite unique, double, c_math, flip_y, flip_x
+  l8ui a10, a9, Sprite.width
+  l16si a13, a9, Sprite.x
+.if \double
+  slli a10, a10, 1
+.endif
+  sub a11, a2, a13 // offset_x = x - sprite.x;
+  movi a12, -7
+  blt a11, a12, handle_sprite_exit_\unique
+  bge a11, a10, handle_sprite_exit_\unique
+  l16si a12, a9, Sprite.y
+.if \flip_x
+  sub a11, a10, a11
+  addi a11, a11, -1
+.endif
+  sub a12, a3, a12 // offset_y = y - sprite.y;
+.if \flip_y
+  l8ui a10, a9, Sprite.height
+.if \double
+  slli a10, a10, 1
+.endif
+  sub a12, a10, a12
+  addi a12, a12, -1
+.endif
+.if \double
+  srai a12, a12, 1 // offset_y
+  srai a11, a11, 1
+.endif
+.if \double
+  movi a10, -4
+.else
+  movi a10, -8
+.endif
+  and a10, a11, a10 // x_pos_1
+.if \flip_x
+  addi a11, a10, -8 // x_pos_2
+.else
+  addi a11, a10, 8 // x_pos_2
+.endif
+
+  extui a13, a13, 0, 3
+  movi a14, 7
+  sub a13, a14, a13 //offset
+  wsr.sar  a13
+
+  l8ui a14, a9, Sprite.width
+  ee.zero.q q4
+  bge a10, a14, spr_1_end_\unique
+  bltz a10, spr_1_end_\unique
+
+  l8ui a14, a9, Sprite.graphics.y
+  add a14, a12, a14
+  slli a14, a14, (SPR_WIDTH_POWER + 4)
+  l8ui a15, a9, Sprite.graphics.x
+  addx8 a14, a14, a15
+  addx8 a14, a14, a15
+  addx2 a14, a14, a10
+  l32r a15, .LCsprites
+  add a14, a14, a15
+  ld.qr q4, a14, 0
+
+spr_1_end_\unique:
+
+  l8ui a14, a9, Sprite.width
+  ee.zero.q q5
+  bge a11, a14, spr_2_end_\unique
+  bltz a11, spr_2_end_\unique
+
+  l8ui a14, a9, Sprite.graphics.y
+  add a14, a12, a14
+  slli a14, a14, (SPR_WIDTH_POWER + 4)
+  l8ui a15, a9, Sprite.graphics.x
+  addx8 a14, a14, a15
+  addx8 a14, a14, a15
+  addx2 a14, a14, a11
+  l32r a15, .LCsprites
+  add a14, a14, a15
+  ld.qr q5, a14, 0
+
+spr_2_end_\unique:
+
+.if \double
+  movi a11, 0x4
+  bany a10, a11, double_fix_not_zero_\unique
+.if \flip_x
+  mv.qr q6, q4
+  ee.vzip.16 q4, q6
+  mv.qr q6, q5
+  ee.vzip.16 q6, q5
+.else
+  mv.qr q5, q4
+  ee.vzip.16 q4, q5
+.endif
+  j double_fix_exit_\unique
+double_fix_not_zero_\unique:
+.if \flip_x
+  mv.qr q5, q4
+  ee.vzip.16 q5, q4
+.else
+  mv.qr q6, q4
+  ee.vzip.16 q6, q4
+  mv.qr q6, q5
+  ee.vzip.16 q5, q6
+.endif
+double_fix_exit_\unique:
+.endif
+
+.if \flip_x
+  ee.vzip.16 q4, q5
+  ee.vzip.16 q5, q4
+  ee.vzip.16 q4, q5
+  ee.vzip.16 q5, q4
+.endif
 
   ee.src.q q4, q4, q5 // swimzleoo
-.if \cmath_enable
-  l32r a15, .LCcmath_bit
-  ee.vldbc.16 q5, a15
+
+.if \c_math
+  l32r a14, .LCcmath_bit
+  ee.vldbc.16 q5, a14
   ee.orq q4, q4, q5 
 .endif
 
-  window_macro \mainwincase, \subwincase
+  l8ui a15, a9, Sprite.window
+  l32r a14, .LCwindow_jump_table
+  addx4 a14, a15, a14
+  l32i.n a14, a14, 0
+  jx a14
+  
+handle_sprite_exit_\unique:
+  ret.n
 .endm
 
-.macro handle_bg_wrap unique, cmath_enable, sub_screen_enable, main_screen_enable, subwincase, mainwincase
-.set main_screen_enable_\unique, \main_screen_enable * \mainwincase
-.set sub_screen_enable_\unique, \sub_screen_enable * \subwincase
-.if main_screen_enable_\unique == 0
-.if sub_screen_enable_\unique == 0
-.exitm
-.else
-handle_bg \unique, \cmath_enable, 0, \subwincase
+.macro handle_spr_wrapper unique
+  movi a5, (SPRITE_CACHE - 1)
+  l32r a8, .LCsprite_jump_table
+spr_loop_\unique:
+  l32i.n a9, a4, 0
+  beqz a9, spr_next_\unique
+  l8ui a14, a9, Sprite.flags
+  movi a15, -4
+  and a14, a15, a14
+  add a15, a14, a8
+  l32i.n a15, a15, 0
+  callx0 a15
+spr_next_\unique:
+  addi a4, a4, 4
+  addi a5, a5, -1
+  bgez a5, spr_loop_\unique
+.endm
+
+.macro colour_split_main
+  movi a15, 0
+  wsr.sar a15
+  l32r a12, .LCcmath_six
+  l32r a13, .LCcmath_eleven
+  l32r a11, .LCcmath_mask_split
+  ee.vldbc.16 q0, a12 // six
+  ee.vldbc.16 q1, a13 // eleven
+  ee.vldbc.16 q4, a11 // mask
+  ee.vmul.u16 q7, q2, q1 // blue
+  ee.vmul.u16 q6, q2, q0 // green
+  ee.vadds.s16 q5, q2, q2 // red
+  ee.andq q6, q6, q4
+  ee.andq q5, q5, q4
+.endm
+
+.macro colour_split_sub
+  ee.vmul.u16 q2, q3, q1 // blue
+  ee.vmul.u16 q1, q3, q0 // green
+  ee.vadds.s16 q0, q3, q3 // red
+  ee.andq q1, q1, q4
+  ee.andq q0, q0, q4
+.endm
+
+.macro colour_split_both
+  colour_split_main
+  colour_split_sub
+.endm
+
+.macro no_cmath_colour_shift
+  l32r a11, .LCcmath_mask_high
+  l32r a10, .LCcmath_mask_low
+  ee.vldbc.16 q1, a11
+  ee.vldbc.16 q0, a10 
+  ee.andq q7, q2, q1
+  ee.andq q6, q2, q0
+  ee.vadds.s16 q5, q7, q7 //shl 1
+  ee.orq q0, q5, q6
+.endm
+
+.macro recombine_colour // assumes cmath_one in q3
+  movi a12, 5
+  wsr.sar a12
+  movi a12, 11
+  ee.vmul.u16 q6, q6, q3
+  wsr.sar a12
+  ee.vmul.u16 q7, q7, q3
+  ee.orq q0, q6, q5
+  ee.orq q0, q0, q7
+.endm
+
+.macro double_screen colr, colg, colb
+  ee.vadds.s16 \colr, \colr, \colr //shl 1
+  ee.vadds.s16 \colg, \colg, \colg //shl 1
+  ee.vadds.s16 \colb, \colb, \colb //shl 1
+.endm
+
+.macro halve_screen colr, colg, colb // assumes cmath_one in q3, 1 in SAR
+  ee.vmul.u16 \colr, \colr, q3 //shr 1
+  ee.vmul.u16 \colg, \colg, q3 //shr 1
+  ee.vmul.u16 \colb, \colb, q3 //shr 1
+.endm
+
+.macro add_screens
+  ee.vadds.s16 q5, q5, q0
+  ee.vadds.s16 q6, q6, q1
+  ee.vadds.s16 q7, q7, q2
+.endm
+
+.macro sub_screens
+  ee.vsubs.s16 q5, q5, q0
+  ee.vsubs.s16 q6, q6, q1
+  ee.vsubs.s16 q7, q7, q2
+.endm
+
+.macro handle_fade_only
+  colour_split_main
+  movi a12, 8
+  wsr.sar a12
+  l32r a13, .LCcmath_fade
+  l32r a11, .LCcmath_one
+  ee.vldbc.16 q0, a13
+  ee.vldbc.16 q3, a11
+  ee.vmul.u16 q5, q5, q0
+  ee.vmul.u16 q6, q6, q0
+  ee.vmul.u16 q7, q7, q0
+  ee.andq q5, q5, q4
+  ee.andq q6, q6, q4
+  ee.andq q7, q7, q4
+  recombine_colour
+.endm
+
+.macro handle_cmath_body sub_ss, add_ss, ss_double, ss_half, ms_double, ms_half
+  l32r a11, .LCcmath_one
+  ee.vldbc.16 q3, a11
+.if \ms_half || \ss_half // preload the halving constants
+  movi a12, 1
+  wsr.sar a12
 .endif
-.else
-.if sub_screen_enable_\unique == 0
-handle_bg \unique, \cmath_enable, \mainwincase, 0
-.else
-handle_bg \unique, \cmath_enable, \mainwincase, \subwincase
+
+.if \ms_double
+  double_screen q5, q6, q7
 .endif
+
+.if \ms_half
+  halve_screen q5, q6, q7
 .endif
+
+.if \ss_double
+  double_screen q0, q1, q2
+.endif
+
+.if \ss_half
+  halve_screen q0, q1, q2
+.endif
+
+.if \add_ss
+  add_screens
+.endif
+
+.if \sub_ss
+  sub_screens
+.endif
+.endm
+
+.macro handle_cmath_only sub_ss, add_ss, ss_double, ss_half, ms_double, ms_half
+  ee.zero.q q7
+  ee.vcmp.lt.s16 q4, q2, q7 // less than zero means bit 15 set
+  st.qr q4, sp, 0 // Ive run out of registers, so this is going to be sent to the stack for its crimes.
+  st.qr q2, sp, 16 // main_col_bak
+  colour_split_both
+
+  handle_cmath_body \sub_ss, \add_ss, \ss_double, \ss_half, \ms_double, \ms_half
+
+  recombine_colour
+
+  ld.qr q4, sp, 0 // use_cmath
+  ld.qr q1, sp, 16 // main_col_bak
+  ee.andq q0, q0, q4
+  ee.notq q4, q4
+  ee.andq q1, q1, q4
+  ee.orq q0, q1, q0
+.endm
+
+.macro handle_cmath_and_fade sub_ss, add_ss, ss_double, ss_half, ms_double, ms_half
+  ee.zero.q q7
+  ee.vcmp.lt.s16 q4, q2, q7 // less than zero means bit 15 set
+  st.qr q4, sp, 0 // Ive run out of registers, so this is going to be sent to the stack for its crimes.
+  colour_split_both
+  st.qr q5, sp, 16 // main_r_bak
+  st.qr q6, sp, 32 // main_g_bak
+  st.qr q7, sp, 48 // main_b_bak
+
+  handle_cmath_body \sub_ss, \add_ss, \ss_double, \ss_half, \ms_double, \ms_half
+
+  ld.qr q3, sp, 0 // use_cmath
+  ld.qr q0, sp, 16 // main_r_bak
+  ld.qr q1, sp, 32 // main_g_bak
+  ld.qr q2, sp, 48 // main_b_bak
+  ee.andq q5, q5, q3
+  ee.andq q6, q6, q3
+  ee.andq q7, q7, q3
+  ee.notq q3, q3
+  ee.andq q0, q0, q3
+  ee.andq q1, q1, q3
+  ee.andq q2, q2, q3
+  ee.orq q5, q5, q0
+  ee.orq q6, q6, q1
+  ee.orq q7, q7, q2
+  
+  movi a12, 8
+  wsr.sar a12
+  l32r a13, .LCcmath_fade
+  ee.vldbc.16 q0, a13
+  ee.vldbc.16 q3, a11
+  ee.vmul.u16 q5, q5, q3
+  ee.vmul.u16 q6, q6, q3
+  ee.vmul.u16 q7, q7, q3
+  ee.andq q5, q5, q4
+  ee.andq q6, q6, q4
+  ee.andq q7, q7, q4
+
+  recombine_colour
+.endm
+
+// void handle_cmath( //a0 return, a1 stack
+  // uint8_t x, // a2
+  // uint8_t y, // a3
+  // SpriteCaches *sprite_caches, // a4
+  // HandleBgType *handle_bg0, // a5
+  // HandleBgType *handle_bg1, // a6
+  // HandleCMathType *handle_cmath, // a7
+  // vector_increments, // a8
+  // Sprite *sprite, // a9
+  //);
+.macro handle_cmath unique, cmath_enable, fade_enable, sub_ss, add_ss, ss_double, ss_half, ms_double, ms_half
+.if \fade_enable && !\cmath_enable
+  handle_fade_only
+  .exitm
+.endif
+.if !\fade_enable && \cmath_enable
+  handle_cmath_only \sub_ss, \add_ss, \ss_double, \ss_half, \ms_double, \ms_half
+  .exitm
+.endif
+.if \fade_enable && \cmath_enable
+  handle_cmath_and_fade \sub_ss, \add_ss, \ss_double, \ss_half, \ms_double, \ms_half
+  .exitm
+.endif
+.if !\fade_enable && !\cmath_enable
+  no_cmath_colour_shift
+  .exitm
+.endif
+.endm
+
+.macro handle_cmath_wrapper unique, cmath_enable, fade_enable, sub_ss, add_ss, ss_double, ss_half, ms_double, ms_half
+  handle_cmath \unique, \cmath_enable, \fade_enable, \sub_ss, \add_ss, \ss_double, \ss_half, \ms_double, \ms_half
+  ret.n
 .endm
 
 // void per_pixel( //a0 return, a1 stack
@@ -496,35 +930,19 @@ handle_bg \unique, \cmath_enable, \mainwincase, \subwincase
   // HandleBgType *handle_bg1, // a6
   // HandleCMathType *handle_cmath, // a7
 //);
-	.literal_position
-	.literal .LCvector_increments, vector_increments
-	.literal .LCmainscreen_colour, SASPPU.main_state.mainscreen_colour
-	.literal .LCsubscreen_colour, SASPPU.main_state.subscreen_colour
-	.literal .LCwindow_1_left, SASPPU.main_state.window_1.left
-	.literal .LCwindow_1_right, SASPPU.main_state.window_1.right
-	.literal .LCwindow_2_left, SASPPU.main_state.window_2.left
-	.literal .LCwindow_2_right, SASPPU.main_state.window_2.right
-	.literal .LCbg0, SASPPU.bg0
-	.literal .LCbg0_state, SASPPU.bg0_state
-	.literal .LCbg1, SASPPU.bg1
-	.literal .LCbg1_state, SASPPU.bg1_state
-	.literal .LCbackground, SASPPU.background
-	.literal .LCcmath_bit, cmath_bit
+.macro per_pixel_macro unique, cmath_enable, bg1_enable, bg0_enable, spr1_enable, spr0_enable
   .align 4
-	.global per_pixel
-  .type   per_pixel, @function
-per_pixel:
-  entry	sp, 80
-	l32r	a8, .LCvector_increments
-	l32r	a9, .LCmainscreen_colour
-	l32r	a10, .LCsubscreen_colour
-	l32r	a11, .LCwindow_1_left
-	l32r	a12, .LCwindow_1_right
-	l32r	a13, .LCwindow_2_left
-	l32r	a14, .LCwindow_2_right
+per_pixel_\unique:
+  l32r a8, .LCvector_increments
+  l32r a9, .LCmainscreen_colour
+  l32r a10, .LCsubscreen_colour
+  l32r a11, .LCwindow_1_left
+  l32r a12, .LCwindow_1_right
+  l32r a13, .LCwindow_2_left
+  l32r a14, .LCwindow_2_right
 
   ld.qr q0, a8, 0 // load increments
-  ee.vldbc.16 q1, sp // broadcast x 
+  ee.vldbc.16 q1, a2 // broadcast x 
   ee.vadds.s16 q0, q0, q1 // x_window
   ee.vldbc.16 q2, a11 // load window_1_left
   ee.vldbc.16 q3, a12 // load window_1_right
@@ -548,21 +966,122 @@ per_pixel:
   ee.vldbc.16 q1, a10 // load sub_col
   ee.andq q3, q4, q5
 
-	l32r	a9, .LCbg0_state
-  l32r	a10, .LCbg0
-
+.if \bg0_enable
   // handle bg0
-	callx8	a5
+  handle_bg bg0, bg0_\unique
+.endif
 
+.if \spr0_enable
+  // handle spr0
+  handle_spr_wrapper spr0_\unique
+.endif
+
+.if \bg1_enable
   // handle bg1
-	callx8	a6
+  handle_bg bg1, bg1_\unique
+.endif
 
+.if \spr1_enable
+  // handle spr1
+  handle_spr_wrapper spr1_\unique
+.endif
+
+.if \cmath_enable
   // handle cmath
-	callx8	a8
+  jx  a7
+.else
+  no_cmath_colour_shift
+  ret.n
+.endif
+  .size  per_pixel_\unique, .-per_pixel_\unique
+.endm
 
-	retw.n
-	.size	per_pixel, .-per_pixel
+  .literal_position
+  .literal .LCmainscreen_colour, SASPPU_main_state_mainscreen_colour
+  .literal .LCsubscreen_colour, SASPPU_main_state_subscreen_colour
+  .literal .LCwindow_1_left, SASPPU_main_state_window_1_left
+  .literal .LCwindow_1_right, SASPPU_main_state_window_1_right
+  .literal .LCwindow_2_left, SASPPU_main_state_window_2_left
+  .literal .LCwindow_2_right, SASPPU_main_state_window_2_right
+  .literal .LCmain_state_flags, SASPPU_main_state_flags
+  .literal .LCcmath_fade, SASPPU_cmath_state_screen_fade
+  .literal .LCcmath_flags, SASPPU_cmath_state_flags
+  .literal .LCbg0_state, SASPPU_bg0_state
+  .literal .LCbg1_state, SASPPU_bg1_state
+  .literal .LCbg0, SASPPU_bg0
+  .literal .LCbg1, SASPPU_bg1
+  .literal .LCbackground, SASPPU_background
+  .literal .LCsprites, SASPPU_sprites
+  .literal .LCframe_buffer, SASPPU_frame_buffer
+  .literal .LCvector_increments, vector_increments
+  .literal .LCcmath_bit, cmath_bit
+  .literal .LCcmath_mask_low, cmath_mask_low
+  .literal .LCcmath_mask_high, cmath_mask_high
+  .literal .LCcmath_mask_split, cmath_mask_split
+  .literal .LCcmath_one, cmath_one
+  .literal .LCcmath_six, cmath_six
+  .literal .LCcmath_eleven, cmath_eleven
 
   .align 4
+.include "sasppu_gen.S"
 
-.include "sasppu_handle_bg_gen.S"
+  .literal_position
+  .literal .LCwindow_jump_table, window_jump_table
+  .literal .LCsprite_jump_table, sprite_jump_table
+  .literal .LCcmath_jump_table, cmath_jump_table
+  .literal .LCper_pixel_jump_table, per_pixel_jump_table
+
+  .align 4
+  .global render_scanline
+  .type   render_scanline, @function
+// void render_scanline( a0 return, a1 stack
+  // uint8_t x, // a2
+  // uint8_t y, // a3
+  // SpriteCaches *sprite_caches, // a4
+//);
+render_scanline:
+  entry sp, 64
+
+  call0 per_scanline
+
+  l32r a14, .LCwindow_jump_table
+
+  l32r a15, .LCbg0_state
+  l8ui a15, a15, Background.windows
+  addx4 a15, a15, a14
+  l32i.n a5, a15, 0
+
+  l32r a15, .LCbg1_state
+  l8ui a15, a15, Background.windows
+  addx4 a15, a15, a14
+  l32i.n a6, a15, 0
+
+  l32r a14, .LCcmath_jump_table
+
+  l32r a15, .LCcmath_flags
+  l8ui a15, a15, 0
+  addx4 a15, a15, a14
+  l32i.n a7, a15, 0
+
+  l32r a14, .LCper_pixel_jump_table
+
+  l32r a15, .LCmain_state_flags
+  l8ui a15, a15, 0
+  addx4 a15, a15, a14
+  l32i.n a0, a15, 0
+
+  movi a2, (240 - 8)
+per_pixel_loop:
+  callx0 a0
+
+  slli a14, a3, (SPR_WIDTH_POWER + 4)
+  addx8 a14, a14, a2
+  addx8 a14, a14, a2
+  l32r a15, .LCframe_buffer
+  add a14, a14, a15
+  st.qr q0, a14, 0
+
+  addi.n a2, a2, -8
+  bgez a2, per_pixel_loop
+
+  retw.n
