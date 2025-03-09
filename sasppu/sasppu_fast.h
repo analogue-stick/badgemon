@@ -81,18 +81,14 @@ extern uint16_t SASPPU_background[BG_WIDTH * BG_HEIGHT * 2];
 extern uint16_t SASPPU_sprites[SPR_WIDTH * SPR_HEIGHT * 2];
 extern uint16_t SASPPU_frame_buffer[240 * 240 * 2];
 
-extern Sprite *SASPPU_sprite_cache[SPRITE_CACHE * 2];
+extern Sprite *SASPPU_sprite_cache[SPRITE_CACHE][2];
 
-void render_scanline(
+void SASPPU_render_scanline(
     uint8_t x,
-    uint8_t y,
-    SpriteCaches *sprite_caches);
+    uint8_t y);
 
-void per_scanline(
+void SASPPU_per_scanline(
     uint8_t x,
-    uint8_t y,
-    SpriteCaches *sprite_caches);
+    uint8_t y);
 
-
-
-void render(SpriteCaches *sprite_caches);
+void SASPPU_render();

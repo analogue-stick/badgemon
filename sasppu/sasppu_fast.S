@@ -9,6 +9,7 @@
 
 // Sprite
 // size = 10, align = 2
+  .section .bss
   .struct 0
 Sprite:
   .space 0
@@ -454,7 +455,7 @@ cmath_eleven:
   // vector_increments, // a8
   //);
 .macro handle_bg bgn, unique
-.if \bgn == bg0
+.if \bgn == 0
   l32r  a9,  .LCbg0_state
   l32r  a10, .LCbg0
 .else
@@ -525,7 +526,7 @@ no_x_flip_1_\unique:
 no_x_flip_2_2_\unique:
   ee.src.q q4, q4, q5 // swimzleoo
 
-.if \bgn == bg0
+.if \bgn == 0
   l32r  a9,  .LCbg0_state
 .else
   l32r  a9,  .LCbg1_state
@@ -536,7 +537,7 @@ no_x_flip_2_2_\unique:
   ee.vldbc.16 q5, a14
   ee.orq q4, q4, q5 
 no_cmath_\unique:
-.if \bgn == bg0
+.if \bgn == 0
   callx0 a5
 .else
   callx0 a6
@@ -675,7 +676,7 @@ double_fix_exit_\unique:
   ee.orq q4, q4, q5 
 .endif
 
-  l8ui a15, a9, Sprite.window
+  l8ui a15, a9, Sprite.windows
   l32r a14, .LCwindow_jump_table
   addx4 a14, a15, a14
   l32i.n a14, a14, 0
@@ -686,21 +687,21 @@ handle_sprite_exit_\unique:
 .endm
 
 .macro handle_spr_wrapper unique
-  movi a5, (SPRITE_CACHE - 1)
-  l32r a8, .LCsprite_jump_table
+  movi a8, (SPRITE_CACHE - 1)
 spr_loop_\unique:
   l32i.n a9, a4, 0
   beqz a9, spr_next_\unique
   l8ui a14, a9, Sprite.flags
   movi a15, -4
+  l32r a10, .LCsprite_jump_table
   and a14, a15, a14
-  add a15, a14, a8
+  add a15, a14, a10
   l32i.n a15, a15, 0
   callx0 a15
 spr_next_\unique:
   addi a4, a4, 4
-  addi a5, a5, -1
-  bgez a5, spr_loop_\unique
+  addi a8, a8, -1
+  bgez a8, spr_loop_\unique
 .endm
 
 .macro colour_split_main
@@ -968,7 +969,7 @@ per_pixel_\unique:
 
 .if \bg0_enable
   // handle bg0
-  handle_bg bg0, bg0_\unique
+  handle_bg 0, bg0_\unique
 .endif
 
 .if \spr0_enable
@@ -978,7 +979,7 @@ per_pixel_\unique:
 
 .if \bg1_enable
   // handle bg1
-  handle_bg bg1, bg1_\unique
+  handle_bg 1, bg1_\unique
 .endif
 
 .if \spr1_enable
@@ -1012,6 +1013,7 @@ per_pixel_\unique:
   .literal .LCbg1, SASPPU_bg1
   .literal .LCbackground, SASPPU_background
   .literal .LCsprites, SASPPU_sprites
+  .literal .LCsprite_cache, SASPPU_sprite_cache
   .literal .LCframe_buffer, SASPPU_frame_buffer
   .literal .LCvector_increments, vector_increments
   .literal .LCcmath_bit, cmath_bit
@@ -1032,17 +1034,16 @@ per_pixel_\unique:
   .literal .LCper_pixel_jump_table, per_pixel_jump_table
 
   .align 4
-  .global render_scanline
-  .type   render_scanline, @function
+  .global SASPPU_render_scanline
+  .type   SASPPU_render_scanline, @function
 // void render_scanline( a0 return, a1 stack
   // uint8_t x, // a2
   // uint8_t y, // a3
-  // SpriteCaches *sprite_caches, // a4
 //);
-render_scanline:
+SASPPU_render_scanline:
   entry sp, 64
 
-  call0 per_scanline
+  call0 SASPPU_per_scanline
 
   l32r a14, .LCwindow_jump_table
 
@@ -1072,6 +1073,7 @@ render_scanline:
 
   movi a2, (240 - 8)
 per_pixel_loop:
+  l32r a4, .LCsprite_cache
   callx0 a0
 
   slli a14, a3, (SPR_WIDTH_POWER + 4)
