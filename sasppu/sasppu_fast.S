@@ -9,7 +9,6 @@
 
 // Sprite
 // size = 10, align = 2
-  .section .bss
   .struct 0
 Sprite:
   .space 0
@@ -166,11 +165,9 @@ SASPPU_sprite_cache:
 SASPPU_frame_buffer:
   .zero ((240 * 240) * 2)
 
-// CONSTANTS
-  .section .rodata
-  .align 16
-  .type vector_increments, @object
-  .size vector_increments, 16
+.section .data.rel.ro
+
+.align 16
 vector_increments:
   .short 0
   .short 1
@@ -194,8 +191,6 @@ cmath_six:
   .short (1 << 6)
 cmath_eleven:
   .short (1 << 11)
-
-.text
 
 .macro window_macro_q6 wincase
 .if \wincase == 14
@@ -482,48 +477,48 @@ cmath_eleven:
   l16ui a13, a13, 0 // bg0_1_map
 
   l32r a9, .LCbackground
-y_flip_1_\unique:
+.Ly_flip_1_\unique:
   addi.n a10, a12, 0
-  bbci.l a13, 1, no_y_flip_1_\unique
+  bbci.l a13, 1, .Lno_y_flip_1_\unique
   sub a10, a14, a10
-no_y_flip_1_\unique:
+.Lno_y_flip_1_\unique:
   slli a10, a10, (BG_WIDTH_POWER + 1)
   addx2 a10, a13, a10
   add.n a10, a9, a10
   ld.qr q4, a10, 0 // load bg0_1 (offset_y flip)
-y_flip_2_\unique:
+.Ly_flip_2_\unique:
   addi.n a10, a12, 0
-  bbci.l a15, 1, no_y_flip_2_\unique
+  bbci.l a15, 1, .Lno_y_flip_2_\unique
   sub a10, a14, a10
-no_y_flip_2_\unique:
+.Lno_y_flip_2_\unique:
   slli a10, a10, (BG_WIDTH_POWER + 1)
   addx2 a10, a15, a10
   add.n a10, a9, a10
   ld.qr q5, a10, 0 // load bg0_1 (offset_y flip)
 
-  bbci.l a13, 0, no_x_flip_1_\unique
-  bbci.l a15, 0, no_x_flip_2_1_\unique
+  bbci.l a13, 0, .Lno_x_flip_1_\unique
+  bbci.l a15, 0, .Lno_x_flip_2_1_\unique
   // flip both
   ee.vzip.16 q4, q5
   ee.vzip.16 q5, q4
   ee.vzip.16 q4, q5
   ee.vzip.16 q5, q4
-  j no_x_flip_2_2_\unique
-no_x_flip_2_1_\unique:
+  j .Lno_x_flip_2_2_\unique
+.Lno_x_flip_2_1_\unique:
   // flip just 1
   ee.vzip.16 q4, q6
   ee.vzip.16 q6, q4
   ee.vzip.16 q4, q6
   ee.vzip.16 q6, q4
-  j no_x_flip_2_2_\unique
-no_x_flip_1_\unique:
-  bbci.l a15, 0, no_x_flip_2_2_\unique
+  j .Lno_x_flip_2_2_\unique
+.Lno_x_flip_1_\unique:
+  bbci.l a15, 0, .Lno_x_flip_2_2_\unique
   // flip just 2
   ee.vzip.16 q5, q6
   ee.vzip.16 q6, q5
   ee.vzip.16 q5, q6
   ee.vzip.16 q6, q5
-no_x_flip_2_2_\unique:
+.Lno_x_flip_2_2_\unique:
   ee.src.q q4, q4, q5 // swimzleoo
 
 .if \bgn == 0
@@ -532,11 +527,11 @@ no_x_flip_2_2_\unique:
   l32r  a9,  .LCbg1_state
 .endif
   l8ui  a15, a9, Background.flags
-  bbci.l a15, 0, no_cmath_\unique
+  bbci.l a15, 0, .Lno_cmath_\unique
   l32r a14, .LCcmath_bit
   ee.vldbc.16 q5, a14
   ee.orq q4, q4, q5 
-no_cmath_\unique:
+.Lno_cmath_\unique:
 .if \bgn == 0
   callx0 a5
 .else
@@ -562,8 +557,8 @@ no_cmath_\unique:
 .endif
   sub a11, a2, a13 // offset_x = x - sprite.x;
   movi a12, -7
-  blt a11, a12, handle_sprite_exit_\unique
-  bge a11, a10, handle_sprite_exit_\unique
+  blt a11, a12, .Lhandle_sprite_exit_\unique
+  bge a11, a10, .Lhandle_sprite_exit_\unique
   l16si a12, a9, Sprite.y
 .if \flip_x
   sub a11, a10, a11
@@ -601,8 +596,8 @@ no_cmath_\unique:
 
   l8ui a14, a9, Sprite.width
   ee.zero.q q4
-  bge a10, a14, spr_1_end_\unique
-  bltz a10, spr_1_end_\unique
+  bge a10, a14, .Lspr_1_end_\unique
+  bltz a10, .Lspr_1_end_\unique
 
   l8ui a14, a9, Sprite.graphics.y
   add a14, a12, a14
@@ -615,12 +610,12 @@ no_cmath_\unique:
   add a14, a14, a15
   ld.qr q4, a14, 0
 
-spr_1_end_\unique:
+.Lspr_1_end_\unique:
 
   l8ui a14, a9, Sprite.width
   ee.zero.q q5
-  bge a11, a14, spr_2_end_\unique
-  bltz a11, spr_2_end_\unique
+  bge a11, a14, .Lspr_2_end_\unique
+  bltz a11, .Lspr_2_end_\unique
 
   l8ui a14, a9, Sprite.graphics.y
   add a14, a12, a14
@@ -633,11 +628,11 @@ spr_1_end_\unique:
   add a14, a14, a15
   ld.qr q5, a14, 0
 
-spr_2_end_\unique:
+.Lspr_2_end_\unique:
 
 .if \double
   movi a11, 0x4
-  bany a10, a11, double_fix_not_zero_\unique
+  bany a10, a11, .Ldouble_fix_not_zero_\unique
 .if \flip_x
   mv.qr q6, q4
   ee.vzip.16 q4, q6
@@ -647,8 +642,8 @@ spr_2_end_\unique:
   mv.qr q5, q4
   ee.vzip.16 q4, q5
 .endif
-  j double_fix_exit_\unique
-double_fix_not_zero_\unique:
+  j .Ldouble_fix_exit_\unique
+.Ldouble_fix_not_zero_\unique:
 .if \flip_x
   mv.qr q5, q4
   ee.vzip.16 q5, q4
@@ -658,7 +653,7 @@ double_fix_not_zero_\unique:
   mv.qr q6, q5
   ee.vzip.16 q5, q6
 .endif
-double_fix_exit_\unique:
+.Ldouble_fix_exit_\unique:
 .endif
 
 .if \flip_x
@@ -682,15 +677,15 @@ double_fix_exit_\unique:
   l32i.n a14, a14, 0
   jx a14
   
-handle_sprite_exit_\unique:
+.Lhandle_sprite_exit_\unique:
   ret.n
 .endm
 
 .macro handle_spr_wrapper unique
   movi a8, (SPRITE_CACHE - 1)
-spr_loop_\unique:
+.Lspr_loop_\unique:
   l32i.n a9, a4, 0
-  beqz a9, spr_next_\unique
+  beqz a9, .Lspr_next_\unique
   l8ui a14, a9, Sprite.flags
   movi a15, -4
   l32r a10, .LCsprite_jump_table
@@ -698,10 +693,10 @@ spr_loop_\unique:
   add a15, a14, a10
   l32i.n a15, a15, 0
   callx0 a15
-spr_next_\unique:
+.Lspr_next_\unique:
   addi a4, a4, 4
   addi a8, a8, -1
-  bgez a8, spr_loop_\unique
+  bgez a8, .Lspr_loop_\unique
 .endm
 
 .macro colour_split_main
@@ -997,6 +992,7 @@ per_pixel_\unique:
   .size  per_pixel_\unique, .-per_pixel_\unique
 .endm
 
+  .text
   .literal_position
   .literal .LCmainscreen_colour, SASPPU_main_state_mainscreen_colour
   .literal .LCsubscreen_colour, SASPPU_main_state_subscreen_colour
@@ -1027,11 +1023,13 @@ per_pixel_\unique:
   .align 4
 .include "sasppu_gen.S"
 
-  .literal_position
+  .text
+
   .literal .LCwindow_jump_table, window_jump_table
   .literal .LCsprite_jump_table, sprite_jump_table
   .literal .LCcmath_jump_table, cmath_jump_table
   .literal .LCper_pixel_jump_table, per_pixel_jump_table
+  .literal .LCper_scanline, SASPPU_per_scanline
 
   .align 4
   .global SASPPU_render_scanline
@@ -1043,7 +1041,8 @@ per_pixel_\unique:
 SASPPU_render_scanline:
   entry sp, 64
 
-  call0 SASPPU_per_scanline
+  l32r a0, .LCper_scanline
+  callx0 a0
 
   l32r a14, .LCwindow_jump_table
 
@@ -1072,7 +1071,7 @@ SASPPU_render_scanline:
   l32i.n a0, a15, 0
 
   movi a2, (240 - 8)
-per_pixel_loop:
+.LCper_pixel_loop:
   l32r a4, .LCsprite_cache
   callx0 a0
 
@@ -1084,6 +1083,6 @@ per_pixel_loop:
   st.qr q0, a14, 0
 
   addi.n a2, a2, -8
-  bgez a2, per_pixel_loop
+  bgez a2, .LCper_pixel_loop
 
   retw.n

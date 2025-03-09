@@ -167,8 +167,27 @@ struct pair handle_bg(
 
 static const uint16x8_t incr = {0, 1, 2, 3, 4, 5, 6, 7};
 
-uint32_t large()
+static const uint16_t thing00;
+static const uint16_t thing01;
+static const uint16_t thing02;
+static const uint16_t thing03;
+static const uint16_t thing04;
+static const uint16_t thing05;
+static const uint16_t thing06;
+static const uint16_t thing07;
+uint16_t *things[8];
+
+uint32_t
+large()
 {
+    things[0] = &thing00;
+    things[1] = &thing01;
+    things[2] = &thing02;
+    things[3] = &thing03;
+    things[4] = &thing04;
+    things[5] = &thing05;
+    things[6] = &thing06;
+    things[7] = &thing07;
     return 123758349;
 }
 

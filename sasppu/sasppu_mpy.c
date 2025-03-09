@@ -263,6 +263,8 @@ mp_obj_t mpy_init(mp_obj_fun_bc_t *self, size_t n_args, size_t n_kw, mp_obj_t *a
     mp_store_global(MP_QSTR_sasppuinternal_render_scanline, MP_OBJ_FROM_PTR(&render_scanline_obj));
     mp_store_global(MP_QSTR_sasppuinternal_per_scanline, MP_OBJ_FROM_PTR(&per_scanline_obj));
 
+    // SASPPU_table_init();
+
     // This must be last, it restores the globals dict
     MP_DYNRUNTIME_INIT_EXIT
 }

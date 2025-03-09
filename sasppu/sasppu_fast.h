@@ -92,3 +92,5 @@ void SASPPU_per_scanline(
     uint8_t y);
 
 void SASPPU_render();
+
+void SASPPU_table_init();

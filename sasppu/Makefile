@@ -1,5 +1,5 @@
 # Location of top-level MicroPython directory
-MPY_DIR = ../../../../micropython
+MPY_DIR = ../../badge-2024-software/micropython
 
 # Name of module
 MOD = sasppu
