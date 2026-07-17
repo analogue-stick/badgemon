@@ -38,7 +38,7 @@ class MainMenu(Scene):
                         ("Rynkitty", lambda: self._get_answer("REOPEN")),
                         ("Special Thanks:", lambda: self._get_answer("REOPEN")),
                         ("Badge Team", lambda: self._get_answer("https://tildagon.badge. emfcamp.org")),
-                        ("Curtis P-F", lambda: self._get_answer("https://cpf.sh/")),
+                        ("Caitlin P-F", lambda: self._get_answer("https://cpf.sh/")),
                         ("Skyler84", lambda: self._get_answer("https://github.com/ Skyler84")),
                         ("GCHQ.NET", lambda: self._get_answer("https://gchq.net /claim/badgemon")),
                         ("You!", lambda: self._get_answer("<3")),

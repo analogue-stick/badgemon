@@ -2,7 +2,7 @@ import asyncio
 import math
 
 from system.eventbus import eventbus
-from events.input import ButtonDownEvent
+from events.input import ButtonDownEvent, BUTTON_TYPES
 from app import App
 
 from ctx import Context
@@ -130,14 +130,15 @@ class SpeechDialog:
             
     def _handle_buttondown(self, event: ButtonDownEvent):
         if self.is_open() and not self._stay_open:
-            if len(self._lines) < 4:
-                self._cleanup()
-                return
-            if self._current_line >= len(self._lines) -1:
-                self._cleanup()
-                return
-            else:
-                self._current_line += 1
+            if BUTTON_TYPES["CANCEL"] in event.button or BUTTON_TYPES["LEFT"] in event.button or BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button or BUTTON_TYPES["UP"] in event.button or BUTTON_TYPES["DOWN"] in event.button:
+                if len(self._lines) < 4:
+                    self._cleanup()
+                    return
+                if self._current_line >= len(self._lines) -1:
+                    self._cleanup()
+                    return
+                else:
+                    self._current_line += 1
 
     def _cleanup(self):
         eventbus.remove(ButtonDownEvent, self._handle_buttondown, self._app)
