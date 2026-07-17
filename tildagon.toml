@@ -25,7 +25,7 @@ class = "SceneManager"
 author = "Analogue Stick"
 
 # License of your app as an SPDX identifier: <https://spdx.org/licenses/>
-license = "CC-BY-NC-SA-4.0"
+license = "MIT"
 
 # URL to the repository of your app.
 url = "https://github.com/analogue-stick/badgemon"
@@ -37,4 +37,4 @@ description = "A realworld creature collecting RPG for the Tildagon!"
 # increased, we interpret this as a new version being released.
 #
 # Version number must be an integer!
-version = "1.0.6"
+version = "1.0.7"
