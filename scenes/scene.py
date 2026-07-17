@@ -1,7 +1,7 @@
 from asyncio import Event
 from ..util.animation import AnimationEvent
 from ctx import Context
-from events.input import ButtonDownEvent
+from events.input import ButtonDownEvent, BUTTON_TYPES
 from system.eventbus import eventbus
 
 try:
@@ -60,11 +60,15 @@ class Scene:
     def handle_buttondown(self, event: ButtonDownEvent):
         pass
 
+    def _handle_buttondown(self, event: ButtonDownEvent):
+        if BUTTON_TYPES["CANCEL"] in event.button or BUTTON_TYPES["LEFT"] in event.button or BUTTON_TYPES["CONFIRM"] in event.button or BUTTON_TYPES["RIGHT"] in event.button or BUTTON_TYPES["UP"] in event.button or BUTTON_TYPES["DOWN"] in event.button:
+            self.handle_buttondown(event)
+
     def scene_start(self):
-        eventbus.on(ButtonDownEvent, self.handle_buttondown, self.sm)
+        eventbus.on(ButtonDownEvent, self._handle_buttondown, self.sm)
 
     def scene_end(self):
-        eventbus.remove(ButtonDownEvent, self.handle_buttondown, self.sm)
+        eventbus.remove(ButtonDownEvent, self._handle_buttondown, self.sm)
         self.animation_scheduler.kill_animation()
 
     def _draw_background(self, ctx: Context):
